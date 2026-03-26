@@ -137,10 +137,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .layer-del:hover{background:#FEE2E2;color:var(--red)}
 
 /* ── PROPERTIES PANEL ── */
-#pp{display:none;border-top:1px solid var(--g200);padding:10px 12px;background:var(--g50)}
+#pp{display:none;border-top:1px solid var(--g200);padding:10px 12px;background:var(--g50);margin-top:4px}
 #pp .pp-title{font-size:11px;font-weight:700;color:var(--g500);letter-spacing:.5px;margin-bottom:8px}
 .pp-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
 .pp-label{font-size:11px;color:var(--g500);min-width:44px}
+.pp-sep{height:1px;background:var(--g200);margin:8px 0}
+.pp-section-label{font-size:11px;font-weight:600;color:var(--g500);letter-spacing:.4px}
 
 /* ── DOWNLOAD BAR ── */
 #dlbar{
@@ -797,10 +799,10 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
   </div><!-- /pg-ie -->
 
-  </div><!-- /sb-scroll -->
-
   <!-- PROPERTIES PANEL -->
   <div id="pp"></div>
+
+  </div><!-- /sb-scroll -->
 
   <!-- DOWNLOAD BAR -->
   <div id="dlbar">
@@ -1692,6 +1694,16 @@ function renderPPHTML(obj){
   </div>
   ${isT?renderTxtPP(obj):''}
   ${!isT?`<div class="pp-row" style="margin-top:6px"><button class="btn btn-teal btn-full btn-sm" onclick="removeBackground(${obj.id})">✂ 一鍵去背</button></div>`:''}
+  <div class="pp-sep"></div>
+  <div class="pp-section-label">對齊畫布</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">
+    <button class="btn btn-ghost btn-sm" title="靠左" onclick="alignObj('left')">⬛▪▪</button>
+    <button class="btn btn-ghost btn-sm" title="水平置中" onclick="alignObj('centerH')">▪⬛▪</button>
+    <button class="btn btn-ghost btn-sm" title="靠右" onclick="alignObj('right')">▪▪⬛</button>
+    <button class="btn btn-ghost btn-sm" title="靠上" onclick="alignObj('top')">⬆</button>
+    <button class="btn btn-ghost btn-sm" title="垂直置中" onclick="alignObj('centerV')">⬍</button>
+    <button class="btn btn-ghost btn-sm" title="靠下" onclick="alignObj('bottom')">⬇</button>
+  </div>
   <div class="pp-row" style="margin-top:6px">
     <button class="btn btn-red btn-full btn-sm" onclick="rmObj(${obj.id})">刪除物件</button>
   </div>`;
@@ -1787,6 +1799,24 @@ function upP(id, key, val){
   updLayerList();
   // Re-render pp if align changed
   if(key==='align') showPP(id);
+}
+
+function alignObj(dir){
+  if(!S.selId) return;
+  const obj = getObj(S.selId);
+  if(!obj) return;
+  switch(dir){
+    case 'left':    obj.x = 0; break;
+    case 'centerH': obj.x = (S.W - obj.w) / 2; break;
+    case 'right':   obj.x = S.W - obj.w; break;
+    case 'top':     obj.y = 0; break;
+    case 'centerV': obj.y = (S.H - obj.h) / 2; break;
+    case 'bottom':  obj.y = S.H - obj.h; break;
+  }
+  const el = document.getElementById('o'+obj.id);
+  if(el) applyStyle(el, obj);
+  showPP(obj.id);
+  pushHistory();
 }
 
 // ═══════════════════════════════════════════════
@@ -2382,6 +2412,8 @@ function switchTab(tab, btn){
     cscroll.style.display='none';
     ieArea.style.display='flex';
     if(pagesPanel) pagesPanel.style.display='none';
+    // 圖片編輯不顯示物件屬性面板
+    document.getElementById('pp').style.display='none';
   }
 }
 
