@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光田醫院｜海報產生器 Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#005BAC;--blue-l:#1A7DC4;--blue-d:#003F7A;
+  --teal:#00A99D;--gold:#C8A04A;--red:#D63B3B;--green:#22C55E;
+  --g50:#F8FAFC;--g100:#F1F5F9;--g200:#E2E8F0;--g300:#CBD5E1;
+  --g400:#94A3B8;--g500:#64748B;--g600:#475569;--g700:#334155;
+  --g800:#1E293B;--g900:#0F172A;
+  --sel:#2563EB;--sw:310px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Noto Sans TC',sans-serif;font-size:13px;background:var(--g100);color:var(--g800)}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+
+/* ── NAV ── */
+#nav{
+  height:44px;background:var(--blue-d);display:flex;align-items:center;
+  padding:0 16px;gap:4px;flex-shrink:0;user-select:none;
+}
+#nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
+.ntab{
+  padding:5px 14px;border:none;background:transparent;color:rgba(255,255,255,.65);
+  border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;
+}
+.ntab:hover{background:rgba(255,255,255,.1);color:#fff}
+.ntab.on{background:rgba(255,255,255,.18);color:#fff}
+#nav .spacer{flex:1}
+#nav .ver{color:rgba(255,255,255,.35);font-size:11px}
+
+/* ── LAYOUT ── */
+#main{display:flex;height:calc(100vh - 44px);overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sb{
+  width:var(--sw);min-width:var(--sw);background:#fff;border-right:1px solid var(--g200);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#sb-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 0 4px}
+#sb-scroll::-webkit-scrollbar{width:4px}
+#sb-scroll::-webkit-scrollbar-thumb{background:var(--g300);border-radius:4px}
+
+.pg{display:none}.pg.on{display:block}
+.sec{padding:0 12px 12px}
+.sec-title{
+  font-size:10px;font-weight:700;color:var(--g400);letter-spacing:.8px;
+  text-transform:uppercase;padding:8px 12px 4px;
+}
+
+/* ── CARDS / BUTTONS ── */
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.sc{
+  flex:1;min-width:60px;padding:6px 4px;border:1.5px solid var(--g200);border-radius:7px;
+  background:var(--g50);cursor:pointer;text-align:center;font-size:11px;
+  color:var(--g600);transition:all .15s;line-height:1.3;
+}
+.sc:hover{border-color:var(--blue);color:var(--blue)}
+.sc.on{border-color:var(--blue);background:#EBF4FF;color:var(--blue);font-weight:600}
+.sc span{display:block;font-size:9px;color:var(--g400)}
+
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:7px 10px;border:none;border-radius:7px;cursor:pointer;
+  font-size:12px;font-weight:500;transition:all .15s;white-space:nowrap;
+}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{background:var(--blue-l)}
+.btn-ghost{background:var(--g100);color:var(--g700);border:1px solid var(--g200)}
+.btn-ghost:hover{background:var(--g200)}
+.btn-red{background:#FEE2E2;color:var(--red)}.btn-red:hover{background:#FECACA}
+.btn-teal{background:#E0F5F4;color:var(--teal)}.btn-teal:hover{background:#C7EDEC}
+.btn-full{width:100%}
+.btn-sm{padding:5px 8px;font-size:11px}
+
+/* inputs */
+.inp{
+  width:100%;padding:6px 9px;border:1.5px solid var(--g200);border-radius:7px;
+  background:var(--g50);color:var(--g800);outline:none;transition:border .15s;
+}
+.inp:focus{border-color:var(--blue)}
+.inp-row{display:flex;gap:6px;align-items:center}
+.inp-label{font-size:11px;color:var(--g500);white-space:nowrap;min-width:52px}
+.inp-unit{font-size:11px;color:var(--g400)}
+input[type=range]{width:100%;accent-color:var(--blue);height:4px}
+input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:pointer;padding:0;background:none}
+
+/* ── LAYER LIST ── */
+#layer-list{display:flex;flex-direction:column;gap:3px}
+.layer-item{
+  display:flex;align-items:center;gap:6px;padding:6px 8px;
+  border-radius:6px;cursor:pointer;transition:background .1s;font-size:12px;
+  border:1.5px solid transparent;
+}
+.layer-item:hover{background:var(--g100)}
+.layer-item.sel{background:#EBF4FF;border-color:var(--blue)}
+.layer-thumb{
+  width:28px;height:28px;border-radius:4px;background:var(--g100);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+  overflow:hidden;border:1px solid var(--g200);
+}
+.layer-thumb img{width:100%;height:100%;object-fit:cover}
+.layer-name{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--g700)}
+.layer-del{
+  width:22px;height:22px;border:none;background:transparent;cursor:pointer;
+  color:var(--g400);border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+.layer-del:hover{background:#FEE2E2;color:var(--red)}
+
+/* ── PROPERTIES PANEL ── */
+#pp{display:none;border-top:1px solid var(--g200);padding:10px 12px;background:var(--g50)}
+#pp .pp-title{font-size:11px;font-weight:700;color:var(--g500);letter-spacing:.5px;margin-bottom:8px}
+.pp-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.pp-label{font-size:11px;color:var(--g500);min-width:44px}
+
+/* ── DOWNLOAD BAR ── */
+#dlbar{
+  padding:10px 12px;border-top:1px solid var(--g200);background:#fff;flex-shrink:0;
+}
+
+/* ── CANVAS AREA ── */
+#ca{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--g200)}
+.catop{
+  height:38px;background:#fff;border-bottom:1px solid var(--g200);
+  display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0;
+}
+.catop .ztxt{font-size:12px;color:var(--g500);min-width:38px;text-align:center}
+.catop .sep{width:1px;height:18px;background:var(--g200);margin:0 2px}
+
+#cscroll{
+  flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:flex-start;
+  padding:24px;
+}
+#cscroll::-webkit-scrollbar{width:6px;height:6px}
+#cscroll::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+
+#pw{
+  position:relative;flex-shrink:0;
+  box-shadow:0 4px 32px rgba(0,0,0,.18);
+}
+#bgc{position:absolute;top:0;left:0;display:block}
+#ol{position:absolute;top:0;left:0;width:100%;height:100%}
+
+/* ── OBJECTS ── */
+.obj{
+  position:absolute;cursor:move;user-select:none;
+  box-sizing:border-box;
+}
+.obj.sel .obj-border{
+  outline:1.5px solid var(--sel);
+  outline-offset:1px;
+}
+.obj-border{position:absolute;inset:0;pointer-events:none}
+.tinner{
+  position:absolute;inset:0;overflow:hidden;
+  white-space:pre-wrap;word-break:break-word;
+  cursor:text;line-height:1.4;
+}
+.lock-badge{
+  position:absolute;bottom:2px;right:2px;
+  background:rgba(0,0,0,.5);color:#fff;font-size:9px;
+  padding:1px 4px;border-radius:3px;pointer-events:none;
+}
+
+/* resize handles */
+.rh{
+  position:absolute;width:10px;height:10px;background:#fff;
+  border:1.5px solid var(--sel);border-radius:2px;
+  display:none;z-index:10;
+}
+.obj.sel .rh{display:block}
+.rh.nw{top:-5px;left:-5px;cursor:nw-resize}
+.rh.n{top:-5px;left:calc(50% - 5px);cursor:n-resize}
+.rh.ne{top:-5px;right:-5px;cursor:ne-resize}
+.rh.e{top:calc(50% - 5px);right:-5px;cursor:e-resize}
+.rh.se{bottom:-5px;right:-5px;cursor:se-resize}
+.rh.s{bottom:-5px;left:calc(50% - 5px);cursor:s-resize}
+.rh.sw{bottom:-5px;left:-5px;cursor:sw-resize}
+.rh.w{top:calc(50% - 5px);left:-5px;cursor:w-resize}
+.roth{
+  position:absolute;top:-28px;left:calc(50% - 8px);
+  width:16px;height:16px;background:#fff;border:1.5px solid var(--sel);
+  border-radius:50%;cursor:grab;display:none;z-index:10;
+}
+.roth::after{
+  content:'';position:absolute;top:14px;left:6px;
+  width:2px;height:12px;background:var(--sel);border-radius:1px;
+}
+.obj.sel .roth{display:block}
+
+/* ── WATERMARK TAB ── */
+.wm-queue{
+  display:flex;flex-wrap:wrap;gap:6px;padding:6px 0;
+  max-height:120px;overflow-y:auto;
+}
+.wm-thumb{
+  width:52px;height:52px;border-radius:5px;object-fit:cover;
+  border:1.5px solid var(--g200);background:var(--g100);
+}
+.wm-count{font-size:11px;color:var(--g500);padding:4px 0}
+
+.logo-slot{
+  border:1.5px solid var(--g200);border-radius:8px;
+  background:#fff;overflow:hidden;margin-bottom:6px;
+}
+.logo-slot.has-logo{border-color:var(--teal)}
+.slot-head{
+  display:flex;align-items:center;gap:6px;padding:7px 9px;cursor:pointer;
+  transition:background .1s;
+}
+.slot-head:hover{background:var(--g50)}
+.slot-icon{
+  width:28px;height:28px;border-radius:4px;background:var(--g100);
+  display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;
+  border:1px solid var(--g200);flex-shrink:0;
+}
+.slot-icon img{width:100%;height:100%;object-fit:contain}
+.slot-name{flex:1;font-size:11px;color:var(--g700);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.slot-arr{font-size:10px;color:var(--g400);transition:transform .2s}
+.slot-body{display:none;padding:0 9px 9px;border-top:1px solid var(--g100)}
+.slot-body.open{display:block}
+
+.pc-grid{display:flex;flex-direction:column;gap:3px;width:72px}
+.pc-row{display:flex;gap:3px}
+.pc{
+  width:21px;height:21px;border:1.5px solid var(--g200);border-radius:4px;
+  background:var(--g100);cursor:pointer;transition:all .1s;
+}
+.pc:hover{border-color:var(--blue)}
+.pc.on{background:var(--blue);border-color:var(--blue)}
+.pc.disabled{opacity:.3;cursor:not-allowed}
+
+/* ── MODAL ── */
+#modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:1000;align-items:center;justify-content:center;
+}
+#modal.open{display:flex}
+.modal-box{
+  background:#fff;border-radius:14px;padding:20px;
+  max-width:420px;width:100%;max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-head h3{font-size:14px;font-weight:700}
+.modal-close{
+  width:28px;height:28px;border:none;background:var(--g100);border-radius:6px;
+  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+  color:var(--g600);
+}
+.modal-close:hover{background:var(--g200)}
+.prev-card{
+  flex:1;overflow:hidden;border-radius:8px;background:var(--g100);
+  display:flex;align-items:center;justify-content:center;margin-bottom:12px;min-height:200px;
+}
+.prev-card canvas{max-width:100%;max-height:340px;border-radius:4px}
+.modal-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.modal-nav .nav-info{font-size:12px;color:var(--g500)}
+.modal-btns{display:flex;gap:8px;margin-top:12px}
+
+/* ── TOAST ── */
+#snack{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--g800);color:#fff;padding:9px 18px;border-radius:8px;
+  font-size:12px;opacity:0;transition:all .25s;z-index:9999;pointer-events:none;
+  white-space:nowrap;
+}
+#snack.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* scrollbar thin */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div id="nav">
+  <div class="logo">🏥 光田醫院｜海報產生器</div>
+  <button class="ntab on" onclick="switchTab('poster',this)" id="ntab-poster">海報編輯</button>
+  <button class="ntab" onclick="switchTab('wm',this)" id="ntab-wm">批次浮水印</button>
+  <div class="spacer"></div>
+  <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed">↩ 復原</button>
+  <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed">↪ 重做</button>
+  <span class="ver" style="margin-left:6px">v3.0</span>
+</div>
+
+<div id="main">
+<!-- SIDEBAR -->
+<div id="sb">
+  <div id="sb-scroll">
+
+  <!-- ═══ POSTER TAB ═══ -->
+  <div class="pg on" id="pg-poster">
+
+    <!-- 尺寸 -->
+    <div class="sec-title">畫布尺寸</div>
+    <div class="sec">
+      <div class="row" style="margin-bottom:6px">
+        <div class="sc on" id="sc-a4v" onclick="selSz(this,'A4 直式',794,1123)">A4 直式<span>210×297mm</span></div>
+        <div class="sc" id="sc-a4h" onclick="selSz(this,'A4 橫式',1123,794)">A4 橫式<span>297×210mm</span></div>
+      </div>
+      <div class="row" style="margin-bottom:6px">
+        <div class="sc" id="sc-a3v" onclick="selSz(this,'A3 直式',1123,1587)">A3 直式<span>297×420mm</span></div>
+        <div class="sc" id="sc-sq" onclick="selSz(this,'正方形',800,800)">正方形<span>800×800px</span></div>
+        <div class="sc" id="sc-fb" onclick="selSz(this,'FB 封面',1702,630)">FB封面<span>1702×630</span></div>
+      </div>
+      <div class="inp-row" style="margin-bottom:5px">
+        <span class="inp-label">自訂 W</span>
+        <input class="inp" type="number" id="inW" placeholder="px" min="100" max="4000" value="794">
+        <span class="inp-unit">px</span>
+      </div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">自訂 H</span>
+        <input class="inp" type="number" id="inH" placeholder="px" min="100" max="4000" value="1123">
+        <span class="inp-unit">px</span>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="applyCustom()">套用自訂尺寸</button>
+    </div>
+
+    <!-- 背景 -->
+    <div class="sec-title">背景</div>
+    <div class="sec">
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">背景色</span>
+        <input type="color" id="bgColorInp" value="#FFFFFF" oninput="setBgC(this.value)">
+        <span style="font-size:11px;color:var(--g400);margin-left:4px">顏色</span>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('bgImgInp').click()">上傳底圖</button>
+        <input type="file" id="bgImgInp" accept="image/*" style="display:none" onchange="addBgImg(this)">
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">清除底圖</button>
+    </div>
+
+    <!-- 新增物件 -->
+    <div class="sec-title">新增物件</div>
+    <div class="sec">
+      <div class="row" style="margin-bottom:6px">
+        <button class="btn btn-blue btn-full" onclick="addTxt('文字內容',48,'#1C2340','400',60,60,300,80)">
+          ＋ 文字
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="document.getElementById('imgInp').click()">
+          ＋ 圖片
+        </button>
+        <input type="file" id="imgInp" accept="image/*" style="display:none" onchange="addImg(this)">
+      </div>
+      <div class="row">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('標題文字',72,'#005BAC','700',40,40,400,100)">大標題</button>
+        <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('副標題',36,'#475569','400',40,160,360,60)">副標題</button>
+        <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('內文文字',24,'#334155','300',40,240,400,40)">內文</button>
+      </div>
+    </div>
+
+    <!-- 圖層 -->
+    <div class="sec-title">圖層</div>
+    <div class="sec">
+      <div id="layer-list"><div style="font-size:11px;color:var(--g400);padding:4px 0">尚無物件</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ WATERMARK TAB ═══ -->
+  <div class="pg" id="pg-wm">
+
+    <!-- 上傳圖片 -->
+    <div class="sec-title">批次圖片</div>
+    <div class="sec">
+      <button class="btn btn-blue btn-full" style="margin-bottom:6px" onclick="document.getElementById('wmImgInp').click()">
+        ＋ 上傳圖片（可多選）
+      </button>
+      <input type="file" id="wmImgInp" accept="image/*" multiple style="display:none" onchange="addWmImgs(this)">
+      <div class="wm-count" id="wm-count">尚未上傳圖片</div>
+      <div class="wm-queue" id="wm-queue"></div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="clearWmImgs()">清除全部圖片</button>
+    </div>
+
+    <!-- LOGO 槽位 -->
+    <div class="sec-title">LOGO 設定</div>
+    <div class="sec">
+      <div id="logo-slots"></div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="addLogoSlot()">＋ 新增 LOGO</button>
+    </div>
+
+    <!-- 輸出設定 -->
+    <div class="sec-title">輸出設定</div>
+    <div class="sec">
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">格式</span>
+        <select class="inp" onchange="S.wm.fmt=this.value">
+          <option value="jpeg">JPEG</option>
+          <option value="png">PNG</option>
+        </select>
+      </div>
+      <div class="inp-row">
+        <span class="inp-label">品質</span>
+        <input type="range" min="50" max="100" value="92" step="1"
+          oninput="S.wm.quality=this.value/100;document.getElementById('qlbl').textContent=this.value+'%'">
+        <span id="qlbl" style="font-size:11px;color:var(--g500);min-width:32px">92%</span>
+      </div>
+    </div>
+
+  </div>
+
+  </div><!-- /sb-scroll -->
+
+  <!-- PROPERTIES PANEL -->
+  <div id="pp"></div>
+
+  <!-- DOWNLOAD BAR -->
+  <div id="dlbar">
+    <button class="btn btn-blue btn-full" onclick="handleDl()" id="dl-btn">
+      ⬇ 下載海報 PNG
+    </button>
+    <div id="wm-preview-btn" style="display:none;margin-top:6px">
+      <button class="btn btn-teal btn-full" onclick="previewAll()">👁 預覽後下載</button>
+    </div>
+  </div>
+</div><!-- /sb -->
+
+<!-- CANVAS AREA -->
+<div id="ca">
+  <div class="catop">
+    <button class="btn btn-ghost btn-sm" onclick="zm(-1)">−</button>
+    <span class="ztxt" id="zlbl">60%</span>
+    <button class="btn btn-ghost btn-sm" onclick="zm(1)">＋</button>
+    <div class="sep"></div>
+    <button class="btn btn-ghost btn-sm" onclick="zfit()">最適</button>
+    <button class="btn btn-ghost btn-sm" onclick="setZoom(1)">100%</button>
+    <div class="sep"></div>
+    <span style="font-size:11px;color:var(--g400)" id="sz-lbl">794 × 1123 px</span>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost btn-sm" onclick="desel(true)">取消選取</button>
+  </div>
+  <div id="cscroll" onclick="handleBgClick(event)">
+    <div id="pw">
+      <canvas id="bgc"></canvas>
+      <div id="ol"></div>
+    </div>
+  </div>
+</div>
+</div><!-- /main -->
+
+<!-- WATERMARK PREVIEW MODAL -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>浮水印預覽</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="prev-card" id="prev-card"></div>
+    <div class="modal-nav">
+      <button class="btn btn-ghost btn-sm" onclick="navPrev()">◀ 上一張</button>
+      <span class="nav-info" id="nav-info">1 / 1</span>
+      <button class="btn btn-ghost btn-sm" onclick="navNext()">下一張 ▶</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-blue btn-full" onclick="dlAll()">⬇ 全部下載</button>
+      <button class="btn btn-ghost" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div id="snack"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  GLOBAL STATE
+// ═══════════════════════════════════════════════
+const S = {
+  W:794, H:1123, name:'A4 直式',
+  bgColor:'#FFFFFF', bgImgEl:null,
+  zoom:0.6,
+  objs:[], selId:null, cnt:0,
+  tab:'poster',
+  wm:{
+    imgs:[], logos:[], logoCnt:0,
+    fmt:'jpeg', quality:0.92
+  },
+  prevIdx:0, prevCanvases:[],
+  // Undo/Redo
+  history:[], future:[], _skipHistory:false, _arrowHistTimer:null
+};
+
+// ═══════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════
+function mkId(){ return ++S.cnt; }
+
+function snack(msg, dur=2000){
+  const el = document.getElementById('snack');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('on'), dur);
+}
+
+function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+
+function pushHistory(){
+  if(S._skipHistory) return;
+  // Shallow-copy each obj — imgEl reference is preserved (no serialisation needed)
+  S.history.push(S.objs.map(o=>({...o})));
+  if(S.history.length > 50) S.history.shift();
+  S.future = [];
+  updUndoButtons();
+}
+
+function applySnapshot(snap){
+  const ol = document.getElementById('ol');
+  ol.innerHTML = '';
+  S.selId = null;
+  S.objs = snap.map(o=>({...o}));   // shallow-copy back
+  S.objs.forEach(obj=>mkEl(obj.id));
+  updLayerList();
+  document.getElementById('pp').style.display='none';
+  renderBg();
+}
+
+function undo(){
+  if(!S.history.length){ snack('已是最初狀態'); return; }
+  S.future.push(S.objs.map(o=>({...o})));
+  S._skipHistory = true;
+  applySnapshot(S.history.pop());
+  S._skipHistory = false;
+  snack('已復原');
+  updUndoButtons();
+}
+
+function redo(){
+  if(!S.future.length){ snack('沒有可重做的操作'); return; }
+  S.history.push(S.objs.map(o=>({...o})));
+  S._skipHistory = true;
+  applySnapshot(S.future.pop());
+  S._skipHistory = false;
+  snack('已重做');
+  updUndoButtons();
+}
+
+function updUndoButtons(){
+  const bu=document.getElementById('btn-undo');
+  const br=document.getElementById('btn-redo');
+  if(!bu||!br) return;
+  const hasU=S.history.length>0, hasR=S.future.length>0;
+  bu.style.opacity=hasU?'1':'.4';
+  bu.style.cursor=hasU?'pointer':'not-allowed';
+  br.style.opacity=hasR?'1':'.4';
+  br.style.cursor=hasR?'pointer':'not-allowed';
+}
+
+function dupObj(id){
+  const src=getObj(id);
+  if(!src) return;
+  pushHistory();
+  const newId=mkId();
+  const obj={...src, id:newId, x:src.x+20, y:src.y+20};
+  S.objs.push(obj);
+  mkEl(newId);
+  selObj(newId);
+  updLayerList();
+  snack('已複製物件');
+}
+
+// ═══════════════════════════════════════════════
+//  ZOOM
+// ═══════════════════════════════════════════════
+function zm(d){
+  let z = S.zoom + d * 0.1;
+  setZoom(z);
+}
+function setZoom(z){
+  S.zoom = clamp(z, 0.08, 3);
+  applyZ();
+}
+function zfit(){
+  const cs = document.getElementById('cscroll');
+  const pw = parseFloat(getComputedStyle(cs).width) - 48;
+  const ph = parseFloat(getComputedStyle(cs).height) - 48;
+  const zw = pw / S.W;
+  const zh = ph / S.H;
+  setZoom(Math.min(zw, zh));
+}
+function applyZ(){
+  document.getElementById('zlbl').textContent = Math.round(S.zoom*100)+'%';
+  renderBg();
+}
+
+// ═══════════════════════════════════════════════
+//  BACKGROUND
+// ═══════════════════════════════════════════════
+function renderBg(){
+  const pw = document.getElementById('pw');
+  const bgc = document.getElementById('bgc');
+  const dw = Math.round(S.W * S.zoom);
+  const dh = Math.round(S.H * S.zoom);
+  pw.style.width = dw+'px';
+  pw.style.height = dh+'px';
+  bgc.width = dw;
+  bgc.height = dh;
+  bgc.style.width = dw+'px';
+  bgc.style.height = dh+'px';
+  const ctx = bgc.getContext('2d');
+  ctx.clearRect(0,0,dw,dh);
+  ctx.fillStyle = S.bgColor;
+  ctx.fillRect(0,0,dw,dh);
+  if(S.bgImgEl){
+    ctx.drawImage(S.bgImgEl,0,0,dw,dh);
+  }
+  scaleObjs();
+  document.getElementById('sz-lbl').textContent = S.W+' × '+S.H+' px';
+}
+
+function setBgC(color){
+  S.bgColor = color;
+  renderBg();
+}
+
+function addBgImg(inp){
+  const file = inp.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = ()=>{ S.bgImgEl = img; renderBg(); snack('底圖已載入'); };
+  img.src = url;
+  inp.value = '';
+}
+
+function clearBgImg(){
+  S.bgImgEl = null;
+  renderBg();
+  snack('底圖已清除');
+}
+
+// ═══════════════════════════════════════════════
+//  SIZE PRESETS
+// ═══════════════════════════════════════════════
+function selSz(el, name, w, h){
+  document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  S.W = w; S.H = h; S.name = name;
+  renderBg();
+  document.getElementById('inW').value = w;
+  document.getElementById('inH').value = h;
+}
+
+function applyCustom(){
+  const w = parseInt(document.getElementById('inW').value);
+  const h = parseInt(document.getElementById('inH').value);
+  if(!w||!h||w<100||h<100){ snack('請輸入有效的寬高（最小 100px）'); return; }
+  document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
+  S.W = w; S.H = h; S.name = w+'x'+h;
+  renderBg();
+  snack(`畫布已設為 ${w}×${h} px`);
+}
+
+// ═══════════════════════════════════════════════
+//  OBJECT SYSTEM
+// ═══════════════════════════════════════════════
+function getObj(id){ return S.objs.find(o=>o.id===id); }
+
+function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='left'){
+  pushHistory();
+  const id = mkId();
+  const obj = {
+    id, type:'txt', x, y, w, h, rot, opacity,
+    text, size, color, weight, align
+  };
+  S.objs.push(obj);
+  mkEl(id);
+  selObj(id);
+  updLayerList();
+  return obj;
+}
+
+function addImg(inp){
+  const file = inp.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = ()=>{
+    pushHistory();
+    const id = mkId();
+    const ar = img.naturalHeight / img.naturalWidth;
+    const dw = clamp(300, 100, S.W*0.6);
+    const obj = {
+      id, type:'img',
+      x: 40, y: 40,
+      w: dw, h: dw*ar,
+      rot:0, opacity:1,
+      imgEl: img,
+      aspectRatio: ar
+    };
+    S.objs.push(obj);
+    mkEl(id);
+    selObj(id);
+    updLayerList();
+    snack('圖片已加入');
+  };
+  img.src = url;
+  inp.value = '';
+}
+
+function mkEl(id){
+  const obj = getObj(id);
+  if(!obj) return;
+  const ol = document.getElementById('ol');
+  const el = document.createElement('div');
+  el.id = 'o'+id;
+  el.className = 'obj';
+  el.dataset.id = id;
+
+  // border div
+  const bd = document.createElement('div');
+  bd.className = 'obj-border';
+  el.appendChild(bd);
+
+  if(obj.type==='txt'){
+    const ti = document.createElement('div');
+    ti.className = 'tinner';
+    ti.contentEditable = 'true';
+    ti.textContent = obj.text;
+    ti.addEventListener('input', ()=>{
+      obj.text = ti.innerText;
+    });
+    ti.addEventListener('blur', ()=>{
+      obj.text = ti.innerText;
+      pushHistory();
+    });
+    ti.addEventListener('mousedown', e=>e.stopPropagation());
+    el.appendChild(ti);
+  } else {
+    const imgEl = document.createElement('img');
+    imgEl.src = obj.imgEl.src;
+    imgEl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;';
+    el.appendChild(imgEl);
+    const lb = document.createElement('div');
+    lb.className = 'lock-badge';
+    lb.textContent = '⇲';
+    el.appendChild(lb);
+  }
+
+  // resize handles
+  ['nw','n','ne','e','se','s','sw','w'].forEach(dir=>{
+    const rh = document.createElement('div');
+    rh.className = 'rh '+dir;
+    rh.dataset.dir = dir;
+    el.appendChild(rh);
+  });
+
+  // rotate handle
+  const roth = document.createElement('div');
+  roth.className = 'roth';
+  el.appendChild(roth);
+
+  ol.appendChild(el);
+  applyStyle(el, obj);
+  attachDrag(el, obj);
+}
+
+function applyStyle(el, obj){
+  const z = S.zoom;
+  el.style.cssText = `
+    left:${obj.x*z}px;
+    top:${obj.y*z}px;
+    width:${obj.w*z}px;
+    height:${obj.h*z}px;
+    transform:rotate(${obj.rot}deg);
+    opacity:${obj.opacity};
+    position:absolute;
+    cursor:move;
+    user-select:none;
+    box-sizing:border-box;
+  `;
+  if(obj.type==='txt'){
+    const ti = el.querySelector('.tinner');
+    if(ti){
+      ti.style.cssText = `
+        position:absolute;inset:0;overflow:hidden;
+        white-space:pre-wrap;word-break:break-word;
+        cursor:text;line-height:1.4;
+        font-size:${obj.size*z}px;
+        color:${obj.color};
+        font-weight:${obj.weight};
+        text-align:${obj.align};
+        font-family:'Noto Sans TC',sans-serif;
+      `;
+    }
+  }
+}
+
+function scaleObjs(){
+  S.objs.forEach(obj=>{
+    const el = document.getElementById('o'+obj.id);
+    if(el) applyStyle(el, obj);
+  });
+}
+
+function selObj(id){
+  document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel'));
+  document.querySelectorAll('.layer-item').forEach(e=>e.classList.remove('sel'));
+  S.selId = id;
+  const el = document.getElementById('o'+id);
+  if(el) el.classList.add('sel');
+  const li = document.getElementById('li'+id);
+  if(li) li.classList.add('sel');
+  showPP(id);
+}
+
+function desel(upd){
+  document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel'));
+  document.querySelectorAll('.layer-item').forEach(e=>e.classList.remove('sel'));
+  S.selId = null;
+  document.getElementById('pp').style.display = 'none';
+  if(upd) updLayerList();
+}
+
+function rmObj(id){
+  pushHistory();
+  const el = document.getElementById('o'+id);
+  if(el) el.remove();
+  S.objs = S.objs.filter(o=>o.id!==id);
+  if(S.selId===id){ S.selId=null; document.getElementById('pp').style.display='none'; }
+  updLayerList();
+  snack('已刪除物件');
+}
+
+function handleBgClick(e){
+  if(e.target.id==='cscroll'||e.target.id==='pw'||e.target.id==='bgc'){
+    desel();
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  DRAG / RESIZE / ROTATE
+// ═══════════════════════════════════════════════
+function attachDrag(el, obj){
+  let mode=null, sx=0, sy=0, ox=0, oy=0, ow=0, oh=0, orot=0, cx=0, cy=0;
+
+  function getCenter(){
+    const z=S.zoom;
+    return { x: obj.x*z + obj.w*z/2, y: obj.y*z + obj.h*z/2 };
+  }
+
+  function onDown(e){
+    e.stopPropagation();
+    if(e.target.classList.contains('tinner')) return;
+    selObj(obj.id);
+
+    sx=e.clientX; sy=e.clientY;
+    ox=obj.x; oy=obj.y; ow=obj.w; oh=obj.h; orot=obj.rot;
+
+    if(e.target.classList.contains('roth')){
+      mode='rotate';
+      const r=el.getBoundingClientRect();
+      cx=r.left+r.width/2; cy=r.top+r.height/2;
+    } else if(e.target.classList.contains('rh')){
+      mode='resize';
+      mode = 'resize-'+e.target.dataset.dir;
+    } else {
+      mode='move';
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  }
+
+  function onMove(e){
+    if(!mode) return;
+    const z=S.zoom;
+    const dx=(e.clientX-sx)/z;
+    const dy=(e.clientY-sy)/z;
+
+    if(mode==='move'){
+      obj.x = ox+dx;
+      obj.y = oy+dy;
+    } else if(mode==='rotate'){
+      const angle = Math.atan2(e.clientY-cy, e.clientX-cx) * 180/Math.PI;
+      obj.rot = Math.round((orot + (angle - Math.atan2(sy-cy,sx-cx)*180/Math.PI)) % 360);
+    } else {
+      const dir = mode.replace('resize-','');
+      let nx=ox, ny=oy, nw=ow, nh=oh;
+      if(dir.includes('e')) nw = Math.max(20, ow+dx);
+      if(dir.includes('s')) nh = Math.max(20, oh+dy);
+      if(dir.includes('w')){ nw = Math.max(20, ow-dx); nx = ox+ow-nw; }
+      if(dir.includes('n')){ nh = Math.max(20, oh-dy); ny = oy+oh-nh; }
+      // for img: maintain aspect on corner
+      if(obj.type==='img' && (dir==='se'||dir==='sw'||dir==='ne'||dir==='nw')){
+        nh = nw * obj.aspectRatio;
+        if(dir.includes('n')) ny = oy+oh-nh;
+      }
+      obj.x=nx; obj.y=ny; obj.w=nw; obj.h=nh;
+    }
+    applyStyle(el, obj);
+    if(S.selId===obj.id) updatePPValues(obj);
+  }
+
+  function onUp(){
+    if(!mode) return;
+    mode=null;
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    pushHistory();
+  }
+
+  el.addEventListener('mousedown', onDown);
+}
+
+// ═══════════════════════════════════════════════
+//  LAYER LIST
+// ═══════════════════════════════════════════════
+function updLayerList(){
+  const ll = document.getElementById('layer-list');
+  if(!S.objs.length){
+    ll.innerHTML = '<div style="font-size:11px;color:var(--g400);padding:4px 0">尚無物件</div>';
+    return;
+  }
+  ll.innerHTML = '';
+  [...S.objs].reverse().forEach(obj=>{
+    const item = document.createElement('div');
+    item.className = 'layer-item' + (S.selId===obj.id?' sel':'');
+    item.id = 'li'+obj.id;
+    item.onclick = ()=>selObj(obj.id);
+
+    const thumb = document.createElement('div');
+    thumb.className = 'layer-thumb';
+    if(obj.type==='img' && obj.imgEl){
+      const im=document.createElement('img');
+      im.src=obj.imgEl.src;
+      thumb.appendChild(im);
+    } else {
+      thumb.textContent='T';
+      thumb.style.cssText='color:var(--blue);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;';
+    }
+
+    const name = document.createElement('div');
+    name.className = 'layer-name';
+    name.textContent = obj.type==='txt'
+      ? (obj.text.substring(0,16)||(obj.text||'文字'))
+      : '圖片';
+
+    const del = document.createElement('button');
+    del.className = 'layer-del';
+    del.innerHTML = '✕';
+    del.onclick = e=>{ e.stopPropagation(); rmObj(obj.id); };
+
+    item.append(thumb, name, del);
+    ll.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  PROPERTIES PANEL
+// ═══════════════════════════════════════════════
+function showPP(id){
+  const obj = getObj(id);
+  const pp = document.getElementById('pp');
+  if(!obj){ pp.style.display='none'; return; }
+  pp.style.display='block';
+  pp.innerHTML = renderPPHTML(obj);
+  bindPPEvents(obj);
+}
+
+function renderPPHTML(obj){
+  const isT = obj.type==='txt';
+  return `
+  <div class="pp-title">${isT?'文字屬性':'圖片屬性'}</div>
+  <div class="pp-row">
+    <span class="pp-label">X</span>
+    <input class="inp" type="number" id="pp-x" value="${Math.round(obj.x)}" style="width:60px">
+    <span class="pp-label" style="margin-left:6px">Y</span>
+    <input class="inp" type="number" id="pp-y" value="${Math.round(obj.y)}" style="width:60px">
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">W</span>
+    <input class="inp" type="number" id="pp-w" value="${Math.round(obj.w)}" style="width:60px">
+    <span class="pp-label" style="margin-left:6px">H</span>
+    <input class="inp" type="number" id="pp-h" value="${Math.round(obj.h)}" style="width:60px">
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">旋轉</span>
+    <input class="inp" type="number" id="pp-rot" value="${Math.round(obj.rot)}" style="width:60px">
+    <span style="font-size:11px;color:var(--g400);margin-left:4px">deg</span>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">透明度</span>
+    <input type="range" id="pp-op" min="0" max="100" value="${Math.round(obj.opacity*100)}" style="flex:1">
+    <span id="pp-op-lbl" style="font-size:11px;color:var(--g500);min-width:34px">${Math.round(obj.opacity*100)}%</span>
+  </div>
+  ${isT?renderTxtPP(obj):''}
+  <div class="pp-row" style="margin-top:6px">
+    <button class="btn btn-red btn-full btn-sm" onclick="rmObj(${obj.id})">刪除物件</button>
+  </div>`;
+}
+
+function renderTxtPP(obj){
+  return `
+  <div class="pp-row">
+    <span class="pp-label">字色</span>
+    <input type="color" id="pp-color" value="${obj.color}">
+    <span class="pp-label" style="margin-left:8px">大小</span>
+    <input class="inp" type="number" id="pp-size" value="${obj.size}" style="width:55px">
+    <span style="font-size:11px;color:var(--g400);margin-left:2px">px</span>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">粗細</span>
+    <select class="inp" id="pp-weight">
+      ${['300','400','500','700','900'].map(w=>`<option value="${w}"${obj.weight===w?' selected':''}>${w}</option>`).join('')}
+    </select>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">對齊</span>
+    <div style="display:flex;gap:4px">
+      ${['left','center','right'].map(a=>`<button class="btn btn-sm ${obj.align===a?'btn-blue':'btn-ghost'}" id="pp-align-${a}" onclick="upP(${obj.id},'align','${a}')">${a==='left'?'⬛▪▪':a==='center'?'▪⬛▪':'▪▪⬛'}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function bindPPEvents(obj){
+  const bind = (id, key, transform) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', ()=>{
+      const v = transform ? transform(el.value) : el.value;
+      upP(obj.id, key, v);
+      if(id==='pp-op') document.getElementById('pp-op-lbl').textContent=Math.round(obj.opacity*100)+'%';
+    });
+  };
+  bind('pp-x','x',v=>parseFloat(v)||0);
+  bind('pp-y','y',v=>parseFloat(v)||0);
+  bind('pp-w','w',v=>Math.max(10,parseFloat(v)||10));
+  bind('pp-h','h',v=>Math.max(10,parseFloat(v)||10));
+  bind('pp-rot','rot',v=>parseFloat(v)||0);
+  bind('pp-op','opacity',v=>v/100);
+  if(obj.type==='txt'){
+    bind('pp-color','color');
+    bind('pp-size','size',v=>Math.max(8,parseFloat(v)||12));
+    bind('pp-weight','weight');
+  }
+}
+
+function updatePPValues(obj){
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v; };
+  set('pp-x',Math.round(obj.x));
+  set('pp-y',Math.round(obj.y));
+  set('pp-w',Math.round(obj.w));
+  set('pp-h',Math.round(obj.h));
+  set('pp-rot',Math.round(obj.rot));
+  set('pp-op',Math.round(obj.opacity*100));
+  const lbl=document.getElementById('pp-op-lbl');
+  if(lbl) lbl.textContent=Math.round(obj.opacity*100)+'%';
+}
+
+function upP(id, key, val){
+  const obj = getObj(id);
+  if(!obj) return;
+  obj[key] = val;
+  const el = document.getElementById('o'+id);
+  if(el) applyStyle(el, obj);
+  updLayerList();
+  // Re-render pp if align changed
+  if(key==='align') showPP(id);
+}
+
+// ═══════════════════════════════════════════════
+//  DOWNLOAD POSTER
+// ═══════════════════════════════════════════════
+async function dlPoster(){
+  await document.fonts.ready;
+  const cvs = document.createElement('canvas');
+  cvs.width = S.W; cvs.height = S.H;
+  const ctx = cvs.getContext('2d');
+
+  // background
+  ctx.fillStyle = S.bgColor;
+  ctx.fillRect(0,0,S.W,S.H);
+  if(S.bgImgEl) ctx.drawImage(S.bgImgEl,0,0,S.W,S.H);
+
+  // objects
+  for(const obj of S.objs){
+    ctx.save();
+    ctx.globalAlpha = obj.opacity;
+    const cx = obj.x + obj.w/2;
+    const cy = obj.y + obj.h/2;
+    ctx.translate(cx,cy);
+    ctx.rotate(obj.rot*Math.PI/180);
+
+    if(obj.type==='img' && obj.imgEl){
+      ctx.drawImage(obj.imgEl, -obj.w/2, -obj.h/2, obj.w, obj.h);
+    } else if(obj.type==='txt'){
+      ctx.font = `${obj.weight} ${obj.size}px 'Noto Sans TC', sans-serif`;
+      ctx.fillStyle = obj.color;
+      ctx.textBaseline = 'top';
+      ctx.textAlign = obj.align;
+      const lines = obj.text.split('\n');
+      let ax = obj.align==='center'?0 : obj.align==='right'?obj.w/2 : -obj.w/2;
+      lines.forEach((line,i)=>{
+        ctx.fillText(line, ax, -obj.h/2 + i*obj.size*1.4);
+      });
+    }
+    ctx.restore();
+  }
+
+  downloadOne(cvs, `光田醫院_${S.name}_${Date.now()}`, 'png', 1);
+  snack('海報已下載！');
+}
+
+function downloadOne(canvas, name, fmt, quality){
+  const a = document.createElement('a');
+  a.download = name+'.'+(fmt==='png'?'png':'jpg');
+  a.href = canvas.toDataURL('image/'+fmt, quality);
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+//  WATERMARK MODULE
+// ═══════════════════════════════════════════════
+function addWmImgs(inp){
+  const files = Array.from(inp.files);
+  let loaded=0;
+  files.forEach(f=>{
+    const url=URL.createObjectURL(f);
+    const img=new Image();
+    img.onload=()=>{
+      S.wm.imgs.push({url, name:f.name, imgEl:img});
+      loaded++;
+      if(loaded===files.length){
+        renderWmQ();
+        snack(`已加入 ${files.length} 張圖片`);
+      }
+    };
+    img.src=url;
+  });
+  inp.value='';
+}
+
+function clearWmImgs(){
+  S.wm.imgs=[];
+  renderWmQ();
+  S.prevCanvases=[];
+  snack('圖片已清除');
+}
+
+function renderWmQ(){
+  const q=document.getElementById('wm-queue');
+  const c=document.getElementById('wm-count');
+  const n=S.wm.imgs.length;
+  c.textContent = n ? `共 ${n} 張圖片` : '尚未上傳圖片';
+  q.innerHTML='';
+  S.wm.imgs.slice(0,12).forEach(item=>{
+    const img=document.createElement('img');
+    img.src=item.url;
+    img.className='wm-thumb';
+    img.title=item.name;
+    q.appendChild(img);
+  });
+  if(n>12){
+    const more=document.createElement('div');
+    more.style.cssText='font-size:11px;color:var(--g400);display:flex;align-items:center';
+    more.textContent=`+${n-12} 張`;
+    q.appendChild(more);
+  }
+}
+
+function addLogoSlot(){
+  const id=++S.wm.logoCnt;
+  S.wm.logos.push({
+    id, imgEl:null, name:'未選擇',
+    pos:'br', marginX:32, marginY:32, sizeRatio:20, opacity:85, _open:false
+  });
+  renderLogoSlots();
+}
+
+function rmLogoSlot(lid){
+  S.wm.logos = S.wm.logos.filter(l=>l.id!==lid);
+  renderLogoSlots();
+}
+
+function renderLogoSlots(){
+  const ct=document.getElementById('logo-slots');
+  ct.innerHTML='';
+  S.wm.logos.forEach(slot=>ct.appendChild(buildSlotEl(slot)));
+}
+
+function buildSlotEl(slot){
+  const wrap=document.createElement('div');
+  wrap.className='logo-slot'+(slot.imgEl?' has-logo':'');
+  wrap.id='slot'+slot.id;
+
+  // head
+  const head=document.createElement('div');
+  head.className='slot-head';
+  head.onclick=()=>expandSlot(slot.id);
+
+  const icon=document.createElement('div');
+  icon.className='slot-icon';
+  if(slot.imgEl){
+    const im=document.createElement('img');
+    im.src=slot.imgEl.src;
+    icon.appendChild(im);
+  } else {
+    icon.textContent='🖼';
+  }
+
+  const name=document.createElement('div');
+  name.className='slot-name';
+  name.textContent=slot.name.substring(0,20);
+
+  const arr=document.createElement('div');
+  arr.className='slot-arr';
+  arr.textContent=slot._open?'▲':'▼';
+
+  const del=document.createElement('button');
+  del.className='layer-del';
+  del.textContent='✕';
+  del.onclick=e=>{e.stopPropagation();rmLogoSlot(slot.id)};
+
+  head.append(icon,name,arr,del);
+  wrap.appendChild(head);
+
+  // body
+  const body=document.createElement('div');
+  body.className='slot-body'+(slot._open?' open':'');
+
+  body.innerHTML=`
+  <div style="margin:8px 0 6px">
+    <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('slotInp${slot.id}').click()">
+      ${slot.imgEl?'更換 LOGO':'上傳 LOGO'}
+    </button>
+    <input type="file" id="slotInp${slot.id}" accept="image/*" style="display:none" onchange="setSlotLogo(${slot.id},this)">
+  </div>
+  <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px">
+    <div>
+      <div style="font-size:10px;color:var(--g400);margin-bottom:4px">位置</div>
+      <div class="pc-grid">
+        <div class="pc-row">
+          <div class="pc${slot.pos==='tl'?' on':''}" onclick="setSlotPos(${slot.id},'tl')"></div>
+          <div class="pc disabled"></div>
+          <div class="pc${slot.pos==='tr'?' on':''}" onclick="setSlotPos(${slot.id},'tr')"></div>
+        </div>
+        <div class="pc-row">
+          <div class="pc disabled"></div>
+          <div class="pc disabled"></div>
+          <div class="pc disabled"></div>
+        </div>
+        <div class="pc-row">
+          <div class="pc${slot.pos==='bl'?' on':''}" onclick="setSlotPos(${slot.id},'bl')"></div>
+          <div class="pc disabled"></div>
+          <div class="pc${slot.pos==='br'?' on':''}" onclick="setSlotPos(${slot.id},'br')"></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1">
+      <div class="inp-row" style="margin-bottom:5px">
+        <span class="inp-label">寬度%</span>
+        <input class="inp" type="number" value="${slot.sizeRatio}" min="5" max="80"
+          oninput="setSlotProp(${slot.id},'sizeRatio',+this.value)" style="width:55px">
+      </div>
+      <div class="inp-row" style="margin-bottom:5px">
+        <span class="inp-label">X邊距</span>
+        <input class="inp" type="number" value="${slot.marginX}" min="0" max="200"
+          oninput="setSlotProp(${slot.id},'marginX',+this.value)" style="width:55px">
+      </div>
+      <div class="inp-row" style="margin-bottom:5px">
+        <span class="inp-label">Y邊距</span>
+        <input class="inp" type="number" value="${slot.marginY}" min="0" max="200"
+          oninput="setSlotProp(${slot.id},'marginY',+this.value)" style="width:55px">
+      </div>
+      <div class="inp-row">
+        <span class="inp-label">透明度</span>
+        <input type="range" min="0" max="100" value="${slot.opacity}"
+          oninput="setSlotProp(${slot.id},'opacity',+this.value);document.getElementById('slop${slot.id}').textContent=this.value+'%'">
+        <span id="slop${slot.id}" style="font-size:11px;color:var(--g500);min-width:34px">${slot.opacity}%</span>
+      </div>
+    </div>
+  </div>`;
+
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function expandSlot(lid){
+  const slot=S.wm.logos.find(l=>l.id===lid);
+  if(!slot) return;
+  slot._open=!slot._open;
+  renderLogoSlots();
+}
+
+function setSlotLogo(lid, inp){
+  const file=inp.files[0];
+  if(!file) return;
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{
+    const slot=S.wm.logos.find(l=>l.id===lid);
+    if(!slot) return;
+    slot.imgEl=img;
+    slot.name=file.name.length>20?file.name.substring(0,17)+'...':file.name;
+    renderLogoSlots();
+    snack('LOGO 已載入');
+  };
+  img.src=url;
+  inp.value='';
+}
+
+function setSlotPos(lid, pos){
+  const slot=S.wm.logos.find(l=>l.id===lid);
+  if(slot){ slot.pos=pos; renderLogoSlots(); }
+}
+
+function setSlotProp(lid, key, val){
+  const slot=S.wm.logos.find(l=>l.id===lid);
+  if(slot) slot[key]=val;
+}
+
+function compositeOne(baseImgEl){
+  const cvs=document.createElement('canvas');
+  const bw=baseImgEl.naturalWidth||baseImgEl.width;
+  const bh=baseImgEl.naturalHeight||baseImgEl.height;
+  cvs.width=bw; cvs.height=bh;
+  const ctx=cvs.getContext('2d');
+  ctx.drawImage(baseImgEl,0,0,bw,bh);
+
+  S.wm.logos.forEach(slot=>{
+    if(!slot.imgEl) return;
+    const lw=Math.round(bw*slot.sizeRatio/100);
+    const lh=Math.round(lw*(slot.imgEl.naturalHeight/slot.imgEl.naturalWidth));
+    let lx,ly;
+    if(slot.pos==='tl'){ lx=slot.marginX; ly=slot.marginY; }
+    else if(slot.pos==='tr'){ lx=bw-lw-slot.marginX; ly=slot.marginY; }
+    else if(slot.pos==='bl'){ lx=slot.marginX; ly=bh-lh-slot.marginY; }
+    else { lx=bw-lw-slot.marginX; ly=bh-lh-slot.marginY; }
+    ctx.save();
+    ctx.globalAlpha=slot.opacity/100;
+    ctx.drawImage(slot.imgEl,lx,ly,lw,lh);
+    ctx.restore();
+  });
+  return cvs;
+}
+
+async function previewAll(){
+  if(!S.wm.imgs.length){ snack('請先上傳圖片'); return; }
+  if(!S.wm.logos.some(l=>l.imgEl)){ snack('請先上傳至少一個 LOGO'); return; }
+  snack('合成中…', 5000);
+  await new Promise(r=>setTimeout(r,50));
+  S.prevCanvases = S.wm.imgs.map(item=>({
+    canvas: compositeOne(item.imgEl),
+    name: item.name.replace(/\.[^.]+$/,'')+'_wm'
+  }));
+  S.prevIdx=0;
+  renderModalPrev();
+  document.getElementById('modal').classList.add('open');
+  snack('預覽完成');
+}
+
+function renderModalPrev(){
+  const {canvas,name}=S.prevCanvases[S.prevIdx];
+  const card=document.getElementById('prev-card');
+  card.innerHTML='';
+  const maxW=340, maxH=340;
+  const scale=Math.min(maxW/canvas.width, maxH/canvas.height, 1);
+  const preview=document.createElement('canvas');
+  preview.width=Math.round(canvas.width*scale);
+  preview.height=Math.round(canvas.height*scale);
+  preview.getContext('2d').drawImage(canvas,0,0,preview.width,preview.height);
+  card.appendChild(preview);
+  document.getElementById('nav-info').textContent=`${S.prevIdx+1} / ${S.prevCanvases.length}`;
+}
+
+function navPrev(){ if(S.prevIdx>0){ S.prevIdx--; renderModalPrev(); } }
+function navNext(){ if(S.prevIdx<S.prevCanvases.length-1){ S.prevIdx++; renderModalPrev(); } }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+
+async function dlAll(){
+  for(let i=0;i<S.prevCanvases.length;i++){
+    const {canvas,name}=S.prevCanvases[i];
+    await new Promise(res=>{
+      downloadOne(canvas, name, S.wm.fmt, S.wm.quality);
+      setTimeout(res,150);
+    });
+  }
+  closeModal();
+  snack(`已下載 ${S.prevCanvases.length} 張圖片`);
+}
+
+async function batchDirectDl(){
+  if(!S.wm.imgs.length){ snack('請先上傳圖片'); return; }
+  if(!S.wm.logos.some(l=>l.imgEl)){ snack('請先上傳至少一個 LOGO'); return; }
+  snack('下載中…', 5000);
+  for(let i=0;i<S.wm.imgs.length;i++){
+    const item=S.wm.imgs[i];
+    const cvs=compositeOne(item.imgEl);
+    const name=item.name.replace(/\.[^.]+$/,'')+'_wm';
+    await new Promise(res=>{ downloadOne(cvs,name,S.wm.fmt,S.wm.quality); setTimeout(res,150); });
+  }
+  snack(`已下載 ${S.wm.imgs.length} 張圖片`);
+}
+
+// ═══════════════════════════════════════════════
+//  TAB SWITCH
+// ═══════════════════════════════════════════════
+function switchTab(tab, btn){
+  S.tab=tab;
+  document.querySelectorAll('.ntab').forEach(e=>e.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.pg').forEach(e=>e.classList.remove('on'));
+  document.getElementById('pg-'+tab).classList.add('on');
+  const dlBtn=document.getElementById('dl-btn');
+  const wmpBtn=document.getElementById('wm-preview-btn');
+  if(tab==='poster'){
+    dlBtn.textContent='⬇ 下載海報 PNG';
+    wmpBtn.style.display='none';
+  } else {
+    dlBtn.textContent='⬇ 批次壓 LOGO 下載';
+    wmpBtn.style.display='block';
+  }
+}
+
+function handleDl(){
+  if(S.tab==='poster') dlPoster();
+  else batchDirectDl();
+}
+
+// ═══════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════
+document.addEventListener('keydown', e=>{
+  // Ignore when typing in input/contenteditable
+  const tag=document.activeElement.tagName;
+  const isCE=document.activeElement.contentEditable==='true';
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||isCE) return;
+
+  // Delete
+  if((e.key==='Delete'||e.key==='Backspace') && S.selId){
+    rmObj(S.selId); return;
+  }
+  // Escape
+  if(e.key==='Escape'){ desel(); return; }
+  // Undo Ctrl/Cmd+Z
+  if((e.metaKey||e.ctrlKey) && e.key==='z' && !e.shiftKey){
+    e.preventDefault(); undo(); return;
+  }
+  // Redo Ctrl/Cmd+Shift+Z or Ctrl+Y
+  if(((e.metaKey||e.ctrlKey) && e.key==='z' && e.shiftKey) ||
+     ((e.ctrlKey) && e.key==='y')){
+    e.preventDefault(); redo(); return;
+  }
+  // Duplicate Ctrl/Cmd+D
+  if((e.metaKey||e.ctrlKey) && e.key==='d' && S.selId){
+    e.preventDefault(); dupObj(S.selId); return;
+  }
+  // Nudge with arrows
+  if(S.selId && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+    e.preventDefault();
+    const obj=getObj(S.selId);
+    if(!obj) return;
+    const step=e.shiftKey?10:1;
+    if(e.key==='ArrowLeft') obj.x-=step;
+    if(e.key==='ArrowRight') obj.x+=step;
+    if(e.key==='ArrowUp') obj.y-=step;
+    if(e.key==='ArrowDown') obj.y+=step;
+    const el=document.getElementById('o'+S.selId);
+    if(el) applyStyle(el,obj);
+    updatePPValues(obj);
+    // debounce history push (200ms after last arrow key)
+    clearTimeout(S._arrowHistTimer);
+    S._arrowHistTimer=setTimeout(pushHistory,200);
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('load', ()=>{
+  renderBg();
+  setTimeout(zfit, 100);
+  addLogoSlot();
+  updUndoButtons();
+});
+</script>
+</body>
+</html>
