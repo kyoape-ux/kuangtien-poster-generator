@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田醫院｜海報產生器 Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
@@ -272,6 +272,29 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 #snack.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* ── TEMPLATES ── */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tpl-card{
+  border:1.5px solid var(--g200);border-radius:8px;overflow:hidden;
+  cursor:pointer;transition:all .15s;background:#fff;
+}
+.tpl-card:hover{border-color:var(--blue);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,91,172,.12)}
+.tpl-card.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,91,172,.2)}
+.tpl-thumb{width:100%;display:block;aspect-ratio:auto}
+.tpl-info{padding:5px 7px}
+.tpl-name{font-size:11px;font-weight:600;color:var(--g700);line-height:1.3}
+.tpl-size{font-size:9px;color:var(--g400);margin-top:1px}
+
+/* hint for dblclick-to-edit */
+.obj.sel .tinner-hint{
+  display:block;
+}
+.tinner-hint{
+  display:none;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  background:rgba(37,99,235,.85);color:#fff;font-size:9px;padding:2px 6px;
+  border-radius:3px;pointer-events:none;white-space:nowrap;z-index:20;
+}
+
 /* scrollbar thin */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -318,6 +341,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
   <!-- ═══ POSTER TAB ═══ -->
   <div class="pg on" id="pg-poster">
+
+    <!-- 模板 -->
+    <div class="sec-title">快速套用模板</div>
+    <div class="sec">
+      <div class="tpl-grid" id="tpl-grid"></div>
+    </div>
 
     <!-- 尺寸 -->
     <div class="sec-title">畫布尺寸</div>
@@ -507,6 +536,68 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 <div id="snack"></div>
 
 <script>
+// ═══════════════════════════════════════════════
+//  FONTS & TEMPLATES
+// ═══════════════════════════════════════════════
+const FONTS = [
+  { label:'黑體 Noto Sans', value:'Noto Sans TC' },
+  { label:'宋體 Noto Serif', value:'Noto Serif TC' },
+];
+
+const TEMPLATES = [
+  {
+    id:'tv-h', name:'電視圖卡 橫式', w:1920, h:1080,
+    bg:'#1C2340', previewGrad:['#1C2340','#2D3A6B'],
+    objs:[
+      {type:'txt',text:'活動標題文字',size:90,color:'#FFFFFF',weight:'700',align:'center',fontFamily:'Noto Sans TC',x:160,y:280,w:1600,h:120,rot:0,opacity:1},
+      {type:'txt',text:'副標題說明文字',size:48,color:'#00A99D',weight:'400',align:'center',fontFamily:'Noto Sans TC',x:160,y:420,w:1600,h:70,rot:0,opacity:1},
+      {type:'txt',text:'2026 年 00 月 00 日　地點：○○院區',size:34,color:'#8B92A9',weight:'300',align:'center',fontFamily:'Noto Sans TC',x:160,y:870,w:1600,h:50,rot:0,opacity:1},
+      {type:'txt',text:'光田醫療財團法人光田綜合醫院',size:28,color:'#FFFFFF',weight:'300',align:'center',fontFamily:'Noto Sans TC',x:160,y:930,w:1600,h:44,rot:0,opacity:1},
+    ]
+  },
+  {
+    id:'tv-v', name:'電視圖卡 直式', w:1080, h:1920,
+    bg:'#003F7A', previewGrad:['#003F7A','#005BAC'],
+    objs:[
+      {type:'txt',text:'活動標題文字',size:80,color:'#FFFFFF',weight:'700',align:'center',fontFamily:'Noto Sans TC',x:60,y:500,w:960,h:110,rot:0,opacity:1},
+      {type:'txt',text:'副標題說明文字',size:44,color:'#00A99D',weight:'400',align:'center',fontFamily:'Noto Sans TC',x:60,y:640,w:960,h:65,rot:0,opacity:1},
+      {type:'txt',text:'2026 年 00 月 00 日',size:34,color:'#8B92A9',weight:'300',align:'center',fontFamily:'Noto Sans TC',x:60,y:1720,w:960,h:50,rot:0,opacity:1},
+      {type:'txt',text:'光田醫療財團法人光田綜合醫院',size:28,color:'#FFFFFF',weight:'300',align:'center',fontFamily:'Noto Sans TC',x:60,y:1780,w:960,h:44,rot:0,opacity:1},
+    ]
+  },
+  {
+    id:'a4', name:'A4 公告', w:794, h:1123,
+    bg:'#FFFFFF', previewGrad:['#FFFFFF','#F1F5F9'],
+    objs:[
+      {type:'txt',text:'公告標題文字',size:52,color:'#003F7A',weight:'700',align:'center',fontFamily:'Noto Sans TC',x:40,y:80,w:714,h:80,rot:0,opacity:1},
+      {type:'txt',text:'副標題 Subtitle',size:26,color:'#475569',weight:'400',align:'center',fontFamily:'Noto Sans TC',x:40,y:180,w:714,h:44,rot:0,opacity:1},
+      {type:'txt',text:'內文說明文字，請在此輸入公告內容。\n可換行，支援多段落文字編輯。\n\n時間：\n地點：\n注意事項：',size:18,color:'#334155',weight:'300',align:'left',fontFamily:'Noto Sans TC',x:60,y:260,w:674,h:500,rot:0,opacity:1},
+      {type:'txt',text:'光田醫療財團法人光田綜合醫院',size:18,color:'#003F7A',weight:'500',align:'center',fontFamily:'Noto Sans TC',x:40,y:1010,w:714,h:30,rot:0,opacity:1},
+      {type:'txt',text:'中華民國 115 年 00 月 00 日',size:15,color:'#94A3B8',weight:'300',align:'center',fontFamily:'Noto Sans TC',x:40,y:1050,w:714,h:26,rot:0,opacity:1},
+    ]
+  },
+  {
+    id:'social', name:'社群貼文', w:1080, h:1080,
+    bg:'#005BAC', previewGrad:['#005BAC','#003F7A'],
+    objs:[
+      {type:'txt',text:'活動標題',size:88,color:'#FFFFFF',weight:'700',align:'center',fontFamily:'Noto Sans TC',x:60,y:320,w:960,h:120,rot:0,opacity:1},
+      {type:'txt',text:'副標題說明',size:42,color:'#FFD700',weight:'400',align:'center',fontFamily:'Noto Sans TC',x:60,y:470,w:960,h:65,rot:0,opacity:1},
+      {type:'txt',text:'#光田醫院　#健康促進　#活動資訊',size:26,color:'rgba(255,255,255,0.7)',weight:'300',align:'center',fontFamily:'Noto Sans TC',x:60,y:870,w:960,h:42,rot:0,opacity:1},
+      {type:'txt',text:'光田醫療財團法人光田綜合醫院',size:26,color:'#FFFFFF',weight:'500',align:'center',fontFamily:'Noto Sans TC',x:60,y:928,w:960,h:42,rot:0,opacity:1},
+    ]
+  },
+  {
+    id:'invite', name:'活動邀請電子卡', w:1200, h:628,
+    bg:'#F8F4EE', previewGrad:['#F8F4EE','#EDE8E0'],
+    objs:[
+      {type:'txt',text:'活動邀請標題',size:64,color:'#003F7A',weight:'700',align:'center',fontFamily:'Noto Serif TC',x:60,y:160,w:1080,h:90,rot:0,opacity:1},
+      {type:'txt',text:'Subtitle · 副標題說明',size:34,color:'#475569',weight:'400',align:'center',fontFamily:'Noto Sans TC',x:60,y:280,w:1080,h:55,rot:0,opacity:1},
+      {type:'txt',text:'時間：2026 年 00 月 00 日　│　地點：○○院區',size:26,color:'#64748B',weight:'300',align:'center',fontFamily:'Noto Sans TC',x:60,y:470,w:1080,h:42,rot:0,opacity:1},
+      {type:'txt',text:'光田醫療財團法人光田綜合醫院',size:22,color:'#005BAC',weight:'500',align:'center',fontFamily:'Noto Sans TC',x:60,y:556,w:1080,h:36,rot:0,opacity:1},
+    ]
+  },
+];
+
 // ═══════════════════════════════════════════════
 //  GLOBAL STATE
 // ═══════════════════════════════════════════════
@@ -701,12 +792,12 @@ function applyCustom(){
 // ═══════════════════════════════════════════════
 function getObj(id){ return S.objs.find(o=>o.id===id); }
 
-function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='left'){
+function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='left', fontFamily='Noto Sans TC'){
   pushHistory();
   const id = mkId();
   const obj = {
     id, type:'txt', x, y, w, h, rot, opacity,
-    text, size, color, weight, align
+    text, size, color, weight, align, fontFamily
   };
   S.objs.push(obj);
   mkEl(id);
@@ -760,17 +851,37 @@ function mkEl(id){
   if(obj.type==='txt'){
     const ti = document.createElement('div');
     ti.className = 'tinner';
-    ti.contentEditable = 'true';
+    ti.contentEditable = 'false';  // 預設不可編輯，雙擊才進入編輯
     ti.textContent = obj.text;
-    ti.addEventListener('input', ()=>{
-      obj.text = ti.innerText;
-    });
+    ti.addEventListener('input', ()=>{ obj.text = ti.innerText; });
     ti.addEventListener('blur', ()=>{
       obj.text = ti.innerText;
+      ti.contentEditable = 'false';
       pushHistory();
     });
-    ti.addEventListener('mousedown', e=>e.stopPropagation());
+    // 單擊：只選取，不攔截（讓 el mousedown 處理拖曳）
+    ti.addEventListener('mousedown', e=>{
+      if(ti.contentEditable === 'true') e.stopPropagation();
+    });
+    // 雙擊：進入編輯模式
+    ti.addEventListener('dblclick', e=>{
+      e.stopPropagation();
+      ti.contentEditable = 'true';
+      ti.focus();
+      // 移到末尾
+      const range = document.createRange();
+      range.selectNodeContents(ti);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+    // 提示標籤
+    const hint = document.createElement('div');
+    hint.className = 'tinner-hint';
+    hint.textContent = '雙擊編輯';
     el.appendChild(ti);
+    el.appendChild(hint);
   } else {
     const imgEl = document.createElement('img');
     imgEl.src = obj.imgEl.src;
@@ -817,15 +928,17 @@ function applyStyle(el, obj){
   if(obj.type==='txt'){
     const ti = el.querySelector('.tinner');
     if(ti){
+      const ff = obj.fontFamily||'Noto Sans TC';
+      const ffStack = ff==='Noto Serif TC' ? `'Noto Serif TC',serif` : `'Noto Sans TC',sans-serif`;
       ti.style.cssText = `
         position:absolute;inset:0;overflow:hidden;
         white-space:pre-wrap;word-break:break-word;
-        cursor:text;line-height:1.4;
+        cursor:default;line-height:1.4;
         font-size:${obj.size*z}px;
         color:${obj.color};
         font-weight:${obj.weight};
         text-align:${obj.align};
-        font-family:'Noto Sans TC',sans-serif;
+        font-family:${ffStack};
       `;
     }
   }
@@ -1036,7 +1149,14 @@ function renderPPHTML(obj){
 }
 
 function renderTxtPP(obj){
+  const ff = obj.fontFamily||'Noto Sans TC';
   return `
+  <div class="pp-row">
+    <span class="pp-label">字體</span>
+    <select class="inp" id="pp-font">
+      ${FONTS.map(f=>`<option value="${f.value}"${ff===f.value?' selected':''}>${f.label}</option>`).join('')}
+    </select>
+  </div>
   <div class="pp-row">
     <span class="pp-label">字色</span>
     <input type="color" id="pp-color" value="${obj.color}">
@@ -1075,6 +1195,7 @@ function bindPPEvents(obj){
   bind('pp-rot','rot',v=>parseFloat(v)||0);
   bind('pp-op','opacity',v=>v/100);
   if(obj.type==='txt'){
+    bind('pp-font','fontFamily');
     bind('pp-color','color');
     bind('pp-size','size',v=>Math.max(8,parseFloat(v)||12));
     bind('pp-weight','weight');
@@ -1130,7 +1251,9 @@ async function dlPoster(){
     if(obj.type==='img' && obj.imgEl){
       ctx.drawImage(obj.imgEl, -obj.w/2, -obj.h/2, obj.w, obj.h);
     } else if(obj.type==='txt'){
-      ctx.font = `${obj.weight} ${obj.size}px 'Noto Sans TC', sans-serif`;
+      const dlFf = obj.fontFamily||'Noto Sans TC';
+      const dlStack = dlFf==='Noto Serif TC'?`'Noto Serif TC',serif`:`'Noto Sans TC',sans-serif`;
+      ctx.font = `${obj.weight} ${obj.size}px ${dlStack}`;
       ctx.fillStyle = obj.color;
       ctx.textBaseline = 'top';
       ctx.textAlign = obj.align;
@@ -1573,9 +1696,123 @@ document.addEventListener('keydown', e=>{
 });
 
 // ═══════════════════════════════════════════════
+//  TEMPLATES
+// ═══════════════════════════════════════════════
+function genTplThumb(tpl){
+  const MAX_W = 130, MAX_H = 100;
+  const scale = Math.min(MAX_W/tpl.w, MAX_H/tpl.h);
+  const cw = Math.round(tpl.w*scale);
+  const ch = Math.round(tpl.h*scale);
+  const cvs = document.createElement('canvas');
+  cvs.width = cw; cvs.height = ch;
+  const ctx = cvs.getContext('2d');
+
+  // background gradient
+  const grd = ctx.createLinearGradient(0,0,cw,ch);
+  grd.addColorStop(0, tpl.previewGrad[0]);
+  grd.addColorStop(1, tpl.previewGrad[1]);
+  ctx.fillStyle = grd;
+  ctx.fillRect(0,0,cw,ch);
+
+  // draw text blocks as simplified rectangles
+  tpl.objs.forEach((o,i)=>{
+    const ox=o.x*scale, oy=o.y*scale;
+    const ow=o.w*scale, oh=Math.max(4, o.size*scale*1.2);
+    const alpha = i===0?0.9:i===1?0.7:0.4;
+    ctx.fillStyle = o.color.startsWith('rgba')?`rgba(255,255,255,${alpha})`:`rgba(255,255,255,${alpha})`;
+    const rh = Math.max(3, o.size*scale*0.8);
+    // draw a rounded bar representing this text line
+    ctx.beginPath();
+    const rx=2;
+    ctx.moveTo(ox+rx,oy); ctx.lineTo(ox+ow-rx,oy);
+    ctx.arcTo(ox+ow,oy,ox+ow,oy+rh,rx); ctx.lineTo(ox+ow,oy+rh);
+    ctx.arcTo(ox+ow,oy+rh,ox,oy+rh,rx); ctx.lineTo(ox+rx,oy+rh);
+    ctx.arcTo(ox,oy+rh,ox,oy,rx); ctx.lineTo(ox,oy+rx);
+    ctx.arcTo(ox,oy,ox+rx,oy,rx);
+    ctx.closePath();
+    ctx.fill();
+  });
+  return cvs;
+}
+
+function renderTemplates(){
+  const grid = document.getElementById('tpl-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  TEMPLATES.forEach(tpl=>{
+    const card = document.createElement('div');
+    card.className='tpl-card';
+    card.id='tpl-'+tpl.id;
+    card.onclick=()=>applyTemplate(tpl.id);
+
+    const thumb = genTplThumb(tpl);
+    thumb.className='tpl-thumb';
+    thumb.style.width='100%';
+    thumb.style.height='auto';
+    thumb.style.display='block';
+
+    const info = document.createElement('div');
+    info.className='tpl-info';
+    info.innerHTML=`<div class="tpl-name">${tpl.name}</div><div class="tpl-size">${tpl.w}×${tpl.h}</div>`;
+
+    card.append(thumb, info);
+    grid.appendChild(card);
+  });
+}
+
+function applyTemplate(id){
+  const tpl = TEMPLATES.find(t=>t.id===id);
+  if(!tpl) return;
+
+  // 確認是否要清空現有物件
+  if(S.objs.length > 0){
+    if(!confirm(`套用「${tpl.name}」模板將清除目前所有物件，確定嗎？`)) return;
+  }
+
+  pushHistory();
+
+  // 清空畫布
+  document.getElementById('ol').innerHTML='';
+  S.objs=[];
+  S.selId=null;
+  document.getElementById('pp').style.display='none';
+
+  // 設定尺寸與背景
+  S.W=tpl.w; S.H=tpl.h; S.name=tpl.name;
+  S.bgColor=tpl.bg;
+  S.bgImgEl=null;
+  document.getElementById('bgColorInp').value=tpl.bg;
+  document.getElementById('inW').value=tpl.w;
+  document.getElementById('inH').value=tpl.h;
+  document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
+
+  // 加入模板物件（不 push history，已在前面 push）
+  S._skipHistory=true;
+  tpl.objs.forEach(o=>{
+    const id=mkId();
+    const obj={...o, id};
+    S.objs.push(obj);
+    mkEl(id);
+  });
+  S._skipHistory=false;
+
+  renderBg();
+  updLayerList();
+  setTimeout(zfit,50);
+
+  // 標記 active card
+  document.querySelectorAll('.tpl-card').forEach(c=>c.classList.remove('active'));
+  const activeCard=document.getElementById('tpl-'+tpl.id);
+  if(activeCard) activeCard.classList.add('active');
+
+  snack(`已套用：${tpl.name}`);
+}
+
+// ═══════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('load', ()=>{
+  renderTemplates();
   renderBg();
   setTimeout(zfit, 100);
   addLogoSlot();
