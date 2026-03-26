@@ -1180,12 +1180,10 @@ function removeBackground(objId){
     variance+=(dr*dr+dg*dg+db*db)/3;
   });
   variance/=bgSamples.length;
-  if(variance>2500){
-    if(!confirm('背景較複雜，去背效果可能不佳，是否繼續?')) return;
-  }
-  // Adaptive threshold
-  const baseThresh=40;
-  const adaptThresh=baseThresh+Math.min(60,Math.sqrt(variance)*0.3);
+  // User-adjustable tolerance from slider (default 40)
+  const threshEl=document.getElementById('pp-bg-thresh');
+  const userThresh=threshEl?parseInt(threshEl.value):40;
+  const adaptThresh=userThresh+Math.min(30,Math.sqrt(variance)*0.2);
   // Remove background pixels
   for(let i=0;i<d.length;i+=4){
     const dr=d[i]-mr,dg=d[i+1]-mg,db=d[i+2]-mb;
@@ -1702,7 +1700,15 @@ function renderPPHTML(obj){
     <span id="pp-op-lbl" style="font-size:11px;color:var(--g500);min-width:34px">${Math.round(obj.opacity*100)}%</span>
   </div>
   ${isT?renderTxtPP(obj):''}
-  ${!isT?`<div class="pp-row" style="margin-top:6px"><button class="btn btn-teal btn-full btn-sm" onclick="removeBackground(${obj.id})">✂ 一鍵去背</button></div>`:''}
+  ${!isT?`
+  <div class="pp-row" style="margin-top:6px">
+    <span class="pp-label">去背容許度</span>
+    <input type="range" id="pp-bg-thresh" min="10" max="120" value="40" style="flex:1" oninput="document.getElementById('pp-bg-thresh-lbl').textContent=this.value">
+    <span id="pp-bg-thresh-lbl" style="font-size:11px;color:var(--g500);min-width:28px;text-align:right">40</span>
+  </div>
+  <div class="pp-row">
+    <button class="btn btn-teal btn-full btn-sm" onclick="removeBackground(${obj.id})">✂ 一鍵去背</button>
+  </div>`:''}
   <div class="pp-sep"></div>
   <div class="pp-section-label">對齊畫布</div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">
@@ -1734,8 +1740,8 @@ function renderTxtPP(obj){
   </div>
   <div class="pp-row">
     <span class="pp-label">大小</span>
-    <input class="inp" type="number" id="pp-size" value="${obj.size}" style="width:55px">
-    <span style="font-size:11px;color:var(--g400);margin-left:2px">px</span>
+    <input type="range" id="pp-size" min="8" max="200" value="${obj.size}" style="flex:1">
+    <span id="pp-size-lbl" style="font-size:11px;color:var(--g500);min-width:44px;text-align:right">${obj.size} px</span>
   </div>
   <div class="pp-row">
     <span class="pp-label">粗細</span>
@@ -1783,6 +1789,8 @@ function bindPPEvents(obj){
       upP(obj.id,'color',hexEl.value);
     });
     bind('pp-size','size',v=>Math.max(8,parseFloat(v)||12));
+    const szEl=document.getElementById('pp-size'), szLbl=document.getElementById('pp-size-lbl');
+    if(szEl&&szLbl) szEl.addEventListener('input',()=>{ szLbl.textContent=szEl.value+' px'; });
     bind('pp-weight','weight');
   }
 }
