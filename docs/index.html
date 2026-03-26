@@ -37,7 +37,28 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 /* ── LAYOUT ── */
 #main{display:flex;height:calc(100vh - 44px);overflow:hidden}
 
-/* ── SIDEBAR ── */
+/* ── TEMPLATE PANEL (左欄) ── */
+#tpl-panel{
+  width:168px;min-width:168px;background:#fff;border-right:1px solid var(--g200);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+}
+#tpl-panel-head{
+  padding:10px 10px 6px;font-size:10px;font-weight:700;color:var(--g400);
+  letter-spacing:.8px;text-transform:uppercase;flex-shrink:0;
+  border-bottom:1px solid var(--g100);
+}
+#tpl-panel-scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 8px 4px;
+}
+#tpl-panel-scroll::-webkit-scrollbar{width:3px}
+#tpl-panel-scroll::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+#tpl-panel-footer{
+  padding:8px;border-top:1px solid var(--g200);flex-shrink:0;
+}
+/* 左欄模板格：單欄 */
+#tpl-panel .tpl-grid{grid-template-columns:1fr;gap:6px}
+
+/* ── SIDEBAR (中欄) ── */
 #sb{
   width:var(--sw);min-width:var(--sw);background:#fff;border-right:1px solid var(--g200);
   display:flex;flex-direction:column;overflow:hidden;
@@ -295,6 +316,35 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   border-radius:3px;pointer-events:none;white-space:nowrap;z-index:20;
 }
 
+/* ── CUSTOM TEMPLATE CARD ── */
+.tpl-card{position:relative}
+.tpl-del-btn{
+  position:absolute;top:5px;right:5px;width:20px;height:20px;
+  border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;
+  font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .15s;z-index:5;line-height:1;
+}
+.tpl-card.custom:hover .tpl-del-btn{opacity:1}
+.tpl-badge{
+  position:absolute;top:5px;left:5px;background:var(--teal);color:#fff;
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;pointer-events:none;
+}
+
+/* ── SAVE TEMPLATE MODAL ── */
+#save-tpl-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:1100;align-items:center;justify-content:center;
+}
+#save-tpl-modal.open{display:flex}
+.save-tpl-box{
+  background:#fff;border-radius:14px;padding:22px 22px 18px;
+  width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.save-tpl-box h3{font-size:15px;font-weight:700;margin-bottom:4px}
+.save-tpl-box .stb-sub{font-size:12px;color:var(--g400);margin-bottom:14px}
+.save-tpl-box .stb-field{margin-bottom:14px}
+.save-tpl-box .stb-field label{font-size:11px;color:var(--g500);display:block;margin-bottom:5px}
+
 /* scrollbar thin */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -335,18 +385,26 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 </div>
 
 <div id="main">
-<!-- SIDEBAR -->
+
+<!-- ══ 左欄：公版範本 ══ -->
+<div id="tpl-panel">
+  <div id="tpl-panel-head">公版範本</div>
+  <div id="tpl-panel-scroll">
+    <div class="tpl-grid" id="tpl-grid"></div>
+  </div>
+  <div id="tpl-panel-footer">
+    <button class="btn btn-teal btn-full btn-sm" onclick="openSaveTplModal()">
+      💾 另存為公版範本
+    </button>
+  </div>
+</div>
+
+<!-- ══ 中欄：編輯側邊欄 ══ -->
 <div id="sb">
   <div id="sb-scroll">
 
   <!-- ═══ POSTER TAB ═══ -->
   <div class="pg on" id="pg-poster">
-
-    <!-- 模板 -->
-    <div class="sec-title">快速套用模板</div>
-    <div class="sec">
-      <div class="tpl-grid" id="tpl-grid"></div>
-    </div>
 
     <!-- 尺寸 -->
     <div class="sec-title">畫布尺寸</div>
@@ -510,6 +568,22 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="modal-btns">
       <button class="btn btn-blue btn-full" onclick="dlAll()">⬇ 全部下載</button>
       <button class="btn btn-ghost" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 儲存公版範本 Modal -->
+<div id="save-tpl-modal">
+  <div class="save-tpl-box">
+    <h3>💾 另存為公版範本</h3>
+    <div class="stb-sub" id="save-tpl-sub">目前版面將儲存至瀏覽器，下次開啟可直接套用</div>
+    <div class="stb-field">
+      <label>範本名稱</label>
+      <input class="inp" id="save-tpl-name" type="text" placeholder="例：心臟科門診公告_公版">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-teal btn-full" id="save-tpl-confirm-btn" onclick="confirmSaveTpl()">💾 確認儲存</button>
+      <button class="btn btn-ghost" onclick="closeSaveTplModal()">取消</button>
     </div>
   </div>
 </div>
@@ -1698,113 +1772,252 @@ document.addEventListener('keydown', e=>{
 // ═══════════════════════════════════════════════
 //  TEMPLATES
 // ═══════════════════════════════════════════════
-function genTplThumb(tpl){
-  const MAX_W = 130, MAX_H = 100;
-  const scale = Math.min(MAX_W/tpl.w, MAX_H/tpl.h);
-  const cw = Math.round(tpl.w*scale);
-  const ch = Math.round(tpl.h*scale);
-  const cvs = document.createElement('canvas');
-  cvs.width = cw; cvs.height = ch;
-  const ctx = cvs.getContext('2d');
+// ── 自訂範本 localStorage ──
+const CUSTOM_TPLS_KEY = 'kt_poster_custom_tpls';
 
-  // background gradient
-  const grd = ctx.createLinearGradient(0,0,cw,ch);
-  grd.addColorStop(0, tpl.previewGrad[0]);
-  grd.addColorStop(1, tpl.previewGrad[1]);
-  ctx.fillStyle = grd;
+function loadCustomTemplates(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_TPLS_KEY)||'[]'); }
+  catch{ return []; }
+}
+
+function saveCustomTplToStorage(tpl){
+  const list = loadCustomTemplates();
+  list.unshift(tpl);
+  try{
+    localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(list));
+    return true;
+  } catch(e){
+    snack('儲存失敗：瀏覽器空間不足，請先刪除舊範本');
+    return false;
+  }
+}
+
+function deleteCustomTemplate(id){
+  const list = loadCustomTemplates().filter(t=>t.id!==id);
+  localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(list));
+  renderTemplates();
+  snack('已刪除範本');
+}
+
+function imgElToDataUrl(imgEl){
+  const c = document.createElement('canvas');
+  c.width = imgEl.naturalWidth||imgEl.width;
+  c.height = imgEl.naturalHeight||imgEl.height;
+  c.getContext('2d').drawImage(imgEl,0,0);
+  return c.toDataURL('image/jpeg', 0.85);
+}
+
+function genCurrentThumbDataUrl(){
+  const MAX_W=130, MAX_H=100;
+  const scale=Math.min(MAX_W/S.W, MAX_H/S.H);
+  const cw=Math.round(S.W*scale), ch=Math.round(S.H*scale);
+  const cvs=document.createElement('canvas');
+  cvs.width=cw; cvs.height=ch;
+  const ctx=cvs.getContext('2d');
+  ctx.fillStyle=S.bgColor;
   ctx.fillRect(0,0,cw,ch);
-
-  // draw text blocks as simplified rectangles
-  tpl.objs.forEach((o,i)=>{
+  if(S.bgImgEl) ctx.drawImage(S.bgImgEl,0,0,cw,ch);
+  S.objs.forEach((o,i)=>{
     const ox=o.x*scale, oy=o.y*scale;
-    const ow=o.w*scale, oh=Math.max(4, o.size*scale*1.2);
-    const alpha = i===0?0.9:i===1?0.7:0.4;
-    ctx.fillStyle = o.color.startsWith('rgba')?`rgba(255,255,255,${alpha})`:`rgba(255,255,255,${alpha})`;
-    const rh = Math.max(3, o.size*scale*0.8);
-    // draw a rounded bar representing this text line
-    ctx.beginPath();
-    const rx=2;
-    ctx.moveTo(ox+rx,oy); ctx.lineTo(ox+ow-rx,oy);
-    ctx.arcTo(ox+ow,oy,ox+ow,oy+rh,rx); ctx.lineTo(ox+ow,oy+rh);
-    ctx.arcTo(ox+ow,oy+rh,ox,oy+rh,rx); ctx.lineTo(ox+rx,oy+rh);
-    ctx.arcTo(ox,oy+rh,ox,oy,rx); ctx.lineTo(ox,oy+rx);
-    ctx.arcTo(ox,oy,ox+rx,oy,rx);
-    ctx.closePath();
-    ctx.fill();
+    const ow=o.w*scale;
+    if(o.type==='img'&&o.imgEl){
+      ctx.save(); ctx.globalAlpha=o.opacity;
+      ctx.drawImage(o.imgEl,ox,oy,ow,o.h*scale);
+      ctx.restore();
+    } else if(o.type==='txt'){
+      const rh=Math.max(3,o.size*scale*0.8);
+      const alpha=i===0?.85:i===1?.65:.4;
+      ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+      ctx.fillRect(ox,oy,ow,rh);
+    }
+  });
+  return cvs.toDataURL('image/jpeg',0.8);
+}
+
+async function serializeCurrentAsTemplate(name){
+  const objs=[];
+  for(const o of S.objs){
+    if(o.type==='txt'){
+      objs.push({...o});
+    } else if(o.type==='img'&&o.imgEl){
+      const {imgEl,...rest}=o;
+      objs.push({...rest, imgDataUrl:imgElToDataUrl(imgEl)});
+    }
+  }
+  const bgImgDataUrl = S.bgImgEl ? imgElToDataUrl(S.bgImgEl) : null;
+  const thumbDataUrl = genCurrentThumbDataUrl();
+  const bg = S.bgColor;
+  return {
+    id:'custom_'+Date.now(), name,
+    w:S.W, h:S.H, bg, bgImgDataUrl, thumbDataUrl,
+    isCustom:true, createdAt:Date.now(),
+    previewGrad:[bg,bg], objs
+  };
+}
+
+// ── 儲存模板 Modal ──
+function openSaveTplModal(){
+  if(!S.objs.length && !S.bgImgEl){
+    snack('畫布是空的，請先加入內容再儲存'); return;
+  }
+  const today=new Date();
+  const ymd=today.getFullYear()+'.'+String(today.getMonth()+1).padStart(2,'0')+'.'+String(today.getDate()).padStart(2,'0');
+  document.getElementById('save-tpl-name').value=`公版範本_${ymd}`;
+  document.getElementById('save-tpl-sub').textContent=
+    `畫布 ${S.W}×${S.H}，共 ${S.objs.length} 個物件，儲存至瀏覽器`;
+  document.getElementById('save-tpl-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('save-tpl-name').select(),80);
+}
+
+function closeSaveTplModal(){
+  document.getElementById('save-tpl-modal').classList.remove('open');
+}
+
+async function confirmSaveTpl(){
+  const name=document.getElementById('save-tpl-name').value.trim();
+  if(!name){ snack('請輸入範本名稱'); return; }
+  const btn=document.getElementById('save-tpl-confirm-btn');
+  btn.disabled=true; btn.textContent='儲存中…';
+  const tpl=await serializeCurrentAsTemplate(name);
+  const ok=saveCustomTplToStorage(tpl);
+  btn.disabled=false; btn.textContent='💾 確認儲存';
+  if(ok){ closeSaveTplModal(); renderTemplates(); snack(`✅ 已儲存範本：${name}`); }
+}
+
+// ── Thumbnail ──
+function genTplThumb(tpl){
+  const MAX_W=130, MAX_H=100;
+  const scale=Math.min(MAX_W/tpl.w, MAX_H/tpl.h);
+  const cw=Math.round(tpl.w*scale), ch=Math.round(tpl.h*scale);
+  const cvs=document.createElement('canvas');
+  cvs.width=cw; cvs.height=ch;
+  const ctx=cvs.getContext('2d');
+  const grd=ctx.createLinearGradient(0,0,cw,ch);
+  grd.addColorStop(0,tpl.previewGrad[0]);
+  grd.addColorStop(1,tpl.previewGrad[1]);
+  ctx.fillStyle=grd; ctx.fillRect(0,0,cw,ch);
+  tpl.objs.filter(o=>o.type==='txt').forEach((o,i)=>{
+    const ox=o.x*scale, oy=o.y*scale, ow=o.w*scale;
+    const rh=Math.max(3,o.size*scale*0.8);
+    const alpha=i===0?.9:i===1?.7:.4;
+    ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+    ctx.fillRect(ox,oy,ow,rh);
   });
   return cvs;
 }
 
+function buildTplCard(tpl, isCustom){
+  const card=document.createElement('div');
+  card.className='tpl-card'+(isCustom?' custom':'');
+  card.id='tpl-'+tpl.id;
+  card.onclick=()=>applyTemplate(tpl.id);
+
+  let thumbEl;
+  if(tpl.thumbDataUrl){
+    thumbEl=document.createElement('img');
+    thumbEl.src=tpl.thumbDataUrl;
+    thumbEl.style.cssText='width:100%;height:auto;display:block;';
+  } else {
+    thumbEl=genTplThumb(tpl);
+    thumbEl.style.cssText='width:100%;height:auto;display:block;';
+  }
+
+  const info=document.createElement('div');
+  info.className='tpl-info';
+  info.innerHTML=`<div class="tpl-name">${tpl.name}</div><div class="tpl-size">${tpl.w}×${tpl.h}</div>`;
+
+  card.append(thumbEl,info);
+
+  if(isCustom){
+    const badge=document.createElement('div');
+    badge.className='tpl-badge'; badge.textContent='自訂';
+    card.appendChild(badge);
+    const del=document.createElement('button');
+    del.className='tpl-del-btn'; del.innerHTML='✕';
+    del.title='刪除此範本';
+    del.onclick=e=>{
+      e.stopPropagation();
+      if(confirm(`刪除範本「${tpl.name}」？`)) deleteCustomTemplate(tpl.id);
+    };
+    card.appendChild(del);
+  }
+  return card;
+}
+
 function renderTemplates(){
-  const grid = document.getElementById('tpl-grid');
+  const grid=document.getElementById('tpl-grid');
   if(!grid) return;
   grid.innerHTML='';
-  TEMPLATES.forEach(tpl=>{
-    const card = document.createElement('div');
-    card.className='tpl-card';
-    card.id='tpl-'+tpl.id;
-    card.onclick=()=>applyTemplate(tpl.id);
-
-    const thumb = genTplThumb(tpl);
-    thumb.className='tpl-thumb';
-    thumb.style.width='100%';
-    thumb.style.height='auto';
-    thumb.style.display='block';
-
-    const info = document.createElement('div');
-    info.className='tpl-info';
-    info.innerHTML=`<div class="tpl-name">${tpl.name}</div><div class="tpl-size">${tpl.w}×${tpl.h}</div>`;
-
-    card.append(thumb, info);
-    grid.appendChild(card);
-  });
+  // 自訂範本優先顯示
+  loadCustomTemplates().forEach(tpl=>grid.appendChild(buildTplCard(tpl,true)));
+  // 內建範本
+  TEMPLATES.forEach(tpl=>grid.appendChild(buildTplCard(tpl,false)));
 }
 
 function applyTemplate(id){
-  const tpl = TEMPLATES.find(t=>t.id===id);
+  const builtIn=TEMPLATES.find(t=>t.id===id);
+  const custom=loadCustomTemplates().find(t=>t.id===id);
+  const tpl=builtIn||custom;
   if(!tpl) return;
 
-  // 確認是否要清空現有物件
-  if(S.objs.length > 0){
-    if(!confirm(`套用「${tpl.name}」模板將清除目前所有物件，確定嗎？`)) return;
+  if(S.objs.length>0){
+    if(!confirm(`套用「${tpl.name}」將清除目前所有物件，確定嗎？`)) return;
   }
 
   pushHistory();
-
-  // 清空畫布
   document.getElementById('ol').innerHTML='';
-  S.objs=[];
-  S.selId=null;
+  S.objs=[]; S.selId=null;
   document.getElementById('pp').style.display='none';
 
-  // 設定尺寸與背景
   S.W=tpl.w; S.H=tpl.h; S.name=tpl.name;
   S.bgColor=tpl.bg;
-  S.bgImgEl=null;
   document.getElementById('bgColorInp').value=tpl.bg;
   document.getElementById('inW').value=tpl.w;
   document.getElementById('inH').value=tpl.h;
   document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
 
-  // 加入模板物件（不 push history，已在前面 push）
+  // 還原背景圖
+  if(tpl.bgImgDataUrl){
+    const bgImg=new Image();
+    bgImg.onload=()=>{ S.bgImgEl=bgImg; renderBg(); };
+    bgImg.src=tpl.bgImgDataUrl;
+  } else {
+    S.bgImgEl=null;
+  }
+
+  // 還原物件
   S._skipHistory=true;
+  const imgPromises=[];
   tpl.objs.forEach(o=>{
-    const id=mkId();
-    const obj={...o, id};
-    S.objs.push(obj);
-    mkEl(id);
+    const objId=mkId();
+    if(o.type==='txt'){
+      const obj={...o,id:objId};
+      S.objs.push(obj); mkEl(objId);
+    } else if(o.type==='img'){
+      const {imgDataUrl,...rest}=o;
+      const obj={...rest,id:objId,imgEl:null};
+      S.objs.push(obj);
+      if(imgDataUrl){
+        imgPromises.push(new Promise(res=>{
+          const img=new Image();
+          img.onload=()=>{
+            obj.imgEl=img;
+            obj.aspectRatio=img.naturalHeight/img.naturalWidth;
+            mkEl(objId); res();
+          };
+          img.src=imgDataUrl;
+        }));
+      }
+    }
   });
   S._skipHistory=false;
 
-  renderBg();
-  updLayerList();
-  setTimeout(zfit,50);
+  const finalize=()=>{ renderBg(); updLayerList(); setTimeout(zfit,50); };
+  imgPromises.length ? Promise.all(imgPromises).then(finalize) : finalize();
 
-  // 標記 active card
   document.querySelectorAll('.tpl-card').forEach(c=>c.classList.remove('active'));
-  const activeCard=document.getElementById('tpl-'+tpl.id);
-  if(activeCard) activeCard.classList.add('active');
-
+  const ac=document.getElementById('tpl-'+tpl.id);
+  if(ac) ac.classList.add('active');
   snack(`已套用：${tpl.name}`);
 }
 
