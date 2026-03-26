@@ -148,7 +148,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 
 /* ── CANVAS AREA ── */
-#ca{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--g200)}
+#ca{flex:1;display:flex;flex-direction:row;overflow:hidden;background:var(--g200)}
+#ca-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .catop{
   height:38px;background:#fff;border-bottom:1px solid var(--g200);
   display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0;
@@ -296,6 +297,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 #snack.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
+
 /* ── TEMPLATES ── */
 .tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .tpl-card{
@@ -416,6 +418,22 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 .ie-thumb-item:hover{border-color:var(--blue)}
 .ie-thumb-item.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,91,172,.25)}
+.ie-thumb-wrap{position:relative;flex-shrink:0}
+.ie-thumb-wrap .ie-del{
+  position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;
+  background:var(--g700);color:#fff;border:none;cursor:pointer;font-size:10px;
+  line-height:1;display:flex;align-items:center;justify-content:center;padding:0;
+  opacity:0;transition:opacity .15s;z-index:2;
+}
+.ie-thumb-wrap:hover .ie-del{opacity:1}
+.ie-side-thumb-wrap{position:relative;display:inline-block}
+.ie-side-thumb-wrap .ie-del{
+  position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;
+  background:var(--g700);color:#fff;border:none;cursor:pointer;font-size:9px;
+  line-height:1;display:flex;align-items:center;justify-content:center;padding:0;
+  opacity:0;transition:opacity .15s;z-index:2;
+}
+.ie-side-thumb-wrap:hover .ie-del{opacity:1}
 .ie-nav-btn{
   width:36px;height:36px;border:1.5px solid var(--g300);border-radius:50%;
   background:#fff;color:var(--g600);font-size:14px;cursor:pointer;
@@ -426,10 +444,34 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .ie-nav-btn:disabled{opacity:.3;cursor:not-allowed}
 .ie-nav-btn:disabled:hover{background:#fff;color:var(--g600);border-color:var(--g300)}
 
-/* ── PAGES BAR ── */
-.page-thumb{width:40px;height:52px;border:2px solid var(--g200);border-radius:4px;cursor:pointer;background:#fff;overflow:hidden;position:relative;flex-shrink:0;font-size:9px;display:flex;align-items:center;justify-content:center}
-.page-thumb.active{border-color:var(--blue)}
-.page-thumb-label{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:8px;color:var(--g500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+/* ── PAGES PANEL (right vertical) ── */
+#pages-panel{
+  width:72px;min-width:72px;background:#fff;border-left:1px solid var(--g200);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+}
+#pages-panel-scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:8px 6px;display:flex;flex-direction:column;gap:6px;align-items:center;
+}
+#pages-panel-scroll::-webkit-scrollbar{width:3px}
+#pages-panel-scroll::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+#pages-panel-footer{
+  padding:6px;border-top:1px solid var(--g200);
+  display:flex;flex-direction:column;gap:4px;flex-shrink:0;
+}
+.page-thumb{
+  width:52px;height:68px;border:2px solid var(--g200);border-radius:5px;
+  cursor:pointer;background:#fff;overflow:hidden;position:relative;
+  font-size:9px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .15s;
+}
+.page-thumb:hover{border-color:var(--blue-l)}
+.page-thumb.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,91,172,.2)}
+.page-thumb-label{
+  position:absolute;bottom:2px;left:0;right:0;text-align:center;
+  font-size:8px;color:var(--g500);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;padding:0 2px;
+}
 
 /* ── TABLE MODAL ── */
 #table-modal{
@@ -496,6 +538,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <div class="sc" id="sc-a3v" onclick="selSz(this,'A3 直式',1123,1587)">A3 直式<span>297×420mm</span></div>
         <div class="sc" id="sc-sq" onclick="selSz(this,'正方形',800,800)">正方形<span>800×800px</span></div>
         <div class="sc" id="sc-fb" onclick="selSz(this,'FB 封面',1702,630)">FB封面<span>1702×630</span></div>
+        <div class="sc" id="sc-yt" onclick="selSz(this,'YouTube 封面',1920,1080)">YouTube封面<span>1920×1080px</span></div>
       </div>
       <div class="inp-row" style="margin-bottom:5px">
         <span class="inp-label">自訂 W</span>
@@ -638,19 +681,18 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
     <div class="sec-title">批次圖片</div>
     <div class="sec">
-      <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('ie-batch-inp').click()">＋ 載入多張圖片</button>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('ie-batch-inp').click()">＋ 載入圖片</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieBatchClear()">🗑 清除</button>
+      </div>
       <input type="file" id="ie-batch-inp" accept="image/*" multiple style="display:none" onchange="ieBatchLoad(this)">
-      <div id="ie-batch-list" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 0;max-height:80px;overflow-y:auto"></div>
-      <div id="ie-batch-count" style="font-size:11px;color:var(--g500)"></div>
-      <div style="display:flex;gap:4px;margin-top:4px">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="ieBatchApply()">✓ 套用調整到全部</button>
+      <div id="ie-batch-list" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;max-height:120px;overflow-y:auto"></div>
+      <div id="ie-batch-count" style="font-size:11px;color:var(--g500);margin:2px 0 6px"></div>
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieBatchApply()">✓ 套用調整</button>
+        <button class="btn btn-teal btn-sm" style="flex:1" onclick="ieBatchToWM()">→ 浮水印</button>
       </div>
-      <div style="display:flex;gap:4px;margin-top:4px">
-        <button class="btn btn-teal btn-full btn-sm" onclick="ieBatchToWM()">→ 導入批次浮水印</button>
-      </div>
-      <div style="display:flex;gap:4px;margin-top:4px">
-        <button class="btn btn-blue btn-full btn-sm" onclick="ieBatchToPoster()">→ 導入海報編輯</button>
-      </div>
+      <button class="btn btn-blue btn-full btn-sm" onclick="ieBatchToPoster()">→ 導入海報編輯</button>
     </div>
 
     <div id="ie-controls" style="display:none">
@@ -722,9 +764,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
             <button class="btn btn-sm btn-ghost" id="ie-shape-circle" onclick="ieSetShape('circle')">◯ 圓形</button>
           </div>
         </div>
-        <div class="row" style="margin-bottom:6px">
-          <button class="btn btn-ghost btn-full btn-sm" id="ie-region-blur-btn" onclick="ieRegionMode('blur')">〰 高斯模糊</button>
-          <button class="btn btn-ghost btn-full btn-sm" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')">⊞ 馬賽克</button>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')">〰 高斯模糊</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')">⊞ 馬賽克</button>
         </div>
         <div id="ie-region-controls" style="display:none">
           <div class="inp-row" style="margin-bottom:6px">
@@ -733,22 +775,22 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
               oninput="document.getElementById('ie-effect-lbl').textContent=this.value">
             <span id="ie-effect-lbl" style="font-size:11px;color:var(--g500);min-width:28px">10</span>
           </div>
-          <div class="row">
-            <button class="btn btn-blue btn-full btn-sm" onclick="ieApplyRegion()">✓ 套用</button>
-            <button class="btn btn-ghost btn-sm" onclick="ieRegionCancel()">✕ 取消</button>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-blue btn-sm" style="flex:1" onclick="ieApplyRegion()">✓ 套用</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieRegionCancel()">✕ 取消</button>
           </div>
         </div>
       </div>
 
       <div class="sec-title">操作</div>
       <div class="sec">
-        <div class="row" style="margin-bottom:6px">
-          <button class="btn btn-ghost btn-full btn-sm" onclick="ieUndo()">↩ 復原</button>
-          <button class="btn btn-ghost btn-full btn-sm" onclick="ieReset()">🔄 重置調整</button>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieUndo()">↩ 復原</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieReset()">🔄 重置</button>
         </div>
-        <div class="row">
-          <button class="btn btn-blue btn-full btn-sm" onclick="ieDownload('png')">⬇ PNG</button>
-          <button class="btn btn-ghost btn-full btn-sm" onclick="ieDownload('jpeg')">⬇ JPG</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-blue btn-sm" style="flex:1" onclick="ieDownload('png')">⬇ PNG</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieDownload('jpeg')">⬇ JPG</button>
         </div>
       </div>
     </div>
@@ -765,6 +807,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <button class="btn btn-blue btn-full" onclick="handleDl()" id="dl-btn">
       ⬇ 下載海報 PNG
     </button>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:4px">
+      ⬇ 匯出 PDF（全部頁面）
+    </button>
     <div id="wm-preview-btn" style="display:none;margin-top:6px">
       <button class="btn btn-teal btn-full" onclick="previewAll()">👁 預覽後下載</button>
     </div>
@@ -773,60 +818,68 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
 <!-- CANVAS AREA -->
 <div id="ca">
-  <div class="catop">
-    <button class="btn btn-ghost btn-sm" onclick="zm(-1)">−</button>
-    <span class="ztxt" id="zlbl">60%</span>
-    <button class="btn btn-ghost btn-sm" onclick="zm(1)">＋</button>
-    <div class="sep"></div>
-    <button class="btn btn-ghost btn-sm" onclick="zfit()">最適</button>
-    <button class="btn btn-ghost btn-sm" onclick="setZoom(1)">100%</button>
-    <div class="sep"></div>
-    <span style="font-size:11px;color:var(--g400)" id="sz-lbl">794 × 1123 px</span>
-    <div style="flex:1"></div>
-    <button class="btn btn-ghost btn-sm" onclick="desel(true)">取消選取</button>
-  </div>
-  <div id="pages-bar" style="background:#fff;border-bottom:1px solid var(--g200);padding:6px 12px;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0">
-    <div id="pages-list" style="display:flex;gap:6px;align-items:center"></div>
-    <button class="btn btn-ghost btn-sm" onclick="addPage()">＋ 頁</button>
-    <button class="btn btn-ghost btn-sm" onclick="exportPDF()">⬇ PDF</button>
-  </div>
-  <div id="cscroll" onclick="handleBgClick(event)">
-    <div id="pw">
-      <canvas id="bgc"></canvas>
-      <div id="ol"></div>
+  <div id="ca-main">
+    <div class="catop">
+      <button class="btn btn-ghost btn-sm" onclick="zm(-1)">−</button>
+      <span class="ztxt" id="zlbl">60%</span>
+      <button class="btn btn-ghost btn-sm" onclick="zm(1)">＋</button>
+      <div class="sep"></div>
+      <button class="btn btn-ghost btn-sm" onclick="zfit()">最適</button>
+      <button class="btn btn-ghost btn-sm" onclick="setZoom(1)">100%</button>
+      <div class="sep"></div>
+      <span style="font-size:11px;color:var(--g400)" id="sz-lbl">794 × 1123 px</span>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="desel(true)">取消選取</button>
+    </div>
+    <div id="cscroll" onclick="handleBgClick(event)">
+      <div id="pw">
+        <canvas id="bgc"></canvas>
+        <div id="ol"></div>
+      </div>
+    </div>
+
+    <!-- IMAGE EDITOR VIEW -->
+    <div id="ie-area" style="display:none">
+      <div id="ie-zoom-bar" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border-bottom:1px solid var(--g200);width:100%;flex-shrink:0;box-sizing:border-box">
+        <button class="btn btn-ghost btn-sm" onclick="ieZm(-1)">−</button>
+        <span style="font-size:12px;color:var(--g500);min-width:40px;text-align:center" id="ie-zlbl">100%</span>
+        <button class="btn btn-ghost btn-sm" onclick="ieZm(1)">＋</button>
+        <div style="width:1px;height:16px;background:var(--g200);margin:0 2px"></div>
+        <button class="btn btn-ghost btn-sm" onclick="ieZmFit()">最適</button>
+        <button class="btn btn-ghost btn-sm" onclick="ieZm100()">100%</button>
+      </div>
+      <div style="flex:1;overflow:auto;display:flex;flex-direction:row;align-items:center;justify-content:center;padding:24px;background:var(--g200);gap:12px">
+        <button class="ie-nav-btn" id="ie-prev-btn" onclick="ieBatchNav(-1)" style="display:none" title="上一張">◀</button>
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div class="ie-canvas-wrap" id="ie-canvas-wrap">
+            <canvas id="ie-canvas"></canvas>
+            <canvas id="ie-overlay"></canvas>
+          </div>
+          <div id="ie-size-lbl"></div>
+          <div id="ie-upload-hint">
+            <div style="font-size:48px;margin-bottom:12px">🖼</div>
+            <div>請從左側上傳圖片以開始編輯</div>
+          </div>
+        </div>
+        <button class="ie-nav-btn" id="ie-next-btn" onclick="ieBatchNav(1)" style="display:none" title="下一張">▶</button>
+      </div>
+      <div id="ie-thumb-strip">
+        <div id="ie-thumb-list"></div>
+      </div>
+    </div>
+  </div><!-- /ca-main -->
+
+  <!-- PAGES PANEL (right vertical column) -->
+  <div id="pages-panel">
+    <div id="pages-panel-scroll">
+      <div id="pages-list"></div>
+    </div>
+    <div id="pages-panel-footer">
+      <button class="btn btn-ghost btn-full btn-sm" onclick="addPage()" style="font-size:11px;padding:5px 4px">＋ 頁</button>
     </div>
   </div>
 
-  <!-- IMAGE EDITOR VIEW -->
-  <div id="ie-area" style="display:none">
-    <div id="ie-zoom-bar" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border-bottom:1px solid var(--g200);width:100%;flex-shrink:0;box-sizing:border-box">
-      <button class="btn btn-ghost btn-sm" onclick="ieZm(-1)">−</button>
-      <span style="font-size:12px;color:var(--g500);min-width:40px;text-align:center" id="ie-zlbl">100%</span>
-      <button class="btn btn-ghost btn-sm" onclick="ieZm(1)">＋</button>
-      <div style="width:1px;height:16px;background:var(--g200);margin:0 2px"></div>
-      <button class="btn btn-ghost btn-sm" onclick="ieZmFit()">最適</button>
-      <button class="btn btn-ghost btn-sm" onclick="ieZm100()">100%</button>
-    </div>
-    <div style="flex:1;overflow:auto;display:flex;flex-direction:row;align-items:center;justify-content:center;padding:24px;background:var(--g200);gap:12px">
-      <button class="ie-nav-btn" id="ie-prev-btn" onclick="ieBatchNav(-1)" style="display:none" title="上一張">◀</button>
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div class="ie-canvas-wrap" id="ie-canvas-wrap">
-          <canvas id="ie-canvas"></canvas>
-          <canvas id="ie-overlay"></canvas>
-        </div>
-        <div id="ie-size-lbl"></div>
-        <div id="ie-upload-hint">
-          <div style="font-size:48px;margin-bottom:12px">🖼</div>
-          <div>請從左側上傳圖片以開始編輯</div>
-        </div>
-      </div>
-      <button class="ie-nav-btn" id="ie-next-btn" onclick="ieBatchNav(1)" style="display:none" title="下一張">▶</button>
-    </div>
-    <div id="ie-thumb-strip">
-      <div id="ie-thumb-list"></div>
-    </div>
-  </div>
-</div>
+</div><!-- /ca -->
 </div><!-- /main -->
 
 <!-- WATERMARK PREVIEW MODAL -->
@@ -2299,25 +2352,28 @@ function switchTab(tab, btn){
   const catop=document.querySelector('.catop');
   const cscroll=document.getElementById('cscroll');
   const ieArea=document.getElementById('ie-area');
-  const pagesBar=document.getElementById('pages-bar');
+  const pagesPanel=document.getElementById('pages-panel');
+  const dlPdfBtn=document.getElementById('dl-pdf-btn');
   if(tab==='poster'){
     dlBtn.textContent='⬇ 下載海報 PNG';
     wmpBtn.style.display='none';
     dlBar.style.display='';
+    if(dlPdfBtn) dlPdfBtn.style.display='';
     tplPanel.style.display='';
     catop.style.display='';
     cscroll.style.display='';
     ieArea.style.display='none';
-    if(pagesBar) pagesBar.style.display='';
+    if(pagesPanel) pagesPanel.style.display='';
   } else if(tab==='wm'){
     dlBtn.textContent='⬇ 批次壓 LOGO 下載';
     wmpBtn.style.display='block';
     dlBar.style.display='';
+    if(dlPdfBtn) dlPdfBtn.style.display='none';
     tplPanel.style.display='none';
     catop.style.display='none';
     cscroll.style.display='none';
     ieArea.style.display='none';
-    if(pagesBar) pagesBar.style.display='none';
+    if(pagesPanel) pagesPanel.style.display='none';
   } else if(tab==='ie'){
     dlBar.style.display='none';
     wmpBtn.style.display='none';
@@ -2325,7 +2381,7 @@ function switchTab(tab, btn){
     catop.style.display='none';
     cscroll.style.display='none';
     ieArea.style.display='flex';
-    if(pagesBar) pagesBar.style.display='none';
+    if(pagesPanel) pagesPanel.style.display='none';
   }
 }
 
@@ -2683,11 +2739,8 @@ async function checkAutoSave(){
     if(!raw) return;
     const data = JSON.parse(raw);
     if(!data.objs||!data.objs.length) return;
-    const ago = Math.round((Date.now()-data.savedAt)/60000);
-    const label = ago<1?'剛剛':ago+'分鐘前';
-    if(confirm(`發現${label}的自動存檔（${data.objs.length} 個物件），是否還原？`)){
-      await restoreAutoSave(data);
-    }
+    // 靜默還原，不詢問
+    await restoreAutoSave(data);
   } catch(e){}
 }
 
@@ -3326,19 +3379,57 @@ function ieSetShape(shape){
 }
 
 // ── IE Batch Mode ──
+function renderIeBatchLists(){
+  const sideList=document.getElementById('ie-batch-list');
+  const thumbList=document.getElementById('ie-thumb-list');
+  const count=document.getElementById('ie-batch-count');
+  const strip=document.getElementById('ie-thumb-strip');
+  sideList.innerHTML=''; thumbList.innerHTML='';
+  IE.batchImgs.forEach((item,i)=>{
+    // sidebar
+    const wrap=document.createElement('div');
+    wrap.className='ie-side-thumb-wrap';
+    const t=document.createElement('img');
+    t.src=item.canvas.toDataURL('image/jpeg',0.4);
+    t.style.cssText='width:36px;height:36px;object-fit:cover;border-radius:4px;border:2px solid '+(i===IE.batchIdx?'var(--blue)':'var(--g200)')+';cursor:pointer;display:block';
+    t.onclick=()=>ieBatchGoTo(i);
+    const del=document.createElement('button');
+    del.className='ie-del'; del.textContent='×'; del.title='刪除';
+    del.onclick=(e)=>{e.stopPropagation();ieBatchDelete(i);};
+    wrap.appendChild(t); wrap.appendChild(del);
+    sideList.appendChild(wrap);
+    // bottom strip
+    const wrap2=document.createElement('div');
+    wrap2.className='ie-thumb-wrap';
+    const t2=document.createElement('img');
+    t2.className='ie-thumb-item'+(i===IE.batchIdx?' active':'');
+    t2.src=item.canvas.toDataURL('image/jpeg',0.5);
+    t2.title=item.name;
+    t2.onclick=()=>ieBatchGoTo(i);
+    const del2=document.createElement('button');
+    del2.className='ie-del'; del2.textContent='×'; del2.title='刪除';
+    del2.onclick=(e)=>{e.stopPropagation();ieBatchDelete(i);};
+    wrap2.appendChild(t2); wrap2.appendChild(del2);
+    thumbList.appendChild(wrap2);
+  });
+  count.textContent=IE.batchImgs.length?`共 ${IE.batchImgs.length} 張`:'';
+  const hasImgs=IE.batchImgs.length>0;
+  strip.style.display=hasImgs?'block':'none';
+  const showArrows=IE.batchImgs.length>1;
+  document.getElementById('ie-prev-btn').style.display=showArrows?'':'none';
+  document.getElementById('ie-next-btn').style.display=showArrows?'':'none';
+  if(hasImgs){
+    document.getElementById('ie-prev-btn').disabled=IE.batchIdx===0;
+    document.getElementById('ie-next-btn').disabled=IE.batchIdx===IE.batchImgs.length-1;
+  }
+}
+
 function ieBatchLoad(inp){
   const files=Array.from(inp.files); if(!files.length) return;
   inp.value='';
   IE.batchImgs=[]; IE.batchIdx=0;
-  const sideList=document.getElementById('ie-batch-list');
-  const count=document.getElementById('ie-batch-count');
-  const strip=document.getElementById('ie-thumb-strip');
-  const thumbList=document.getElementById('ie-thumb-list');
-  sideList.innerHTML=''; thumbList.innerHTML='';
-  count.textContent='載入中…';
-  strip.style.display='none';
+  document.getElementById('ie-batch-count').textContent='載入中…';
   let loaded=0;
-  // preserve original order
   const items=new Array(files.length);
   files.forEach((f,idx)=>{
     const reader=new FileReader();
@@ -3351,31 +3442,7 @@ function ieBatchLoad(inp){
         loaded++;
         if(loaded===files.length){
           IE.batchImgs=items;
-          // sidebar small thumbnails
-          sideList.innerHTML='';
-          IE.batchImgs.forEach((item,i)=>{
-            const t=document.createElement('img');
-            t.src=item.canvas.toDataURL('image/jpeg',0.4);
-            t.style.cssText='width:32px;height:32px;object-fit:cover;border-radius:3px;border:1px solid var(--g200)';
-            sideList.appendChild(t);
-          });
-          count.textContent=`共 ${loaded} 張`;
-          // bottom strip thumbnails
-          thumbList.innerHTML='';
-          IE.batchImgs.forEach((item,i)=>{
-            const t=document.createElement('img');
-            t.className='ie-thumb-item'+(i===0?' active':'');
-            t.src=item.canvas.toDataURL('image/jpeg',0.5);
-            t.title=item.name;
-            t.onclick=()=>ieBatchGoTo(i);
-            thumbList.appendChild(t);
-          });
-          strip.style.display='block';
-          // show arrows if >1 image
-          const showArrows=IE.batchImgs.length>1;
-          document.getElementById('ie-prev-btn').style.display=showArrows?'':'none';
-          document.getElementById('ie-next-btn').style.display=showArrows?'':'none';
-          // load first image into main canvas
+          renderIeBatchLists();
           IE.batchIdx=0;
           ieBatchShowCurrent();
           document.getElementById('ie-controls').style.display='block';
@@ -3387,6 +3454,29 @@ function ieBatchLoad(inp){
     };
     reader.readAsDataURL(f);
   });
+}
+
+function ieBatchDelete(i){
+  IE.batchImgs.splice(i,1);
+  if(!IE.batchImgs.length){
+    ieBatchClear(); return;
+  }
+  IE.batchIdx=clamp(IE.batchIdx,0,IE.batchImgs.length-1);
+  renderIeBatchLists();
+  ieBatchShowCurrent();
+}
+
+function ieBatchClear(){
+  IE.batchImgs=[]; IE.batchIdx=0;
+  renderIeBatchLists();
+  document.getElementById('ie-batch-count').textContent='';
+  // reset main canvas
+  IE.origCanvas=null;
+  const dc=ieC(); dc.width=1; dc.height=1; dc.style.display='none';
+  document.getElementById('ie-controls').style.display='none';
+  document.getElementById('ie-upload-hint').style.display='';
+  document.getElementById('ie-size-lbl').textContent='';
+  snack('已清除全部批次圖片');
 }
 
 function ieBatchGoTo(i){
@@ -3410,8 +3500,12 @@ function ieBatchShowCurrent(){
   const lbl=document.getElementById('ie-size-lbl');
   if(lbl) lbl.textContent=`${item.canvas.width} × ${item.canvas.height} px`;
   ieRedraw();
-  // update thumbnails
+  // update bottom strip highlights
   document.querySelectorAll('.ie-thumb-item').forEach((el,i)=>el.classList.toggle('active',i===IE.batchIdx));
+  // update sidebar highlights
+  document.querySelectorAll('#ie-batch-list .ie-side-thumb-wrap img').forEach((el,i)=>{
+    el.style.borderColor=i===IE.batchIdx?'var(--blue)':'var(--g200)';
+  });
   // update arrow states
   const prev=document.getElementById('ie-prev-btn');
   const next=document.getElementById('ie-next-btn');
