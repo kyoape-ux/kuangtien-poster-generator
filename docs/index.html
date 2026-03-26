@@ -10,7 +10,13 @@
 <style>
 :root{
   --blue:#005BAC;--blue-l:#1A7DC4;--blue-d:#003F7A;
-  --teal:#00A99D;--gold:#C8A04A;--red:#D63B3B;--green:#22C55E;
+  --teal:#00A99D;--teal-d:#007A72;
+  --green:#16A34A;--green-l:#22C55E;--green-d:#15803D;
+  --red:#D63B3B;--red-d:#B91C1C;
+  --purple:#7C3AED;--purple-l:#8B5CF6;--purple-d:#6D28D9;
+  --amber:#D97706;--amber-l:#F59E0B;--amber-d:#B45309;
+  --indigo:#4338CA;--indigo-l:#6366F1;
+  --gold:#C8A04A;
   --g50:#F8FAFC;--g100:#F1F5F9;--g200:#E2E8F0;--g300:#CBD5E1;
   --g400:#94A3B8;--g500:#64748B;--g600:#475569;--g700:#334155;
   --g800:#1E293B;--g900:#0F172A;
@@ -71,33 +77,55 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 .pg{display:none}.pg.on{display:block}
 .sec{padding:0 12px 12px}
 .sec-title{
-  font-size:10px;font-weight:700;color:var(--g400);letter-spacing:.8px;
-  text-transform:uppercase;padding:8px 12px 4px;
+  font-size:10px;font-weight:700;color:var(--g500);letter-spacing:1px;
+  text-transform:uppercase;padding:10px 12px 4px;
+  display:flex;align-items:center;gap:6px;
 }
+.sec-title::before{content:'';display:block;width:3px;height:11px;border-radius:2px;background:var(--blue);flex-shrink:0}
 
 /* ── CARDS / BUTTONS ── */
 .row{display:flex;gap:6px;flex-wrap:wrap}
 .sc{
-  flex:1;min-width:60px;padding:6px 4px;border:1.5px solid var(--g200);border-radius:7px;
+  flex:1;min-width:60px;padding:6px 4px;border:1.5px solid var(--g200);border-radius:8px;
   background:var(--g50);cursor:pointer;text-align:center;font-size:11px;
   color:var(--g600);transition:all .15s;line-height:1.3;
 }
-.sc:hover{border-color:var(--blue);color:var(--blue)}
+.sc:hover{border-color:var(--blue);color:var(--blue);background:#EBF4FF}
 .sc.on{border-color:var(--blue);background:#EBF4FF;color:var(--blue);font-weight:600}
 .sc span{display:block;font-size:9px;color:var(--g400)}
 
 .btn{
   display:flex;align-items:center;justify-content:center;gap:5px;
-  padding:7px 10px;border:none;border-radius:7px;cursor:pointer;
-  font-size:12px;font-weight:500;transition:all .15s;white-space:nowrap;
+  padding:7px 12px;border:none;border-radius:8px;cursor:pointer;
+  font-size:12px;font-weight:600;transition:all .15s;white-space:nowrap;letter-spacing:.2px;
 }
-.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{background:var(--blue-l)}
-.btn-ghost{background:var(--g100);color:var(--g700);border:1px solid var(--g200)}
-.btn-ghost:hover{background:var(--g200)}
-.btn-red{background:#FEE2E2;color:var(--red)}.btn-red:hover{background:#FECACA}
-.btn-teal{background:#E0F5F4;color:var(--teal)}.btn-teal:hover{background:#C7EDEC}
+/* Blue — primary/create */
+.btn-blue{background:linear-gradient(145deg,var(--blue-l),var(--blue-d));color:#fff;box-shadow:0 2px 8px rgba(0,91,172,.3)}
+.btn-blue:hover{background:linear-gradient(145deg,#2490D8,var(--blue-l));transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,91,172,.4)}
+/* Green — download/export */
+.btn-green{background:linear-gradient(145deg,var(--green-l),var(--green-d));color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.3)}
+.btn-green:hover{background:linear-gradient(145deg,#4ADE80,var(--green));transform:translateY(-1px);box-shadow:0 4px 12px rgba(22,163,74,.4)}
+/* Teal — image/visual tools */
+.btn-teal{background:linear-gradient(145deg,#00BEB0,var(--teal-d));color:#fff;box-shadow:0 2px 8px rgba(0,169,157,.3)}
+.btn-teal:hover{background:linear-gradient(145deg,#2DD4CA,var(--teal));transform:translateY(-1px)}
+/* Purple — image edit */
+.btn-purple{background:linear-gradient(145deg,var(--purple-l),var(--purple-d));color:#fff;box-shadow:0 2px 8px rgba(124,58,237,.3)}
+.btn-purple:hover{background:linear-gradient(145deg,#A78BFA,var(--purple));transform:translateY(-1px)}
+/* Amber — edit/transform */
+.btn-amber{background:linear-gradient(145deg,var(--amber-l),var(--amber-d));color:#fff;box-shadow:0 2px 8px rgba(217,119,6,.3)}
+.btn-amber:hover{background:linear-gradient(145deg,#FCD34D,var(--amber));transform:translateY(-1px)}
+/* Indigo — heading/title */
+.btn-indigo{background:linear-gradient(145deg,var(--indigo-l),var(--indigo));color:#fff;box-shadow:0 2px 8px rgba(67,56,202,.3)}
+.btn-indigo:hover{background:linear-gradient(145deg,#818CF8,var(--indigo-l));transform:translateY(-1px)}
+/* Red — destructive */
+.btn-red{background:linear-gradient(145deg,#EF4444,var(--red-d));color:#fff;box-shadow:0 2px 8px rgba(214,59,59,.3)}
+.btn-red:hover{background:linear-gradient(145deg,#F87171,#DC2626);transform:translateY(-1px)}
+/* Ghost — neutral secondary */
+.btn-ghost{background:#fff;color:var(--g700);border:1.5px solid var(--g200);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.btn-ghost:hover{background:var(--g50);border-color:var(--g300);box-shadow:0 2px 6px rgba(0,0,0,.1)}
+
 .btn-full{width:100%}
-.btn-sm{padding:5px 8px;font-size:11px}
+.btn-sm{padding:5px 9px;font-size:11px}
 
 /* inputs */
 .inp{
@@ -376,12 +404,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .zip-progress-bar{height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .15s}
 
 /* ── NAV TABS COLORED PILLS ── */
-#ntab-poster{background:rgba(0,169,157,.45);color:rgba(255,255,255,.9)}
-#ntab-poster:hover,#ntab-poster.on{background:var(--teal);color:#fff}
-#ntab-wm{background:rgba(200,160,74,.45);color:rgba(255,255,255,.9)}
-#ntab-wm:hover,#ntab-wm.on{background:var(--gold);color:#fff}
-#ntab-ie{background:rgba(147,51,234,.45);color:rgba(255,255,255,.9)}
-#ntab-ie:hover,#ntab-ie.on{background:#9333EA;color:#fff}
+.ntab{border:1px solid transparent}
+#ntab-poster{background:rgba(0,169,157,.25);color:rgba(255,255,255,.85);border-color:rgba(0,169,157,.4)}
+#ntab-poster:hover{background:rgba(0,169,157,.5);color:#fff}
+#ntab-poster.on{background:linear-gradient(135deg,#00BEB0,var(--teal-d));color:#fff;border-color:transparent;box-shadow:0 2px 10px rgba(0,169,157,.5)}
+#ntab-ie{background:rgba(139,92,246,.25);color:rgba(255,255,255,.85);border-color:rgba(139,92,246,.4)}
+#ntab-ie:hover{background:rgba(139,92,246,.5);color:#fff}
+#ntab-ie.on{background:linear-gradient(135deg,var(--purple-l),var(--purple-d));color:#fff;border-color:transparent;box-shadow:0 2px 10px rgba(124,58,237,.5)}
+#ntab-wm{background:rgba(245,158,11,.25);color:rgba(255,255,255,.85);border-color:rgba(245,158,11,.4)}
+#ntab-wm:hover{background:rgba(245,158,11,.5);color:#fff}
+#ntab-wm.on{background:linear-gradient(135deg,var(--amber-l),var(--amber-d));color:#fff;border-color:transparent;box-shadow:0 2px 10px rgba(217,119,6,.5)}
 
 /* ── HEX COLOR INPUT ── */
 .hex-inp{
@@ -474,7 +506,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 
 /* ── ADD OBJ GRID ── */
-.add-obj-btn{padding:7px 4px!important;font-size:11px!important;text-align:center}
+.add-obj-btn{padding:8px 4px!important;font-size:11px!important;text-align:center;border-radius:8px!important;font-weight:700!important;letter-spacing:.3px}
 
 /* ── TABLE BUILDER MODAL ── */
 #tbl-builder-modal{
@@ -604,7 +636,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <input class="inp" type="number" id="inH" placeholder="px" min="100" max="4000" value="1123">
         <span class="inp-unit">px</span>
       </div>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="applyCustom()">套用自訂尺寸</button>
+      <button class="btn btn-blue btn-full btn-sm" onclick="applyCustom()">套用自訂尺寸</button>
     </div>
 
     <!-- 背景 -->
@@ -616,10 +648,10 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <input type="text" id="bgColorHex" class="hex-inp" value="#FFFFFF" maxlength="7" placeholder="#RRGGBB"
           oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)){document.getElementById('bgColorInp').value=this.value;setBgC(this.value)}">
         <div style="flex:1"></div>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('bgImgInp').click()">上傳底圖</button>
+        <button class="btn btn-teal btn-sm" onclick="document.getElementById('bgImgInp').click()">🖼 上傳底圖</button>
         <input type="file" id="bgImgInp" accept="image/*" style="display:none" onchange="addBgImg(this)">
       </div>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">清除底圖</button>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">✕ 清除底圖</button>
       <div id="bg-img-controls" style="display:none;margin-top:8px;border-top:1px solid var(--g200);padding-top:8px">
         <div class="inp-row" style="margin-bottom:6px">
           <span class="inp-label">縮放</span>
@@ -637,7 +669,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
           <span class="inp-unit">px</span>
         </div>
         <div class="row" style="margin-bottom:6px">
-          <button class="btn btn-ghost btn-full btn-sm" onclick="bgFitCanvas()">適應畫布</button>
+          <button class="btn btn-indigo btn-full btn-sm" onclick="bgFitCanvas()">適應畫布</button>
           <button class="btn btn-ghost btn-full btn-sm" id="bg-lock-btn" onclick="toggleBgLock()">🔓 鎖定底圖</button>
         </div>
       </div>
@@ -646,13 +678,13 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <!-- 新增物件 -->
     <div class="sec-title">新增物件</div>
     <div class="sec">
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
-        <button class="btn btn-blue btn-sm add-obj-btn" onclick="addTxt('文字內容',48,'#1C2340','400',60,60,300,80)">＋ 文字</button>
-        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="document.getElementById('imgInp').click()">＋ 圖片</button>
-        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="addTxt('標題文字',72,'#005BAC','700',40,40,400,100)">大標題</button>
-        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="addTxt('副標題',36,'#475569','400',40,160,360,60)">副標題</button>
-        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="addTxt('內文文字',24,'#334155','300',40,240,400,40)">內文</button>
-        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="openTblBuilder()">＋ 表格</button>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
+        <button class="btn btn-blue btn-sm add-obj-btn" onclick="addTxt('文字內容',48,'#1C2340','400',60,60,300,80)">Aa 文字</button>
+        <button class="btn btn-purple btn-sm add-obj-btn" onclick="document.getElementById('imgInp').click()">🖼 圖片</button>
+        <button class="btn btn-teal btn-sm add-obj-btn" onclick="openTblBuilder()">⊞ 表格</button>
+        <button class="btn btn-indigo btn-sm add-obj-btn" onclick="addTxt('標題文字',72,'#005BAC','700',40,40,400,100)">H1 大標</button>
+        <button class="btn btn-ghost btn-sm add-obj-btn" style="color:var(--g600)" onclick="addTxt('副標題',36,'#475569','500',40,160,360,60)">H2 副標</button>
+        <button class="btn btn-ghost btn-sm add-obj-btn" style="color:var(--g500)" onclick="addTxt('內文文字',24,'#334155','300',40,240,400,40)">¶ 內文</button>
       </div>
       <input type="file" id="imgInp" accept="image/*" style="display:none" onchange="addImg(this)">
     </div>
@@ -670,8 +702,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <!-- 上傳圖片 -->
     <div class="sec-title">批次圖片</div>
     <div class="sec">
-      <button class="btn btn-blue btn-full" style="margin-bottom:6px" onclick="document.getElementById('wmImgInp').click()">
-        ＋ 上傳圖片（可多選）
+      <button class="btn btn-purple btn-full" style="margin-bottom:6px" onclick="document.getElementById('wmImgInp').click()">
+        🖼 上傳圖片（可多選）
       </button>
       <input type="file" id="wmImgInp" accept="image/*" multiple style="display:none" onchange="addWmImgs(this)">
       <div class="wm-count" id="wm-count">尚未上傳圖片</div>
@@ -683,7 +715,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="sec-title">LOGO 設定</div>
     <div class="sec">
       <div id="logo-slots"></div>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="addLogoSlot()">＋ 新增 LOGO</button>
+      <button class="btn btn-teal btn-full btn-sm" onclick="addLogoSlot()">＋ 新增 LOGO</button>
     </div>
 
     <!-- 輸出設定 -->
@@ -711,7 +743,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
     <div class="sec-title">上傳圖片</div>
     <div class="sec">
-      <button class="btn btn-blue btn-full" onclick="document.getElementById('ie-file').click()">
+      <button class="btn btn-purple btn-full" onclick="document.getElementById('ie-file').click()">
         ＋ 載入圖片
       </button>
       <input type="file" id="ie-file" accept="image/*" style="display:none" onchange="ieLoad(this)">
@@ -720,14 +752,14 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="sec-title">批次圖片</div>
     <div class="sec">
       <div style="display:flex;gap:6px;margin-bottom:6px">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('ie-batch-inp').click()">＋ 載入圖片</button>
+        <button class="btn btn-purple btn-sm" style="flex:1" onclick="document.getElementById('ie-batch-inp').click()">＋ 載入</button>
         <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieBatchClear()">🗑 清除</button>
       </div>
       <input type="file" id="ie-batch-inp" accept="image/*" multiple style="display:none" onchange="ieBatchLoad(this)">
       <div id="ie-batch-list" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;max-height:120px;overflow-y:auto"></div>
       <div id="ie-batch-count" style="font-size:11px;color:var(--g500);margin:2px 0 6px"></div>
       <div style="display:flex;gap:6px;margin-bottom:4px">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieBatchApply()">✓ 套用調整</button>
+        <button class="btn btn-amber btn-sm" style="flex:1" onclick="ieBatchApply()">✓ 套用調整</button>
         <button class="btn btn-teal btn-sm" style="flex:1" onclick="ieBatchToWM()">→ 浮水印</button>
       </div>
       <button class="btn btn-blue btn-full btn-sm" onclick="ieBatchToPoster()">→ 導入海報編輯</button>
@@ -737,7 +769,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
       <div class="sec-title">白平衡</div>
       <div class="sec">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="ieAutoWB()">⚡ 自動白平衡</button>
+        <button class="btn btn-amber btn-full btn-sm" onclick="ieAutoWB()">⚡ 自動白平衡</button>
       </div>
 
       <div class="sec-title">基礎調光調色</div>
@@ -767,9 +799,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <div class="sec-title">裁切</div>
       <div class="sec">
         <div class="row">
-          <button class="btn btn-ghost btn-full btn-sm" id="ie-crop-btn" onclick="ieCropToggle()">✂ 選取裁切區域</button>
-          <button class="btn btn-blue btn-sm" id="ie-crop-confirm" onclick="ieCropConfirm()" style="display:none">✓ 確認</button>
-          <button class="btn btn-ghost btn-sm" id="ie-crop-cancel" onclick="ieCropCancel()" style="display:none">✕</button>
+          <button class="btn btn-indigo btn-full btn-sm" id="ie-crop-btn" onclick="ieCropToggle()">✂ 選取裁切區域</button>
+          <button class="btn btn-green btn-sm" id="ie-crop-confirm" onclick="ieCropConfirm()" style="display:none">✓ 確認</button>
+          <button class="btn btn-ghost btn-sm" id="ie-crop-cancel" onclick="ieCropCancel()" style="display:none">✕ 取消</button>
         </div>
       </div>
 
@@ -790,7 +822,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
             <input type="checkbox" id="ie-lock" checked>鎖定比例
           </label>
         </div>
-        <button class="btn btn-ghost btn-full btn-sm" onclick="ieResize()">套用尺寸</button>
+        <button class="btn btn-indigo btn-full btn-sm" onclick="ieResize()">套用尺寸</button>
       </div>
 
       <div class="sec-title">區域效果</div>
@@ -798,13 +830,13 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <div class="inp-row" style="margin-bottom:6px">
           <span class="inp-label">形狀</span>
           <div style="display:flex;gap:4px">
-            <button class="btn btn-sm btn-blue" id="ie-shape-rect" onclick="ieSetShape('rect')">▭ 方形</button>
+            <button class="btn btn-sm btn-indigo" id="ie-shape-rect" onclick="ieSetShape('rect')">▭ 方形</button>
             <button class="btn btn-sm btn-ghost" id="ie-shape-circle" onclick="ieSetShape('circle')">◯ 圓形</button>
           </div>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button class="btn btn-ghost btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')">〰 高斯模糊</button>
-          <button class="btn btn-ghost btn-sm" style="flex:1" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')">⊞ 馬賽克</button>
+          <button class="btn btn-teal btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')">〰 模糊</button>
+          <button class="btn btn-purple btn-sm" style="flex:1" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')">⊞ 馬賽克</button>
         </div>
         <div id="ie-region-controls" style="display:none">
           <div class="inp-row" style="margin-bottom:6px">
@@ -827,8 +859,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
           <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieReset()">🔄 重置</button>
         </div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-blue btn-sm" style="flex:1" onclick="ieDownload('png')">⬇ PNG</button>
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieDownload('jpeg')">⬇ JPG</button>
+          <button class="btn btn-green btn-sm" style="flex:1" onclick="ieDownload('png')">⬇ PNG</button>
+          <button class="btn btn-green btn-sm" style="flex:1;opacity:.85" onclick="ieDownload('jpeg')">⬇ JPG</button>
         </div>
       </div>
     </div>
@@ -842,10 +874,10 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
   <!-- DOWNLOAD BAR -->
   <div id="dlbar">
-    <button class="btn btn-blue btn-full" onclick="handleDl()" id="dl-btn">
+    <button class="btn btn-green btn-full" onclick="handleDl()" id="dl-btn">
       ⬇ 下載海報 PNG
     </button>
-    <button class="btn btn-ghost btn-full btn-sm" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:4px">
+    <button class="btn btn-amber btn-full btn-sm" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:5px">
       ⬇ 匯出 PDF（全部頁面）
     </button>
     <div id="wm-preview-btn" style="display:none;margin-top:6px">
