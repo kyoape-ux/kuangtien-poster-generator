@@ -402,6 +402,29 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 #ie-upload-hint{font-size:14px;color:var(--g400);text-align:center;padding:60px 20px}
 #ie-size-lbl{font-size:11px;color:var(--g500);margin-top:8px;text-align:center}
+#ie-thumb-strip{
+  display:none;width:100%;overflow-x:auto;padding:8px 12px;
+  background:#fff;border-top:1px solid var(--g200);flex-shrink:0;
+}
+#ie-thumb-strip::-webkit-scrollbar{height:4px}
+#ie-thumb-strip::-webkit-scrollbar-thumb{background:var(--g300);border-radius:2px}
+#ie-thumb-list{display:flex;gap:6px;align-items:center}
+.ie-thumb-item{
+  width:52px;height:52px;object-fit:cover;border-radius:5px;
+  border:2px solid var(--g200);cursor:pointer;flex-shrink:0;
+  transition:all .15s;
+}
+.ie-thumb-item:hover{border-color:var(--blue)}
+.ie-thumb-item.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,91,172,.25)}
+.ie-nav-btn{
+  width:36px;height:36px;border:1.5px solid var(--g300);border-radius:50%;
+  background:#fff;color:var(--g600);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s;
+}
+.ie-nav-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.ie-nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.ie-nav-btn:disabled:hover{background:#fff;color:var(--g600);border-color:var(--g300)}
 
 /* ── PAGES BAR ── */
 .page-thumb{width:40px;height:52px;border:2px solid var(--g200);border-radius:4px;cursor:pointer;background:#fff;overflow:hidden;position:relative;flex-shrink:0;font-size:9px;display:flex;align-items:center;justify-content:center}
@@ -432,8 +455,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 <div id="nav">
   <div class="logo">🏥 光田醫院｜海報產生器</div>
   <button class="ntab on" onclick="switchTab('poster',this)" id="ntab-poster">海報編輯</button>
-  <button class="ntab" onclick="switchTab('wm',this)" id="ntab-wm">批次浮水印</button>
   <button class="ntab" onclick="switchTab('ie',this)" id="ntab-ie">圖片編輯</button>
+  <button class="ntab" onclick="switchTab('wm',this)" id="ntab-wm">批次浮水印</button>
   <div class="spacer"></div>
   <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed">↩ 復原</button>
   <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed">↪ 重做</button>
@@ -784,16 +807,23 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <button class="btn btn-ghost btn-sm" onclick="ieZmFit()">最適</button>
       <button class="btn btn-ghost btn-sm" onclick="ieZm100()">100%</button>
     </div>
-    <div style="flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px;background:var(--g200);">
-      <div class="ie-canvas-wrap" id="ie-canvas-wrap">
-        <canvas id="ie-canvas"></canvas>
-        <canvas id="ie-overlay"></canvas>
+    <div style="flex:1;overflow:auto;display:flex;flex-direction:row;align-items:center;justify-content:center;padding:24px;background:var(--g200);gap:12px">
+      <button class="ie-nav-btn" id="ie-prev-btn" onclick="ieBatchNav(-1)" style="display:none" title="上一張">◀</button>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="ie-canvas-wrap" id="ie-canvas-wrap">
+          <canvas id="ie-canvas"></canvas>
+          <canvas id="ie-overlay"></canvas>
+        </div>
+        <div id="ie-size-lbl"></div>
+        <div id="ie-upload-hint">
+          <div style="font-size:48px;margin-bottom:12px">🖼</div>
+          <div>請從左側上傳圖片以開始編輯</div>
+        </div>
       </div>
-      <div id="ie-size-lbl"></div>
-      <div id="ie-upload-hint">
-        <div style="font-size:48px;margin-bottom:12px">🖼</div>
-        <div>請從左側上傳圖片以開始編輯</div>
-      </div>
+      <button class="ie-nav-btn" id="ie-next-btn" onclick="ieBatchNav(1)" style="display:none" title="下一張">▶</button>
+    </div>
+    <div id="ie-thumb-strip">
+      <div id="ie-thumb-list"></div>
     </div>
   </div>
 </div>
@@ -2283,11 +2313,11 @@ function switchTab(tab, btn){
     dlBtn.textContent='⬇ 批次壓 LOGO 下載';
     wmpBtn.style.display='block';
     dlBar.style.display='';
-    tplPanel.style.display='';
-    catop.style.display='';
-    cscroll.style.display='';
+    tplPanel.style.display='none';
+    catop.style.display='none';
+    cscroll.style.display='none';
     ieArea.style.display='none';
-    if(pagesBar) pagesBar.style.display='';
+    if(pagesBar) pagesBar.style.display='none';
   } else if(tab==='ie'){
     dlBar.style.display='none';
     wmpBtn.style.display='none';
@@ -2856,7 +2886,7 @@ const IE = {
   undoStack:[],
   zoom:1,
   regionShape:'rect',
-  batchImgs:[],
+  batchImgs:[], batchIdx:0,
 };
 
 function ieC(){ return document.getElementById('ie-canvas'); }
@@ -3299,27 +3329,57 @@ function ieSetShape(shape){
 function ieBatchLoad(inp){
   const files=Array.from(inp.files); if(!files.length) return;
   inp.value='';
-  IE.batchImgs=[];
-  const list=document.getElementById('ie-batch-list');
+  IE.batchImgs=[]; IE.batchIdx=0;
+  const sideList=document.getElementById('ie-batch-list');
   const count=document.getElementById('ie-batch-count');
-  list.innerHTML='';
+  const strip=document.getElementById('ie-thumb-strip');
+  const thumbList=document.getElementById('ie-thumb-list');
+  sideList.innerHTML=''; thumbList.innerHTML='';
   count.textContent='載入中…';
+  strip.style.display='none';
   let loaded=0;
-  files.forEach(f=>{
+  // preserve original order
+  const items=new Array(files.length);
+  files.forEach((f,idx)=>{
     const reader=new FileReader();
     reader.onload=e=>{
       const img=new Image();
       img.onload=()=>{
         const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
         c.getContext('2d').drawImage(img,0,0);
-        IE.batchImgs.push({canvas:c, name:f.name});
-        const thumb=document.createElement('img');
-        thumb.src=c.toDataURL('image/jpeg',0.5);
-        thumb.style.cssText='width:36px;height:36px;object-fit:cover;border-radius:3px;border:1px solid var(--g200)';
-        list.appendChild(thumb);
+        items[idx]={canvas:c, name:f.name};
         loaded++;
         if(loaded===files.length){
-          count.textContent=`共 ${loaded} 張圖片`;
+          IE.batchImgs=items;
+          // sidebar small thumbnails
+          sideList.innerHTML='';
+          IE.batchImgs.forEach((item,i)=>{
+            const t=document.createElement('img');
+            t.src=item.canvas.toDataURL('image/jpeg',0.4);
+            t.style.cssText='width:32px;height:32px;object-fit:cover;border-radius:3px;border:1px solid var(--g200)';
+            sideList.appendChild(t);
+          });
+          count.textContent=`共 ${loaded} 張`;
+          // bottom strip thumbnails
+          thumbList.innerHTML='';
+          IE.batchImgs.forEach((item,i)=>{
+            const t=document.createElement('img');
+            t.className='ie-thumb-item'+(i===0?' active':'');
+            t.src=item.canvas.toDataURL('image/jpeg',0.5);
+            t.title=item.name;
+            t.onclick=()=>ieBatchGoTo(i);
+            thumbList.appendChild(t);
+          });
+          strip.style.display='block';
+          // show arrows if >1 image
+          const showArrows=IE.batchImgs.length>1;
+          document.getElementById('ie-prev-btn').style.display=showArrows?'':'none';
+          document.getElementById('ie-next-btn').style.display=showArrows?'':'none';
+          // load first image into main canvas
+          IE.batchIdx=0;
+          ieBatchShowCurrent();
+          document.getElementById('ie-controls').style.display='block';
+          document.getElementById('ie-upload-hint').style.display='none';
           snack(`已載入 ${loaded} 張批次圖片`);
         }
       };
@@ -3327,6 +3387,36 @@ function ieBatchLoad(inp){
     };
     reader.readAsDataURL(f);
   });
+}
+
+function ieBatchGoTo(i){
+  IE.batchIdx=clamp(i,0,IE.batchImgs.length-1);
+  ieBatchShowCurrent();
+}
+
+function ieBatchNav(dir){
+  if(!IE.batchImgs.length) return;
+  ieBatchGoTo(IE.batchIdx+dir);
+}
+
+function ieBatchShowCurrent(){
+  const item=IE.batchImgs[IE.batchIdx];
+  if(!item) return;
+  IE.origCanvas=item.canvas;
+  const dc=ieC(); dc.width=item.canvas.width; dc.height=item.canvas.height; dc.style.display='block';
+  const oc=ieO(); oc.width=item.canvas.width; oc.height=item.canvas.height;
+  const wEl=document.getElementById('ie-resize-w'); if(wEl) wEl.value=item.canvas.width;
+  const hEl=document.getElementById('ie-resize-h'); if(hEl) hEl.value=item.canvas.height;
+  const lbl=document.getElementById('ie-size-lbl');
+  if(lbl) lbl.textContent=`${item.canvas.width} × ${item.canvas.height} px`;
+  ieRedraw();
+  // update thumbnails
+  document.querySelectorAll('.ie-thumb-item').forEach((el,i)=>el.classList.toggle('active',i===IE.batchIdx));
+  // update arrow states
+  const prev=document.getElementById('ie-prev-btn');
+  const next=document.getElementById('ie-next-btn');
+  if(prev) prev.disabled=IE.batchIdx===0;
+  if(next) next.disabled=IE.batchIdx===IE.batchImgs.length-1;
 }
 
 function ieBatchApply(){
