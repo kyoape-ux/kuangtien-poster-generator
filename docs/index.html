@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田醫院｜海報產生器 Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --blue:#005BAC;--blue-l:#1A7DC4;--blue-d:#003F7A;
@@ -275,6 +276,26 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+
+/* ── ZIP MODAL ── */
+#zip-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:1100;align-items:center;justify-content:center;
+}
+#zip-modal.open{display:flex}
+.zip-box{
+  background:#fff;border-radius:14px;padding:24px 24px 20px;
+  width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.zip-box h3{font-size:15px;font-weight:700;margin-bottom:4px}
+.zip-box .zip-sub{font-size:12px;color:var(--g400);margin-bottom:16px}
+.zip-box .zip-field{margin-bottom:14px}
+.zip-box .zip-field label{font-size:11px;color:var(--g500);display:block;margin-bottom:5px}
+.zip-progress{
+  height:4px;background:var(--g200);border-radius:2px;overflow:hidden;
+  margin-bottom:14px;display:none;
+}
+.zip-progress-bar{height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .15s}
 </style>
 </head>
 <body>
@@ -460,6 +481,25 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="modal-btns">
       <button class="btn btn-blue btn-full" onclick="dlAll()">⬇ 全部下載</button>
       <button class="btn btn-ghost" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ZIP 命名 Modal -->
+<div id="zip-modal">
+  <div class="zip-box">
+    <h3>📦 打包下載</h3>
+    <div class="zip-sub" id="zip-sub">共 0 張圖片，將打包為單一 .zip 檔</div>
+    <div class="zip-field">
+      <label>壓縮檔名稱</label>
+      <input class="inp" id="zip-name" type="text" placeholder="例：光田醫院_浮水印_20260326">
+    </div>
+    <div class="zip-progress" id="zip-progress">
+      <div class="zip-progress-bar" id="zip-bar"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-blue btn-full" id="zip-confirm-btn" onclick="confirmZipDl()">⬇ 確認打包下載</button>
+      <button class="btn btn-ghost" onclick="closeZipModal()" id="zip-cancel-btn">取消</button>
     </div>
   </div>
 </div>
@@ -1373,29 +1413,91 @@ function navPrev(){ if(S.prevIdx>0){ S.prevIdx--; renderModalPrev(); } }
 function navNext(){ if(S.prevIdx<S.prevCanvases.length-1){ S.prevIdx++; renderModalPrev(); } }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 
-async function dlAll(){
-  for(let i=0;i<S.prevCanvases.length;i++){
-    const {canvas,name}=S.prevCanvases[i];
-    await new Promise(res=>{
-      downloadOne(canvas, name, S.wm.fmt, S.wm.quality);
-      setTimeout(res,150);
-    });
-  }
+// 從預覽 Modal 點「全部下載」→ 開啟 ZIP 命名 Modal
+function dlAll(){
   closeModal();
-  snack(`已下載 ${S.prevCanvases.length} 張圖片`);
+  openZipModal(S.prevCanvases);
 }
 
+// 直接批次（不過預覽）→ 先合成再開 ZIP 命名 Modal
 async function batchDirectDl(){
   if(!S.wm.imgs.length){ snack('請先上傳圖片'); return; }
   if(!S.wm.logos.some(l=>l.imgEl)){ snack('請先上傳至少一個 LOGO'); return; }
-  snack('下載中…', 5000);
-  for(let i=0;i<S.wm.imgs.length;i++){
-    const item=S.wm.imgs[i];
-    const cvs=compositeOne(item.imgEl);
-    const name=item.name.replace(/\.[^.]+$/,'')+'_wm';
-    await new Promise(res=>{ downloadOne(cvs,name,S.wm.fmt,S.wm.quality); setTimeout(res,150); });
+  snack('合成中…', 4000);
+  await new Promise(r=>setTimeout(r,30));
+  const canvases = S.wm.imgs.map(item=>({
+    canvas: compositeOne(item.imgEl),
+    name: item.name.replace(/\.[^.]+$/,'')+'_wm'
+  }));
+  openZipModal(canvases);
+}
+
+// ── ZIP MODAL ──
+let _zipCanvases = [];
+
+function openZipModal(canvases){
+  _zipCanvases = canvases;
+  const today = new Date();
+  const ymd = today.getFullYear().toString()
+    + String(today.getMonth()+1).padStart(2,'0')
+    + String(today.getDate()).padStart(2,'0');
+  document.getElementById('zip-name').value = `光田醫院_浮水印_${ymd}`;
+  document.getElementById('zip-sub').textContent =
+    `共 ${canvases.length} 張圖片，將打包為單一 .zip 檔`;
+  document.getElementById('zip-progress').style.display='none';
+  document.getElementById('zip-bar').style.width='0%';
+  document.getElementById('zip-confirm-btn').disabled=false;
+  document.getElementById('zip-cancel-btn').disabled=false;
+  document.getElementById('zip-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('zip-name').select(),80);
+}
+
+function closeZipModal(){
+  document.getElementById('zip-modal').classList.remove('open');
+  _zipCanvases=[];
+}
+
+async function confirmZipDl(){
+  const raw = document.getElementById('zip-name').value.trim();
+  const zipName = (raw || '光田醫院_浮水印') + '.zip';
+  const ext = S.wm.fmt==='png'?'png':'jpg';
+  const mime = 'image/'+S.wm.fmt;
+
+  // 鎖定按鈕、顯示進度條
+  document.getElementById('zip-confirm-btn').disabled=true;
+  document.getElementById('zip-cancel-btn').disabled=true;
+  const prog = document.getElementById('zip-progress');
+  const bar  = document.getElementById('zip-bar');
+  prog.style.display='block';
+  snack('打包中…', 30000);
+
+  const zip = new JSZip();
+  const total = _zipCanvases.length;
+
+  for(let i=0;i<total;i++){
+    const {canvas, name} = _zipCanvases[i];
+    // canvas → Blob
+    const blob = await new Promise(res=>
+      canvas.toBlob(res, mime, S.wm.quality)
+    );
+    zip.file(`${name}.${ext}`, blob);
+    bar.style.width = Math.round((i+1)/total*90)+'%';
+    await new Promise(r=>setTimeout(r,0)); // 讓 UI 更新
   }
-  snack(`已下載 ${S.wm.imgs.length} 張圖片`);
+
+  bar.style.width='95%';
+  const content = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+  bar.style.width='100%';
+
+  // 觸發下載
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = zipName;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+
+  closeZipModal();
+  snack(`✅ 已打包下載：${zipName}（${total} 張）`);
 }
 
 // ═══════════════════════════════════════════════
