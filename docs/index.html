@@ -7,8 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <style>
 :root{
   --blue:#005BAC;--blue-l:#1A7DC4;--blue-d:#003F7A;
@@ -475,22 +473,37 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   white-space:nowrap;padding:0 2px;
 }
 
-/* ── TABLE MODAL ── */
-#table-modal{
+/* ── ADD OBJ GRID ── */
+.add-obj-btn{padding:7px 4px!important;font-size:11px!important;text-align:center}
+
+/* ── TABLE BUILDER MODAL ── */
+#tbl-builder-modal{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
   z-index:1200;align-items:center;justify-content:center;
 }
-#table-modal.open{display:flex}
-.table-modal-box{
+#tbl-builder-modal.open{display:flex}
+.tbl-builder-box{
   background:#fff;border-radius:14px;padding:20px;
-  max-width:600px;width:100%;max-height:90vh;display:flex;flex-direction:column;
-  box-shadow:0 20px 60px rgba(0,0,0,.3);
+  width:780px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;
 }
-.table-preview{flex:1;overflow:auto;border:1px solid var(--g200);border-radius:8px;margin-bottom:12px;max-height:300px}
-.table-preview table{width:100%;border-collapse:collapse;font-size:12px}
-.table-preview td,.table-preview th{border:1px solid var(--g200);padding:4px 8px}
-.table-preview tr:nth-child(even){background:var(--g50)}
-.tbl-style-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tbl-builder-settings{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:10px 12px;background:var(--g50);border-radius:8px;margin-bottom:12px;
+}
+.tbl-builder-settings label{
+  display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--g500);font-weight:600;
+}
+.tbl-builder-settings input[type=number]{width:48px}
+.tbl-builder-settings input[type=color]{width:36px;height:26px;padding:1px 2px;border-radius:4px;border:1px solid var(--g200);cursor:pointer}
+.tbl-grid-wrap{flex:1;overflow:auto;border:1px solid var(--g200);border-radius:8px}
+#tbl-builder-grid{border-collapse:collapse;min-width:100%}
+#tbl-builder-grid th,#tbl-builder-grid td{
+  border:1px solid #CBD5E1;padding:6px 10px;min-width:90px;
+  outline:none;white-space:nowrap;font-size:14px;
+}
+#tbl-builder-grid th{font-weight:700;cursor:cell}
+#tbl-builder-grid td{cursor:cell}
 </style>
 </head>
 <body>
@@ -594,31 +607,15 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <!-- 新增物件 -->
     <div class="sec-title">新增物件</div>
     <div class="sec">
-      <div class="row" style="margin-bottom:6px">
-        <button class="btn btn-blue btn-full" onclick="addTxt('文字內容',48,'#1C2340','400',60,60,300,80)">
-          ＋ 文字
-        </button>
-        <button class="btn btn-ghost btn-full" onclick="document.getElementById('imgInp').click()">
-          ＋ 圖片
-        </button>
-        <input type="file" id="imgInp" accept="image/*" style="display:none" onchange="addImg(this)">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+        <button class="btn btn-blue btn-sm add-obj-btn" onclick="addTxt('文字內容',48,'#1C2340','400',60,60,300,80)">＋ 文字</button>
+        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="document.getElementById('imgInp').click()">＋ 圖片</button>
+        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="addTxt('標題文字',72,'#005BAC','700',40,40,400,100)">大標題</button>
+        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="addTxt('副標題',36,'#475569','400',40,160,360,60)">副標題</button>
+        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="addTxt('內文文字',24,'#334155','300',40,240,400,40)">內文</button>
+        <button class="btn btn-ghost btn-sm add-obj-btn" onclick="openTblBuilder()">＋ 表格</button>
       </div>
-      <div class="row">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('標題文字',72,'#005BAC','700',40,40,400,100)">大標題</button>
-        <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('副標題',36,'#475569','400',40,160,360,60)">副標題</button>
-        <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('內文文字',24,'#334155','300',40,240,400,40)">內文</button>
-      </div>
-    </div>
-
-    <!-- 匯入表格 -->
-    <div class="sec-title">匯入表格</div>
-    <div class="sec">
-      <div class="row">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('xlsx-inp').click()">📊 Excel/CSV</button>
-        <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('docx-inp').click()">📝 Word表格</button>
-      </div>
-      <input type="file" id="xlsx-inp" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(this)">
-      <input type="file" id="docx-inp" accept=".docx" style="display:none" onchange="importWord(this)">
+      <input type="file" id="imgInp" accept="image/*" style="display:none" onchange="addImg(this)">
     </div>
 
     <!-- 圖層 -->
@@ -939,18 +936,30 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   </div>
 </div>
 
-<!-- TABLE IMPORT MODAL -->
-<div id="table-modal">
-  <div class="table-modal-box">
+<!-- TABLE BUILDER MODAL -->
+<div id="tbl-builder-modal">
+  <div class="tbl-builder-box">
     <div class="modal-head">
-      <h3>匯入表格</h3>
-      <button class="modal-close" onclick="closeTableModal()">✕</button>
+      <h3>建立表格</h3>
+      <button class="modal-close" onclick="closeTblBuilder()">✕</button>
     </div>
-    <div class="table-preview" id="table-preview-area"></div>
-    <div class="tbl-style-btns" id="tbl-style-btns"></div>
-    <div class="modal-btns">
-      <button class="btn btn-blue btn-full" onclick="confirmImportTable()">匯入到畫布</button>
-      <button class="btn btn-ghost" onclick="closeTableModal()">取消</button>
+    <div class="tbl-builder-settings">
+      <label>欄數<input type="number" id="tbl-cols" value="3" min="1" max="15" oninput="rebuildTblGrid()"></label>
+      <label>列數<input type="number" id="tbl-rows" value="4" min="1" max="30" oninput="rebuildTblGrid()"></label>
+      <div style="width:1px;height:30px;background:var(--g200)"></div>
+      <label>標題背景<input type="color" id="tbl-header-bg" value="#005BAC" oninput="updateTblStyle()"></label>
+      <label>標題文字<input type="color" id="tbl-header-color" value="#FFFFFF" oninput="updateTblStyle()"></label>
+      <label>儲存格背景<input type="color" id="tbl-cell-bg" value="#EBF4FF" oninput="updateTblStyle()"></label>
+      <label>框線顏色<input type="color" id="tbl-border-color" value="#CBD5E1" oninput="updateTblStyle()"></label>
+      <label>框線粗細<input type="number" id="tbl-border-width" value="1" min="0" max="8" oninput="updateTblStyle()"></label>
+      <label>字級<input type="number" id="tbl-font-size" value="14" min="8" max="36" oninput="updateTblStyle()"></label>
+    </div>
+    <div class="tbl-grid-wrap">
+      <table id="tbl-builder-grid"></table>
+    </div>
+    <div class="modal-btns" style="margin-top:12px">
+      <button class="btn btn-blue btn-full" onclick="confirmTblBuilder()">加入到海報</button>
+      <button class="btn btn-ghost" onclick="closeTblBuilder()">取消</button>
     </div>
   </div>
 </div>
@@ -2822,90 +2831,69 @@ async function restoreAutoSave(data){
 }
 
 // ═══════════════════════════════════════════════
-//  TABLE IMPORT
+//  TABLE BUILDER
 // ═══════════════════════════════════════════════
-const TABLE_STYLES = [
-  { name:'醫療藍', headerBg:'#005BAC', headerColor:'#FFFFFF', rowBg:'#EBF4FF', altBg:'#FFFFFF', borderColor:'#CBD5E1', textColor:'#1E293B', fontSize:14 },
-  { name:'清爽綠', headerBg:'#00A99D', headerColor:'#FFFFFF', rowBg:'#E0F5F4', altBg:'#FFFFFF', borderColor:'#CBD5E1', textColor:'#1E293B', fontSize:14 },
-  { name:'深色專業', headerBg:'#1E293B', headerColor:'#FFFFFF', rowBg:'#334155', altBg:'#475569', borderColor:'#64748B', textColor:'#FFFFFF', fontSize:14 },
-  { name:'暖色溫馨', headerBg:'#C8A04A', headerColor:'#FFFFFF', rowBg:'#FEF9EE', altBg:'#FFFFFF', borderColor:'#E2C97E', textColor:'#1E293B', fontSize:14 },
-  { name:'簡約白', headerBg:'#F1F5F9', headerColor:'#1E293B', rowBg:'#FFFFFF', altBg:'#F8FAFC', borderColor:'#E2E8F0', textColor:'#1E293B', fontSize:14 },
-];
-
-let _tableData = [];
-let _selectedTableStyle = 0;
-
-function importExcel(inp){
-  const file=inp.files[0]; if(!file) return;
-  inp.value='';
-  if(typeof XLSX==='undefined'){ snack('XLSX 尚未載入，請稍後再試'); return; }
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try{
-      const wb=XLSX.read(e.target.result,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      _tableData=data.filter(r=>r.some(c=>String(c).trim()!==''));
-      showTableModal();
-    } catch(err){ snack('Excel 解析失敗：'+err.message); }
-  };
-  reader.readAsArrayBuffer(file);
+function openTblBuilder(){
+  document.getElementById('tbl-builder-modal').classList.add('open');
+  rebuildTblGrid();
+}
+function closeTblBuilder(){
+  document.getElementById('tbl-builder-modal').classList.remove('open');
 }
 
-function importWord(inp){
-  const file=inp.files[0]; if(!file) return;
-  inp.value='';
-  if(typeof mammoth==='undefined'){ snack('mammoth 尚未載入，請稍後再試'); return; }
-  const reader=new FileReader();
-  reader.onload=e=>{
-    mammoth.convertToHtml({arrayBuffer:e.target.result}).then(result=>{
-      const html=result.value;
-      const div=document.createElement('div'); div.innerHTML=html;
-      const table=div.querySelector('table');
-      if(!table){ snack('Word 檔案中未找到表格'); return; }
-      const rows=Array.from(table.querySelectorAll('tr'));
-      _tableData=rows.map(tr=>Array.from(tr.querySelectorAll('td,th')).map(td=>td.textContent.trim()));
-      _tableData=_tableData.filter(r=>r.some(c=>c!==''));
-      showTableModal();
-    }).catch(err=>snack('Word 解析失敗：'+err.message));
-  };
-  reader.readAsArrayBuffer(file);
+function rebuildTblGrid(){
+  const rows=Math.max(1,parseInt(document.getElementById('tbl-rows').value)||4);
+  const cols=Math.max(1,parseInt(document.getElementById('tbl-cols').value)||3);
+  const table=document.getElementById('tbl-builder-grid');
+  const oldData=getTblBuilderData();
+  table.innerHTML='';
+  for(let r=0;r<rows;r++){
+    const tr=document.createElement('tr');
+    for(let c=0;c<cols;c++){
+      const cell=document.createElement(r===0?'th':'td');
+      cell.contentEditable='true';
+      cell.textContent=(oldData[r]&&oldData[r][c]!=null)?oldData[r][c]:'';
+      tr.appendChild(cell);
+    }
+    table.appendChild(tr);
+  }
+  updateTblStyle();
 }
 
-function showTableModal(){
-  if(!_tableData.length){ snack('未找到表格資料'); return; }
-  // Render preview table
-  const prev=document.getElementById('table-preview-area');
-  let html='<table>';
-  _tableData.forEach((row,ri)=>{
-    html+=`<tr>`;
-    row.forEach(cell=>{
-      html+=ri===0?`<th>${cell}</th>`:`<td>${cell}</td>`;
-    });
-    html+='</tr>';
+function getTblBuilderData(){
+  const table=document.getElementById('tbl-builder-grid');
+  if(!table) return [];
+  return Array.from(table.querySelectorAll('tr')).map(tr=>
+    Array.from(tr.querySelectorAll('th,td')).map(td=>td.textContent)
+  );
+}
+
+function updateTblStyle(){
+  const table=document.getElementById('tbl-builder-grid');
+  if(!table) return;
+  const headerBg=document.getElementById('tbl-header-bg').value;
+  const headerColor=document.getElementById('tbl-header-color').value;
+  const cellBg=document.getElementById('tbl-cell-bg').value;
+  const borderColor=document.getElementById('tbl-border-color').value;
+  const bw=Math.max(0,parseInt(document.getElementById('tbl-border-width').value)||1);
+  const fs=parseInt(document.getElementById('tbl-font-size').value)||14;
+  table.style.fontSize=fs+'px';
+  table.querySelectorAll('th').forEach(th=>{
+    th.style.background=headerBg;
+    th.style.color=headerColor;
+    th.style.border=`${bw}px solid ${borderColor}`;
   });
-  html+='</table>';
-  prev.innerHTML=html;
-  // Render style buttons
-  const btns=document.getElementById('tbl-style-btns');
-  btns.innerHTML='';
-  TABLE_STYLES.forEach((st,i)=>{
-    const b=document.createElement('button');
-    b.className='btn btn-sm '+(i===_selectedTableStyle?'btn-blue':'btn-ghost');
-    b.textContent=st.name;
-    b.onclick=()=>{ _selectedTableStyle=i; showTableModal(); };
-    btns.appendChild(b);
+  table.querySelectorAll('td').forEach(td=>{
+    td.style.background=cellBg;
+    td.style.color='#1E293B';
+    td.style.border=`${bw}px solid ${borderColor}`;
   });
-  document.getElementById('table-modal').classList.add('open');
 }
 
-function closeTableModal(){
-  document.getElementById('table-modal').classList.remove('open');
-}
-
-function renderTableToCanvas(data, style){
+function renderTableToCanvas(data,style){
   const padding=12;
   const colWidth=120;
+  const bw=style.borderWidth||1;
   const rowH=style.fontSize*2.2+8;
   const cols=Math.max(...data.map(r=>r.length));
   const rows=data.length;
@@ -2919,14 +2907,15 @@ function renderTableToCanvas(data, style){
     const isHeader=ri===0;
     row.forEach((cell,ci)=>{
       const x=padding+ci*colWidth;
-      ctx.fillStyle=isHeader?style.headerBg:(ri%2===0?style.rowBg:style.altBg);
+      ctx.fillStyle=isHeader?style.headerBg:style.rowBg;
       ctx.fillRect(x,y,colWidth,rowH);
-      ctx.strokeStyle=style.borderColor; ctx.lineWidth=1;
-      ctx.strokeRect(x,y,colWidth,rowH);
+      if(bw>0){
+        ctx.strokeStyle=style.borderColor; ctx.lineWidth=bw;
+        ctx.strokeRect(x+bw/2,y+bw/2,colWidth-bw,rowH-bw);
+      }
       ctx.fillStyle=isHeader?style.headerColor:style.textColor;
       ctx.font=`${isHeader?'700':'400'} ${style.fontSize}px 'Noto Sans TC',sans-serif`;
       ctx.textBaseline='middle'; ctx.textAlign='center';
-      // Clip text
       ctx.save();
       ctx.rect(x+2,y,colWidth-4,rowH);
       ctx.clip();
@@ -2937,11 +2926,20 @@ function renderTableToCanvas(data, style){
   return cvs;
 }
 
-async function confirmImportTable(){
-  if(!_tableData.length) return;
-  const style=TABLE_STYLES[_selectedTableStyle];
-  const cvs=renderTableToCanvas(_tableData,style);
-  closeTableModal();
+async function confirmTblBuilder(){
+  const data=getTblBuilderData().filter(r=>r.some(c=>c.trim()!==''));
+  if(!data.length){ snack('請先填入表格內容'); return; }
+  const style={
+    headerBg:document.getElementById('tbl-header-bg').value,
+    headerColor:document.getElementById('tbl-header-color').value,
+    rowBg:document.getElementById('tbl-cell-bg').value,
+    borderColor:document.getElementById('tbl-border-color').value,
+    borderWidth:parseInt(document.getElementById('tbl-border-width').value)||1,
+    textColor:'#1E293B',
+    fontSize:parseInt(document.getElementById('tbl-font-size').value)||14,
+  };
+  const cvs=renderTableToCanvas(data,style);
+  closeTblBuilder();
   await document.fonts.ready;
   const url=cvs.toDataURL('image/png');
   const img=new Image();
@@ -2952,10 +2950,8 @@ async function confirmImportTable(){
     const dw=Math.min(S.W*0.9,cvs.width);
     const obj={id,type:'img',x:40,y:40,w:dw,h:dw*ar,rot:0,opacity:1,imgEl:img,aspectRatio:ar};
     S.objs.push(obj);
-    mkEl(id);
-    selObj(id);
-    updLayerList();
-    snack('表格已匯入到畫布');
+    mkEl(id); selObj(id); updLayerList();
+    snack('表格已加入到海報');
   };
   img.src=url;
 }
