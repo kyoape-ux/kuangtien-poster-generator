@@ -6,6 +6,9 @@
 <title>光田醫院｜海報產生器 Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <style>
 :root{
   --blue:#005BAC;--blue-l:#1A7DC4;--blue-d:#003F7A;
@@ -388,8 +391,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
 /* ── IMAGE EDITOR AREA ── */
 #ie-area{
-  flex:1;overflow:auto;flex-direction:column;align-items:center;
-  justify-content:flex-start;padding:24px;background:var(--g200);
+  flex:1;overflow:hidden;flex-direction:column;align-items:stretch;
+  justify-content:flex-start;background:var(--g200);
 }
 .ie-canvas-wrap{position:relative;display:inline-block;line-height:0}
 #ie-canvas{display:none;max-width:100%;box-shadow:0 4px 32px rgba(0,0,0,.18)}
@@ -399,6 +402,28 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 #ie-upload-hint{font-size:14px;color:var(--g400);text-align:center;padding:60px 20px}
 #ie-size-lbl{font-size:11px;color:var(--g500);margin-top:8px;text-align:center}
+
+/* ── PAGES BAR ── */
+.page-thumb{width:40px;height:52px;border:2px solid var(--g200);border-radius:4px;cursor:pointer;background:#fff;overflow:hidden;position:relative;flex-shrink:0;font-size:9px;display:flex;align-items:center;justify-content:center}
+.page-thumb.active{border-color:var(--blue)}
+.page-thumb-label{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:8px;color:var(--g500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+
+/* ── TABLE MODAL ── */
+#table-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:1200;align-items:center;justify-content:center;
+}
+#table-modal.open{display:flex}
+.table-modal-box{
+  background:#fff;border-radius:14px;padding:20px;
+  max-width:600px;width:100%;max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.table-preview{flex:1;overflow:auto;border:1px solid var(--g200);border-radius:8px;margin-bottom:12px;max-height:300px}
+.table-preview table{width:100%;border-collapse:collapse;font-size:12px}
+.table-preview td,.table-preview th{border:1px solid var(--g200);padding:4px 8px}
+.table-preview tr:nth-child(even){background:var(--g50)}
+.tbl-style-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -475,6 +500,27 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <input type="file" id="bgImgInp" accept="image/*" style="display:none" onchange="addBgImg(this)">
       </div>
       <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">清除底圖</button>
+      <div id="bg-img-controls" style="display:none;margin-top:8px;border-top:1px solid var(--g200);padding-top:8px">
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">縮放</span>
+          <input type="range" id="bg-scale-slider" min="10" max="300" value="100" oninput="S.bgScale=this.value/100;document.getElementById('bg-scale-lbl').textContent=this.value+'%';renderBg()">
+          <span id="bg-scale-lbl" style="font-size:11px;color:var(--g500);min-width:36px">100%</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">X 偏移</span>
+          <input class="inp" type="number" id="bg-offset-x" value="0" style="width:60px" oninput="S.bgOffsetX=+this.value;renderBg()">
+          <span class="inp-unit">px</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">Y 偏移</span>
+          <input class="inp" type="number" id="bg-offset-y" value="0" style="width:60px" oninput="S.bgOffsetY=+this.value;renderBg()">
+          <span class="inp-unit">px</span>
+        </div>
+        <div class="row" style="margin-bottom:6px">
+          <button class="btn btn-ghost btn-full btn-sm" onclick="bgFitCanvas()">適應畫布</button>
+          <button class="btn btn-ghost btn-full btn-sm" id="bg-lock-btn" onclick="toggleBgLock()">🔓 鎖定底圖</button>
+        </div>
+      </div>
     </div>
 
     <!-- 新增物件 -->
@@ -494,6 +540,17 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('副標題',36,'#475569','400',40,160,360,60)">副標題</button>
         <button class="btn btn-ghost btn-full btn-sm" onclick="addTxt('內文文字',24,'#334155','300',40,240,400,40)">內文</button>
       </div>
+    </div>
+
+    <!-- 匯入表格 -->
+    <div class="sec-title">匯入表格</div>
+    <div class="sec">
+      <div class="row">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('xlsx-inp').click()">📊 Excel/CSV</button>
+        <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('docx-inp').click()">📝 Word表格</button>
+      </div>
+      <input type="file" id="xlsx-inp" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(this)">
+      <input type="file" id="docx-inp" accept=".docx" style="display:none" onchange="importWord(this)">
     </div>
 
     <!-- 圖層 -->
@@ -556,6 +613,23 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <input type="file" id="ie-file" accept="image/*" style="display:none" onchange="ieLoad(this)">
     </div>
 
+    <div class="sec-title">批次圖片</div>
+    <div class="sec">
+      <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('ie-batch-inp').click()">＋ 載入多張圖片</button>
+      <input type="file" id="ie-batch-inp" accept="image/*" multiple style="display:none" onchange="ieBatchLoad(this)">
+      <div id="ie-batch-list" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 0;max-height:80px;overflow-y:auto"></div>
+      <div id="ie-batch-count" style="font-size:11px;color:var(--g500)"></div>
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="ieBatchApply()">✓ 套用調整到全部</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <button class="btn btn-teal btn-full btn-sm" onclick="ieBatchToWM()">→ 導入批次浮水印</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:4px">
+        <button class="btn btn-blue btn-full btn-sm" onclick="ieBatchToPoster()">→ 導入海報編輯</button>
+      </div>
+    </div>
+
     <div id="ie-controls" style="display:none">
 
       <div class="sec-title">白平衡</div>
@@ -596,20 +670,6 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         </div>
       </div>
 
-      <div class="sec-title">旋轉</div>
-      <div class="sec">
-        <div class="row" style="margin-bottom:6px">
-          <button class="btn btn-ghost btn-full btn-sm" onclick="ieRotate(-90)">↺ −90°</button>
-          <button class="btn btn-ghost btn-full btn-sm" onclick="ieRotate(90)">↻ ＋90°</button>
-        </div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">微調</span>
-          <input type="range" id="ie-rotate" min="-45" max="45" value="0" oninput="ieRotatePreview(this)">
-          <span id="ie-rotate-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0°</span>
-        </div>
-        <button class="btn btn-ghost btn-full btn-sm" onclick="ieRotateCommit()">套用微調角度</button>
-      </div>
-
       <div class="sec-title">調整尺寸</div>
       <div class="sec">
         <div class="inp-row" style="margin-bottom:5px">
@@ -632,6 +692,13 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
       <div class="sec-title">區域效果</div>
       <div class="sec">
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">形狀</span>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-sm btn-blue" id="ie-shape-rect" onclick="ieSetShape('rect')">▭ 方形</button>
+            <button class="btn btn-sm btn-ghost" id="ie-shape-circle" onclick="ieSetShape('circle')">◯ 圓形</button>
+          </div>
+        </div>
         <div class="row" style="margin-bottom:6px">
           <button class="btn btn-ghost btn-full btn-sm" id="ie-region-blur-btn" onclick="ieRegionMode('blur')">〰 高斯模糊</button>
           <button class="btn btn-ghost btn-full btn-sm" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')">⊞ 馬賽克</button>
@@ -695,6 +762,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div style="flex:1"></div>
     <button class="btn btn-ghost btn-sm" onclick="desel(true)">取消選取</button>
   </div>
+  <div id="pages-bar" style="background:#fff;border-bottom:1px solid var(--g200);padding:6px 12px;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0">
+    <div id="pages-list" style="display:flex;gap:6px;align-items:center"></div>
+    <button class="btn btn-ghost btn-sm" onclick="addPage()">＋ 頁</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportPDF()">⬇ PDF</button>
+  </div>
   <div id="cscroll" onclick="handleBgClick(event)">
     <div id="pw">
       <canvas id="bgc"></canvas>
@@ -704,14 +776,24 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
   <!-- IMAGE EDITOR VIEW -->
   <div id="ie-area" style="display:none">
-    <div class="ie-canvas-wrap">
-      <canvas id="ie-canvas"></canvas>
-      <canvas id="ie-overlay"></canvas>
+    <div id="ie-zoom-bar" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border-bottom:1px solid var(--g200);width:100%;flex-shrink:0;box-sizing:border-box">
+      <button class="btn btn-ghost btn-sm" onclick="ieZm(-1)">−</button>
+      <span style="font-size:12px;color:var(--g500);min-width:40px;text-align:center" id="ie-zlbl">100%</span>
+      <button class="btn btn-ghost btn-sm" onclick="ieZm(1)">＋</button>
+      <div style="width:1px;height:16px;background:var(--g200);margin:0 2px"></div>
+      <button class="btn btn-ghost btn-sm" onclick="ieZmFit()">最適</button>
+      <button class="btn btn-ghost btn-sm" onclick="ieZm100()">100%</button>
     </div>
-    <div id="ie-size-lbl"></div>
-    <div id="ie-upload-hint">
-      <div style="font-size:48px;margin-bottom:12px">🖼</div>
-      <div>請從左側上傳圖片以開始編輯</div>
+    <div style="flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px;background:var(--g200);">
+      <div class="ie-canvas-wrap" id="ie-canvas-wrap">
+        <canvas id="ie-canvas"></canvas>
+        <canvas id="ie-overlay"></canvas>
+      </div>
+      <div id="ie-size-lbl"></div>
+      <div id="ie-upload-hint">
+        <div style="font-size:48px;margin-bottom:12px">🖼</div>
+        <div>請從左側上傳圖片以開始編輯</div>
+      </div>
     </div>
   </div>
 </div>
@@ -768,6 +850,22 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div style="display:flex;gap:8px">
       <button class="btn btn-blue btn-full" id="zip-confirm-btn" onclick="confirmZipDl()">⬇ 確認打包下載</button>
       <button class="btn btn-ghost" onclick="closeZipModal()" id="zip-cancel-btn">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABLE IMPORT MODAL -->
+<div id="table-modal">
+  <div class="table-modal-box">
+    <div class="modal-head">
+      <h3>匯入表格</h3>
+      <button class="modal-close" onclick="closeTableModal()">✕</button>
+    </div>
+    <div class="table-preview" id="table-preview-area"></div>
+    <div class="tbl-style-btns" id="tbl-style-btns"></div>
+    <div class="modal-btns">
+      <button class="btn btn-blue btn-full" onclick="confirmImportTable()">匯入到畫布</button>
+      <button class="btn btn-ghost" onclick="closeTableModal()">取消</button>
     </div>
   </div>
 </div>
@@ -843,6 +941,7 @@ const TEMPLATES = [
 const S = {
   W:794, H:1123, name:'A4 直式',
   bgColor:'#FFFFFF', bgImgEl:null,
+  bgScale:1, bgOffsetX:0, bgOffsetY:0, bgLocked:false,
   zoom:0.6,
   objs:[], selId:null, cnt:0,
   tab:'poster',
@@ -852,7 +951,11 @@ const S = {
   },
   prevIdx:0, prevCanvases:[],
   // Undo/Redo
-  history:[], future:[], _skipHistory:false, _arrowHistTimer:null
+  history:[], future:[], _skipHistory:false, _arrowHistTimer:null,
+  // Copy/Paste
+  _clipboard:null,
+  // Multi-page
+  pages:[], pageIdx:0,
 };
 
 // ═══════════════════════════════════════════════
@@ -935,6 +1038,91 @@ function dupObj(id){
   snack('已複製物件');
 }
 
+function pasteObj(){
+  if(!S._clipboard) return;
+  pushHistory();
+  const newId=mkId();
+  const obj={...S._clipboard, id:newId, x:S._clipboard.x+20, y:S._clipboard.y+20, imgEl:S._clipboard.imgEl};
+  S.objs.push(obj);
+  mkEl(newId);
+  selObj(newId);
+  updLayerList();
+  snack('已貼上物件');
+}
+
+function removeBackground(objId){
+  const obj=getObj(objId);
+  if(!obj||!obj.imgEl) return;
+  const srcImg=obj.imgEl;
+  const w=srcImg.naturalWidth||srcImg.width;
+  const h=srcImg.naturalHeight||srcImg.height;
+  const oc=document.createElement('canvas'); oc.width=w; oc.height=h;
+  const ctx=oc.getContext('2d');
+  ctx.drawImage(srcImg,0,0,w,h);
+  const id=ctx.getImageData(0,0,w,h),d=id.data;
+  // Sample edge pixels for background detection
+  const borderPx=Math.max(1,Math.min(5,Math.floor(Math.min(w,h)*0.02)));
+  const bgSamples=[];
+  for(let x=0;x<w;x++){
+    for(let b=0;b<borderPx;b++){
+      const ti=(b*w+x)*4; bgSamples.push([d[ti],d[ti+1],d[ti+2]]);
+      const bi=((h-1-b)*w+x)*4; bgSamples.push([d[bi],d[bi+1],d[bi+2]]);
+    }
+  }
+  for(let y=borderPx;y<h-borderPx;y++){
+    for(let b=0;b<borderPx;b++){
+      const li=(y*w+b)*4; bgSamples.push([d[li],d[li+1],d[li+2]]);
+      const ri=(y*w+(w-1-b))*4; bgSamples.push([d[ri],d[ri+1],d[ri+2]]);
+    }
+  }
+  // Compute mean
+  let mr=0,mg=0,mb=0;
+  bgSamples.forEach(s=>{mr+=s[0];mg+=s[1];mb+=s[2];});
+  mr/=bgSamples.length; mg/=bgSamples.length; mb/=bgSamples.length;
+  // Compute variance
+  let variance=0;
+  bgSamples.forEach(s=>{
+    const dr=s[0]-mr,dg=s[1]-mg,db=s[2]-mb;
+    variance+=(dr*dr+dg*dg+db*db)/3;
+  });
+  variance/=bgSamples.length;
+  if(variance>2500){
+    if(!confirm('背景較複雜，去背效果可能不佳，是否繼續?')) return;
+  }
+  // Adaptive threshold
+  const baseThresh=40;
+  const adaptThresh=baseThresh+Math.min(60,Math.sqrt(variance)*0.3);
+  // Remove background pixels
+  for(let i=0;i<d.length;i+=4){
+    const dr=d[i]-mr,dg=d[i+1]-mg,db=d[i+2]-mb;
+    const dist=Math.sqrt(dr*dr+dg*dg+db*db);
+    if(dist<adaptThresh) d[i+3]=0;
+  }
+  // 1px feathering: simple 3x3 blur on alpha channel only
+  const alphaOrig=new Uint8ClampedArray(d.length/4);
+  for(let i=0;i<d.length;i+=4) alphaOrig[i/4]=d[i+3];
+  for(let y=1;y<h-1;y++){
+    for(let x=1;x<w-1;x++){
+      let sum=0;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) sum+=alphaOrig[(y+dy)*w+(x+dx)];
+      d[(y*w+x)*4+3]=Math.round(sum/9);
+    }
+  }
+  ctx.putImageData(id,0,0);
+  const newImg=new Image();
+  newImg.onload=()=>{
+    obj.imgEl=newImg;
+    const el=document.getElementById('o'+objId);
+    if(el){
+      const im=el.querySelector('img');
+      if(im) im.src=newImg.src;
+    }
+    pushHistory();
+    snack('去背完成，已套用羽化');
+  };
+  newImg.src=oc.toDataURL('image/png');
+}
+
 // ═══════════════════════════════════════════════
 //  ZOOM
 // ═══════════════════════════════════════════════
@@ -978,7 +1166,7 @@ function renderBg(){
   ctx.fillStyle = S.bgColor;
   ctx.fillRect(0,0,dw,dh);
   if(S.bgImgEl){
-    ctx.drawImage(S.bgImgEl,0,0,dw,dh);
+    ctx.drawImage(S.bgImgEl, S.bgOffsetX*S.zoom, S.bgOffsetY*S.zoom, S.bgImgEl.naturalWidth*S.bgScale*S.zoom, S.bgImgEl.naturalHeight*S.bgScale*S.zoom);
   }
   scaleObjs();
   document.getElementById('sz-lbl').textContent = S.W+' × '+S.H+' px';
@@ -989,18 +1177,56 @@ function setBgC(color){
   renderBg();
 }
 
+function showBgImgControls(){
+  const ctrl = document.getElementById('bg-img-controls');
+  if(!ctrl) return;
+  if(S.bgImgEl){
+    ctrl.style.display='block';
+    const lockBtn = document.getElementById('bg-lock-btn');
+    if(lockBtn) lockBtn.textContent = S.bgLocked ? '🔒 解鎖底圖' : '🔓 鎖定底圖';
+    const scSlider = document.getElementById('bg-scale-slider');
+    if(scSlider){ scSlider.value=Math.round(S.bgScale*100); scSlider.disabled=S.bgLocked; }
+    const lbl = document.getElementById('bg-scale-lbl');
+    if(lbl) lbl.textContent=Math.round(S.bgScale*100)+'%';
+    const ox = document.getElementById('bg-offset-x');
+    if(ox){ ox.value=S.bgOffsetX; ox.disabled=S.bgLocked; }
+    const oy = document.getElementById('bg-offset-y');
+    if(oy){ oy.value=S.bgOffsetY; oy.disabled=S.bgLocked; }
+  } else {
+    ctrl.style.display='none';
+  }
+}
+
+function bgFitCanvas(){
+  if(!S.bgImgEl||S.bgLocked) return;
+  const scaleW = S.W / S.bgImgEl.naturalWidth;
+  const scaleH = S.H / S.bgImgEl.naturalHeight;
+  S.bgScale = Math.min(scaleW, scaleH);
+  S.bgOffsetX = 0; S.bgOffsetY = 0;
+  showBgImgControls();
+  renderBg();
+}
+
+function toggleBgLock(){
+  S.bgLocked = !S.bgLocked;
+  showBgImgControls();
+  snack(S.bgLocked ? '底圖已鎖定' : '底圖已解鎖');
+}
+
 function addBgImg(inp){
   const file = inp.files[0];
   if(!file) return;
   const url = URL.createObjectURL(file);
   const img = new Image();
-  img.onload = ()=>{ S.bgImgEl = img; renderBg(); snack('底圖已載入'); };
+  img.onload = ()=>{ S.bgImgEl = img; showBgImgControls(); renderBg(); snack('底圖已載入'); };
   img.src = url;
   inp.value = '';
 }
 
 function clearBgImg(){
   S.bgImgEl = null;
+  S.bgScale = 1; S.bgOffsetX = 0; S.bgOffsetY = 0; S.bgLocked = false;
+  showBgImgControls();
   renderBg();
   snack('底圖已清除');
 }
@@ -1382,6 +1608,7 @@ function renderPPHTML(obj){
     <span id="pp-op-lbl" style="font-size:11px;color:var(--g500);min-width:34px">${Math.round(obj.opacity*100)}%</span>
   </div>
   ${isT?renderTxtPP(obj):''}
+  ${!isT?`<div class="pp-row" style="margin-top:6px"><button class="btn btn-teal btn-full btn-sm" onclick="removeBackground(${obj.id})">✂ 一鍵去背</button></div>`:''}
   <div class="pp-row" style="margin-top:6px">
     <button class="btn btn-red btn-full btn-sm" onclick="rmObj(${obj.id})">刪除物件</button>
   </div>`;
@@ -1491,7 +1718,7 @@ async function dlPoster(){
   // background
   ctx.fillStyle = S.bgColor;
   ctx.fillRect(0,0,S.W,S.H);
-  if(S.bgImgEl) ctx.drawImage(S.bgImgEl,0,0,S.W,S.H);
+  if(S.bgImgEl) ctx.drawImage(S.bgImgEl, S.bgOffsetX, S.bgOffsetY, S.bgImgEl.naturalWidth*S.bgScale, S.bgImgEl.naturalHeight*S.bgScale);
 
   // objects
   for(const obj of S.objs){
@@ -1878,6 +2105,155 @@ async function confirmZipDl(){
 }
 
 // ═══════════════════════════════════════════════
+//  MULTI-PAGE
+// ═══════════════════════════════════════════════
+function getCurrentPageData(){
+  return {
+    W:S.W, H:S.H, name:S.name, bgColor:S.bgColor, bgImgEl:S.bgImgEl,
+    bgScale:S.bgScale, bgOffsetX:S.bgOffsetX, bgOffsetY:S.bgOffsetY, bgLocked:S.bgLocked,
+    objs:S.objs.map(o=>({...o})), selId:S.selId
+  };
+}
+
+function saveCurrentPage(){
+  S.pages[S.pageIdx]=getCurrentPageData();
+}
+
+function loadPage(idx){
+  const pg=S.pages[idx];
+  if(!pg) return;
+  S.pageIdx=idx;
+  document.getElementById('ol').innerHTML='';
+  S.objs=[]; S.selId=null;
+  document.getElementById('pp').style.display='none';
+  S.W=pg.W; S.H=pg.H; S.name=pg.name||'';
+  S.bgColor=pg.bgColor||'#FFFFFF';
+  S.bgImgEl=pg.bgImgEl||null;
+  S.bgScale=pg.bgScale||1; S.bgOffsetX=pg.bgOffsetX||0; S.bgOffsetY=pg.bgOffsetY||0; S.bgLocked=pg.bgLocked||false;
+  document.getElementById('bgColorInp').value=S.bgColor;
+  document.getElementById('bgColorHex').value=S.bgColor;
+  document.getElementById('inW').value=S.W;
+  document.getElementById('inH').value=S.H;
+  S._skipHistory=true;
+  pg.objs.forEach(o=>{
+    const obj={...o};
+    S.objs.push(obj);
+    mkEl(obj.id);
+  });
+  S._skipHistory=false;
+  showBgImgControls();
+  renderBg();
+  updLayerList();
+  renderPagesBar();
+}
+
+function addPage(){
+  saveCurrentPage();
+  const newPg={
+    W:S.W, H:S.H, name:'第'+(S.pages.length+1)+'頁',
+    bgColor:'#FFFFFF', bgImgEl:null,
+    bgScale:1, bgOffsetX:0, bgOffsetY:0, bgLocked:false,
+    objs:[], selId:null
+  };
+  S.pages.push(newPg);
+  S.pageIdx=S.pages.length-1;
+  loadPage(S.pageIdx);
+}
+
+function deletePage(idx){
+  if(S.pages.length<=1){ snack('至少需要一頁'); return; }
+  if(!confirm(`刪除第 ${idx+1} 頁？`)) return;
+  S.pages.splice(idx,1);
+  S.pageIdx=Math.min(S.pageIdx,S.pages.length-1);
+  loadPage(S.pageIdx);
+}
+
+function renderPagesBar(){
+  const list=document.getElementById('pages-list');
+  if(!list) return;
+  list.innerHTML='';
+  S.pages.forEach((pg,i)=>{
+    const thumb=document.createElement('div');
+    thumb.className='page-thumb'+(i===S.pageIdx?' active':'');
+    thumb.title=(pg.name||`第${i+1}頁`);
+    // mini canvas preview
+    const mc=document.createElement('canvas');
+    mc.width=36; mc.height=46;
+    const mctx=mc.getContext('2d');
+    mctx.fillStyle=pg.bgColor||'#FFFFFF';
+    mctx.fillRect(0,0,36,46);
+    if(pg.bgImgEl){
+      const sc=Math.min(36/(pg.bgImgEl.naturalWidth*pg.bgScale||1),46/(pg.bgImgEl.naturalHeight*pg.bgScale||1));
+      try{ mctx.drawImage(pg.bgImgEl,0,0,36,46); }catch(e){}
+    }
+    mc.style.cssText='width:36px;height:46px;display:block;';
+    thumb.appendChild(mc);
+    const lbl=document.createElement('div');
+    lbl.className='page-thumb-label';
+    lbl.textContent=String(i+1);
+    thumb.appendChild(lbl);
+    thumb.onclick=()=>{ saveCurrentPage(); loadPage(i); };
+    thumb.ondblclick=(e)=>{ e.stopPropagation(); deletePage(i); };
+    list.appendChild(thumb);
+  });
+}
+
+async function exportPDF(){
+  if(typeof window.jspdf==='undefined'&&typeof jsPDF==='undefined'){
+    snack('jsPDF 尚未載入，請稍後再試'); return;
+  }
+  saveCurrentPage();
+  snack('PDF 匯出中…',10000);
+  const jsPDFCtor=window.jspdf?window.jspdf.jsPDF:jsPDF;
+  const firstPg=S.pages[0];
+  const pdfW=firstPg.W/3.7795; // px to mm (96dpi)
+  const pdfH=firstPg.H/3.7795;
+  const doc=new jsPDFCtor({orientation:pdfW>pdfH?'landscape':'portrait',unit:'mm',format:[pdfW,pdfH]});
+  for(let pi=0;pi<S.pages.length;pi++){
+    if(pi>0) doc.addPage([pdfW,pdfH], pdfW>pdfH?'landscape':'portrait');
+    const pg=S.pages[pi];
+    // Render this page to a canvas at 2x
+    const sc=2;
+    const cvs=document.createElement('canvas');
+    cvs.width=pg.W*sc; cvs.height=pg.H*sc;
+    const ctx=cvs.getContext('2d');
+    ctx.scale(sc,sc);
+    ctx.fillStyle=pg.bgColor||'#FFFFFF';
+    ctx.fillRect(0,0,pg.W,pg.H);
+    if(pg.bgImgEl){
+      try{ ctx.drawImage(pg.bgImgEl,pg.bgOffsetX||0,pg.bgOffsetY||0,pg.bgImgEl.naturalWidth*(pg.bgScale||1),pg.bgImgEl.naturalHeight*(pg.bgScale||1)); }catch(e){}
+    }
+    for(const obj of pg.objs){
+      ctx.save();
+      ctx.globalAlpha=obj.opacity||1;
+      const cx=obj.x+obj.w/2, cy=obj.y+obj.h/2;
+      ctx.translate(cx,cy);
+      ctx.rotate((obj.rot||0)*Math.PI/180);
+      if(obj.type==='img'&&obj.imgEl){
+        try{ ctx.drawImage(obj.imgEl,-obj.w/2,-obj.h/2,obj.w,obj.h); }catch(e){}
+      } else if(obj.type==='txt'){
+        await document.fonts.ready;
+        const ff=obj.fontFamily||'Noto Sans TC';
+        const stack=ff==='Noto Serif TC'?`'Noto Serif TC',serif`:`'Noto Sans TC',sans-serif`;
+        ctx.font=`${obj.weight} ${obj.size}px ${stack}`;
+        ctx.fillStyle=obj.color;
+        ctx.textBaseline='top';
+        ctx.textAlign=obj.align||'left';
+        const lines=(obj.text||'').split('\n');
+        const ax=obj.align==='center'?0:obj.align==='right'?obj.w/2:-obj.w/2;
+        lines.forEach((line,i)=>ctx.fillText(line,ax,-obj.h/2+i*obj.size*1.4));
+      }
+      ctx.restore();
+    }
+    const imgData=cvs.toDataURL('image/jpeg',0.9);
+    const pgW=pg.W/3.7795, pgH=pg.H/3.7795;
+    doc.addImage(imgData,'JPEG',0,0,pgW,pgH);
+  }
+  doc.save('光田醫院_海報.pdf');
+  snack('PDF 已下載！');
+}
+
+// ═══════════════════════════════════════════════
 //  TAB SWITCH
 // ═══════════════════════════════════════════════
 function switchTab(tab, btn){
@@ -1893,6 +2269,7 @@ function switchTab(tab, btn){
   const catop=document.querySelector('.catop');
   const cscroll=document.getElementById('cscroll');
   const ieArea=document.getElementById('ie-area');
+  const pagesBar=document.getElementById('pages-bar');
   if(tab==='poster'){
     dlBtn.textContent='⬇ 下載海報 PNG';
     wmpBtn.style.display='none';
@@ -1901,6 +2278,7 @@ function switchTab(tab, btn){
     catop.style.display='';
     cscroll.style.display='';
     ieArea.style.display='none';
+    if(pagesBar) pagesBar.style.display='';
   } else if(tab==='wm'){
     dlBtn.textContent='⬇ 批次壓 LOGO 下載';
     wmpBtn.style.display='block';
@@ -1909,6 +2287,7 @@ function switchTab(tab, btn){
     catop.style.display='';
     cscroll.style.display='';
     ieArea.style.display='none';
+    if(pagesBar) pagesBar.style.display='';
   } else if(tab==='ie'){
     dlBar.style.display='none';
     wmpBtn.style.display='none';
@@ -1916,6 +2295,7 @@ function switchTab(tab, btn){
     catop.style.display='none';
     cscroll.style.display='none';
     ieArea.style.display='flex';
+    if(pagesBar) pagesBar.style.display='none';
   }
 }
 
@@ -1947,6 +2327,20 @@ document.addEventListener('keydown', e=>{
   if(((e.metaKey||e.ctrlKey) && e.key==='z' && e.shiftKey) ||
      ((e.ctrlKey) && e.key==='y')){
     e.preventDefault(); redo(); return;
+  }
+  // Copy Ctrl/Cmd+C
+  if((e.metaKey||e.ctrlKey) && e.key==='c' && S.selId){
+    e.preventDefault();
+    const src=getObj(S.selId);
+    if(src) S._clipboard={...src, imgEl: src.imgEl};
+    snack('已複製');
+    return;
+  }
+  // Paste Ctrl/Cmd+V
+  if((e.metaKey||e.ctrlKey) && e.key==='v'){
+    e.preventDefault();
+    if(S._clipboard) pasteObj();
+    return;
   }
   // Duplicate Ctrl/Cmd+D
   if((e.metaKey||e.ctrlKey) && e.key==='d' && S.selId){
@@ -2173,6 +2567,7 @@ function applyTemplate(id){
 
   S.W=tpl.w; S.H=tpl.h; S.name=tpl.name;
   S.bgColor=tpl.bg;
+  S.bgScale=1; S.bgOffsetX=0; S.bgOffsetY=0; S.bgLocked=false;
   document.getElementById('bgColorInp').value=tpl.bg;
   document.getElementById('inW').value=tpl.w;
   document.getElementById('inH').value=tpl.h;
@@ -2181,10 +2576,11 @@ function applyTemplate(id){
   // 還原背景圖
   if(tpl.bgImgDataUrl){
     const bgImg=new Image();
-    bgImg.onload=()=>{ S.bgImgEl=bgImg; renderBg(); };
+    bgImg.onload=()=>{ S.bgImgEl=bgImg; showBgImgControls(); renderBg(); };
     bgImg.src=tpl.bgImgDataUrl;
   } else {
     S.bgImgEl=null;
+    showBgImgControls();
   }
 
   // 還原物件
@@ -2271,6 +2667,7 @@ async function restoreAutoSave(data){
   document.getElementById('pp').style.display='none';
   S.W=data.W; S.H=data.H; S.name=data.name||'';
   S.bgColor=data.bgColor||'#FFFFFF';
+  S.bgScale=data.bgScale||1; S.bgOffsetX=data.bgOffsetX||0; S.bgOffsetY=data.bgOffsetY||0; S.bgLocked=data.bgLocked||false;
   document.getElementById('bgColorInp').value=S.bgColor;
   document.getElementById('bgColorHex').value=S.bgColor;
   document.getElementById('inW').value=S.W;
@@ -2278,10 +2675,11 @@ async function restoreAutoSave(data){
   document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
   if(data.bgImgDataUrl){
     const bgImg=new Image();
-    bgImg.onload=()=>{S.bgImgEl=bgImg;renderBg();};
+    bgImg.onload=()=>{S.bgImgEl=bgImg;showBgImgControls();renderBg();};
     bgImg.src=data.bgImgDataUrl;
   } else {
     S.bgImgEl=null;
+    showBgImgControls();
   }
   S._skipHistory=true;
   const promises=[];
@@ -2309,6 +2707,145 @@ async function restoreAutoSave(data){
 }
 
 // ═══════════════════════════════════════════════
+//  TABLE IMPORT
+// ═══════════════════════════════════════════════
+const TABLE_STYLES = [
+  { name:'醫療藍', headerBg:'#005BAC', headerColor:'#FFFFFF', rowBg:'#EBF4FF', altBg:'#FFFFFF', borderColor:'#CBD5E1', textColor:'#1E293B', fontSize:14 },
+  { name:'清爽綠', headerBg:'#00A99D', headerColor:'#FFFFFF', rowBg:'#E0F5F4', altBg:'#FFFFFF', borderColor:'#CBD5E1', textColor:'#1E293B', fontSize:14 },
+  { name:'深色專業', headerBg:'#1E293B', headerColor:'#FFFFFF', rowBg:'#334155', altBg:'#475569', borderColor:'#64748B', textColor:'#FFFFFF', fontSize:14 },
+  { name:'暖色溫馨', headerBg:'#C8A04A', headerColor:'#FFFFFF', rowBg:'#FEF9EE', altBg:'#FFFFFF', borderColor:'#E2C97E', textColor:'#1E293B', fontSize:14 },
+  { name:'簡約白', headerBg:'#F1F5F9', headerColor:'#1E293B', rowBg:'#FFFFFF', altBg:'#F8FAFC', borderColor:'#E2E8F0', textColor:'#1E293B', fontSize:14 },
+];
+
+let _tableData = [];
+let _selectedTableStyle = 0;
+
+function importExcel(inp){
+  const file=inp.files[0]; if(!file) return;
+  inp.value='';
+  if(typeof XLSX==='undefined'){ snack('XLSX 尚未載入，請稍後再試'); return; }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      _tableData=data.filter(r=>r.some(c=>String(c).trim()!==''));
+      showTableModal();
+    } catch(err){ snack('Excel 解析失敗：'+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function importWord(inp){
+  const file=inp.files[0]; if(!file) return;
+  inp.value='';
+  if(typeof mammoth==='undefined'){ snack('mammoth 尚未載入，請稍後再試'); return; }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    mammoth.convertToHtml({arrayBuffer:e.target.result}).then(result=>{
+      const html=result.value;
+      const div=document.createElement('div'); div.innerHTML=html;
+      const table=div.querySelector('table');
+      if(!table){ snack('Word 檔案中未找到表格'); return; }
+      const rows=Array.from(table.querySelectorAll('tr'));
+      _tableData=rows.map(tr=>Array.from(tr.querySelectorAll('td,th')).map(td=>td.textContent.trim()));
+      _tableData=_tableData.filter(r=>r.some(c=>c!==''));
+      showTableModal();
+    }).catch(err=>snack('Word 解析失敗：'+err.message));
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showTableModal(){
+  if(!_tableData.length){ snack('未找到表格資料'); return; }
+  // Render preview table
+  const prev=document.getElementById('table-preview-area');
+  let html='<table>';
+  _tableData.forEach((row,ri)=>{
+    html+=`<tr>`;
+    row.forEach(cell=>{
+      html+=ri===0?`<th>${cell}</th>`:`<td>${cell}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</table>';
+  prev.innerHTML=html;
+  // Render style buttons
+  const btns=document.getElementById('tbl-style-btns');
+  btns.innerHTML='';
+  TABLE_STYLES.forEach((st,i)=>{
+    const b=document.createElement('button');
+    b.className='btn btn-sm '+(i===_selectedTableStyle?'btn-blue':'btn-ghost');
+    b.textContent=st.name;
+    b.onclick=()=>{ _selectedTableStyle=i; showTableModal(); };
+    btns.appendChild(b);
+  });
+  document.getElementById('table-modal').classList.add('open');
+}
+
+function closeTableModal(){
+  document.getElementById('table-modal').classList.remove('open');
+}
+
+function renderTableToCanvas(data, style){
+  const padding=12;
+  const colWidth=120;
+  const rowH=style.fontSize*2.2+8;
+  const cols=Math.max(...data.map(r=>r.length));
+  const rows=data.length;
+  const w=cols*colWidth+padding*2;
+  const h=rows*rowH+padding*2;
+  const cvs=document.createElement('canvas'); cvs.width=w; cvs.height=h;
+  const ctx=cvs.getContext('2d');
+  ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,w,h);
+  data.forEach((row,ri)=>{
+    const y=padding+ri*rowH;
+    const isHeader=ri===0;
+    row.forEach((cell,ci)=>{
+      const x=padding+ci*colWidth;
+      ctx.fillStyle=isHeader?style.headerBg:(ri%2===0?style.rowBg:style.altBg);
+      ctx.fillRect(x,y,colWidth,rowH);
+      ctx.strokeStyle=style.borderColor; ctx.lineWidth=1;
+      ctx.strokeRect(x,y,colWidth,rowH);
+      ctx.fillStyle=isHeader?style.headerColor:style.textColor;
+      ctx.font=`${isHeader?'700':'400'} ${style.fontSize}px 'Noto Sans TC',sans-serif`;
+      ctx.textBaseline='middle'; ctx.textAlign='center';
+      // Clip text
+      ctx.save();
+      ctx.rect(x+2,y,colWidth-4,rowH);
+      ctx.clip();
+      ctx.fillText(String(cell),x+colWidth/2,y+rowH/2);
+      ctx.restore();
+    });
+  });
+  return cvs;
+}
+
+async function confirmImportTable(){
+  if(!_tableData.length) return;
+  const style=TABLE_STYLES[_selectedTableStyle];
+  const cvs=renderTableToCanvas(_tableData,style);
+  closeTableModal();
+  await document.fonts.ready;
+  const url=cvs.toDataURL('image/png');
+  const img=new Image();
+  img.onload=()=>{
+    pushHistory();
+    const id=mkId();
+    const ar=img.naturalHeight/img.naturalWidth;
+    const dw=Math.min(S.W*0.9,cvs.width);
+    const obj={id,type:'img',x:40,y:40,w:dw,h:dw*ar,rot:0,opacity:1,imgEl:img,aspectRatio:ar};
+    S.objs.push(obj);
+    mkEl(id);
+    selObj(id);
+    updLayerList();
+    snack('表格已匯入到畫布');
+  };
+  img.src=url;
+}
+
+// ═══════════════════════════════════════════════
 //  IMAGE EDITOR (IE)
 // ═══════════════════════════════════════════════
 const IE = {
@@ -2317,6 +2854,9 @@ const IE = {
   cropMode:false, _cropStart:null, _cropRect:null,
   regionMode:null, _regStart:null, _regRect:null,
   undoStack:[],
+  zoom:1,
+  regionShape:'rect',
+  batchImgs:[],
 };
 
 function ieC(){ return document.getElementById('ie-canvas'); }
@@ -2339,8 +2879,8 @@ function ieLoad(inp){
         const el=document.getElementById('ie-'+k);
         if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
       });
-      document.getElementById('ie-rotate').value=0;
-      document.getElementById('ie-rotate-lbl').textContent='0°';
+      const rotEl=document.getElementById('ie-rotate'); if(rotEl){rotEl.value=0;}
+      const rotLbl=document.getElementById('ie-rotate-lbl'); if(rotLbl){rotLbl.textContent='0°';}
       const dc=ieC(); dc.width=c.width; dc.height=c.height; dc.style.display='block';
       const oc=ieO(); oc.width=c.width; oc.height=c.height;
       document.getElementById('ie-resize-w').value=c.width;
@@ -2465,7 +3005,7 @@ function ieRotate(deg){
 
 function ieRotatePreview(inp){
   const deg=+inp.value;
-  document.getElementById('ie-rotate-lbl').textContent=deg+'°';
+  const rl=document.getElementById('ie-rotate-lbl'); if(rl) rl.textContent=deg+'°';
   if(!IE.origCanvas) return;
   const dc=ieC(),dctx=dc.getContext('2d');
   const rad=deg*Math.PI/180;
@@ -2483,7 +3023,8 @@ function ieRotatePreview(inp){
 }
 
 function ieRotateCommit(){
-  const deg=+document.getElementById('ie-rotate').value;
+  const rotEl=document.getElementById('ie-rotate');
+  const deg=rotEl?+rotEl.value:0;
   if(deg===0){snack('角度為 0°，無需套用');return;}
   iePushUndo();
   const rad=deg*Math.PI/180;
@@ -2495,8 +3036,8 @@ function ieRotateCommit(){
   ctx.translate(nw/2,nh/2);ctx.rotate(rad);
   ctx.drawImage(IE.origCanvas,-ow/2,-oh/2);
   IE.origCanvas=c;
-  document.getElementById('ie-rotate').value=0;
-  document.getElementById('ie-rotate-lbl').textContent='0°';
+  if(rotEl) rotEl.value=0;
+  const rotLbl=document.getElementById('ie-rotate-lbl'); if(rotLbl) rotLbl.textContent='0°';
   ieAfterDestructive();
 }
 
@@ -2606,8 +3147,25 @@ function ieApplyRegion(){
   const strength=+document.getElementById('ie-effect-strength').value;
   const ctx=IE.origCanvas.getContext('2d');
   const id=ctx.getImageData(x,y,w,h);
-  if(IE.regionMode==='blur') ieBoxBlur(id,Math.round(strength));
-  else ieMosaic(id,Math.max(2,Math.round(strength)));
+  if(IE.regionShape==='circle'){
+    // Apply effect only to pixels within the ellipse
+    const cx=w/2, cy=h/2, rx=w/2, ry=h/2;
+    const tmp=new ImageData(new Uint8ClampedArray(id.data),w,h);
+    if(IE.regionMode==='blur') ieBoxBlur(tmp,Math.round(strength));
+    else ieMosaic(tmp,Math.max(2,Math.round(strength)));
+    for(let py=0;py<h;py++){
+      for(let px=0;px<w;px++){
+        const dx=(px-cx)/rx, dy=(py-cy)/ry;
+        if(dx*dx+dy*dy<=1){
+          const i=(py*w+px)*4;
+          id.data[i]=tmp.data[i]; id.data[i+1]=tmp.data[i+1]; id.data[i+2]=tmp.data[i+2];
+        }
+      }
+    }
+  } else {
+    if(IE.regionMode==='blur') ieBoxBlur(id,Math.round(strength));
+    else ieMosaic(id,Math.max(2,Math.round(strength)));
+  }
   ctx.putImageData(id,x,y);
   ieRegionCancel();
   ieRedraw();
@@ -2702,6 +3260,125 @@ function ieDownload(fmt){
   a.href=url;a.download=`edited_${Date.now()}.${fmt==='jpeg'?'jpg':'png'}`;a.click();
 }
 
+function ieApplyZoom(){
+  const wrap=document.getElementById('ie-canvas-wrap');
+  if(wrap){
+    wrap.style.transform=`scale(${IE.zoom})`;
+    wrap.style.transformOrigin='top center';
+  }
+  const lbl=document.getElementById('ie-zlbl');
+  if(lbl) lbl.textContent=Math.round(IE.zoom*100)+'%';
+}
+
+function ieZm(dir){
+  IE.zoom=clamp(IE.zoom+dir*0.1,0.1,5);
+  ieApplyZoom();
+}
+
+function ieZmFit(){
+  const area=document.getElementById('ie-area');
+  if(!IE.origCanvas||!area) return;
+  const aw=area.clientWidth-48;
+  const ah=area.clientHeight-48;
+  IE.zoom=clamp(Math.min(aw/IE.origCanvas.width, ah/IE.origCanvas.height),0.1,5);
+  ieApplyZoom();
+}
+
+function ieZm100(){
+  IE.zoom=1;
+  ieApplyZoom();
+}
+
+function ieSetShape(shape){
+  IE.regionShape=shape;
+  document.getElementById('ie-shape-rect').className='btn btn-sm '+(shape==='rect'?'btn-blue':'btn-ghost');
+  document.getElementById('ie-shape-circle').className='btn btn-sm '+(shape==='circle'?'btn-blue':'btn-ghost');
+}
+
+// ── IE Batch Mode ──
+function ieBatchLoad(inp){
+  const files=Array.from(inp.files); if(!files.length) return;
+  inp.value='';
+  IE.batchImgs=[];
+  const list=document.getElementById('ie-batch-list');
+  const count=document.getElementById('ie-batch-count');
+  list.innerHTML='';
+  count.textContent='載入中…';
+  let loaded=0;
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+        c.getContext('2d').drawImage(img,0,0);
+        IE.batchImgs.push({canvas:c, name:f.name});
+        const thumb=document.createElement('img');
+        thumb.src=c.toDataURL('image/jpeg',0.5);
+        thumb.style.cssText='width:36px;height:36px;object-fit:cover;border-radius:3px;border:1px solid var(--g200)';
+        list.appendChild(thumb);
+        loaded++;
+        if(loaded===files.length){
+          count.textContent=`共 ${loaded} 張圖片`;
+          snack(`已載入 ${loaded} 張批次圖片`);
+        }
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function ieBatchApply(){
+  if(!IE.batchImgs.length){ snack('請先載入批次圖片'); return; }
+  IE.batchImgs.forEach(item=>{
+    const origTmp=IE.origCanvas;
+    IE.origCanvas=item.canvas;
+    const adjusted=ieApplyAdjust(item.canvas);
+    item.canvas=adjusted;
+    IE.origCanvas=origTmp;
+  });
+  snack(`已套用調整到 ${IE.batchImgs.length} 張圖片`);
+}
+
+function ieBatchToWM(){
+  if(!IE.batchImgs.length){ snack('請先載入批次圖片'); return; }
+  IE.batchImgs.forEach(item=>{
+    const url=item.canvas.toDataURL('image/jpeg',0.9);
+    const img=new Image();
+    img.src=url;
+    S.wm.imgs.push({url, name:item.name, imgEl:img});
+  });
+  renderWmQ();
+  // Switch to wm tab
+  const wmBtn=document.getElementById('ntab-wm');
+  if(wmBtn) switchTab('wm',wmBtn);
+  snack(`已導入 ${IE.batchImgs.length} 張到浮水印`);
+}
+
+function ieBatchToPoster(){
+  if(!IE.batchImgs.length){ snack('請先載入批次圖片'); return; }
+  pushHistory();
+  IE.batchImgs.forEach((item,i)=>{
+    const url=item.canvas.toDataURL('image/png');
+    const img=new Image();
+    img.onload=()=>{
+      const id=mkId();
+      const ar=img.naturalHeight/img.naturalWidth;
+      const dw=Math.min(200,S.W*0.3);
+      const obj={id,type:'img',x:40+i*20,y:40+i*20,w:dw,h:dw*ar,rot:0,opacity:1,imgEl:img,aspectRatio:ar};
+      S.objs.push(obj);
+      mkEl(id);
+      updLayerList();
+    };
+    img.src=url;
+  });
+  // Switch to poster tab
+  const posterBtn=document.getElementById('ntab-poster');
+  if(posterBtn) switchTab('poster',posterBtn);
+  snack(`已導入 ${IE.batchImgs.length} 張到海報編輯`);
+}
+
 function ieInitMouseEvents(){
   const ov=ieO();
   let dragging=false;
@@ -2735,9 +3412,20 @@ function ieInitMouseEvents(){
     ctx.clearRect(0,0,ov.width,ov.height);
     ctx.strokeStyle='rgba(37,99,235,.9)';ctx.lineWidth=2;
     ctx.setLineDash([5,3]);
-    ctx.strokeRect(x,y,w,h);
-    ctx.fillStyle='rgba(37,99,235,.12)';
-    ctx.fillRect(x,y,w,h);
+    if(!IE.cropMode && IE.regionShape==='circle'){
+      const cx=x+w/2, cy=y+h/2, rx=w/2, ry=h/2;
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      ctx.stroke();
+      ctx.fillStyle='rgba(37,99,235,.12)';
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      ctx.fill();
+    } else {
+      ctx.strokeRect(x,y,w,h);
+      ctx.fillStyle='rgba(37,99,235,.12)';
+      ctx.fillRect(x,y,w,h);
+    }
     if(IE.cropMode) IE._cropRect={x,y,w,h};
     else if(IE.regionMode) IE._regRect={x,y,w,h};
   });
@@ -2756,6 +3444,10 @@ window.addEventListener('load', ()=>{
   addLogoSlot();
   updUndoButtons();
   ieInitMouseEvents();
+  // Initialize pages after everything else
+  S.pages = [getCurrentPageData()];
+  S.pageIdx = 0;
+  renderPagesBar();
   checkAutoSave();
 });
 </script>
