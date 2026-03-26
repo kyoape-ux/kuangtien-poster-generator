@@ -369,6 +369,36 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   margin-bottom:14px;display:none;
 }
 .zip-progress-bar{height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .15s}
+
+/* ── NAV TABS COLORED PILLS ── */
+#ntab-poster{background:rgba(0,169,157,.45);color:rgba(255,255,255,.9)}
+#ntab-poster:hover,#ntab-poster.on{background:var(--teal);color:#fff}
+#ntab-wm{background:rgba(200,160,74,.45);color:rgba(255,255,255,.9)}
+#ntab-wm:hover,#ntab-wm.on{background:var(--gold);color:#fff}
+#ntab-ie{background:rgba(147,51,234,.45);color:rgba(255,255,255,.9)}
+#ntab-ie:hover,#ntab-ie.on{background:#9333EA;color:#fff}
+
+/* ── HEX COLOR INPUT ── */
+.hex-inp{
+  width:72px;padding:4px 6px;border:1.5px solid var(--g200);border-radius:6px;
+  background:var(--g50);color:var(--g800);font-size:11px;font-family:monospace;
+  outline:none;transition:border .15s;
+}
+.hex-inp:focus{border-color:var(--blue)}
+
+/* ── IMAGE EDITOR AREA ── */
+#ie-area{
+  flex:1;overflow:auto;flex-direction:column;align-items:center;
+  justify-content:flex-start;padding:24px;background:var(--g200);
+}
+.ie-canvas-wrap{position:relative;display:inline-block;line-height:0}
+#ie-canvas{display:none;max-width:100%;box-shadow:0 4px 32px rgba(0,0,0,.18)}
+#ie-overlay{
+  position:absolute;top:0;left:0;cursor:crosshair;display:none;
+  width:100%;height:100%;
+}
+#ie-upload-hint{font-size:14px;color:var(--g400);text-align:center;padding:60px 20px}
+#ie-size-lbl{font-size:11px;color:var(--g500);margin-top:8px;text-align:center}
 </style>
 </head>
 <body>
@@ -378,6 +408,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <div class="logo">🏥 光田醫院｜海報產生器</div>
   <button class="ntab on" onclick="switchTab('poster',this)" id="ntab-poster">海報編輯</button>
   <button class="ntab" onclick="switchTab('wm',this)" id="ntab-wm">批次浮水印</button>
+  <button class="ntab" onclick="switchTab('ie',this)" id="ntab-ie">圖片編輯</button>
   <div class="spacer"></div>
   <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed">↩ 復原</button>
   <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed">↪ 重做</button>
@@ -436,8 +467,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="sec">
       <div class="inp-row" style="margin-bottom:6px">
         <span class="inp-label">背景色</span>
-        <input type="color" id="bgColorInp" value="#FFFFFF" oninput="setBgC(this.value)">
-        <span style="font-size:11px;color:var(--g400);margin-left:4px">顏色</span>
+        <input type="color" id="bgColorInp" value="#FFFFFF" oninput="setBgC(this.value);document.getElementById('bgColorHex').value=this.value">
+        <input type="text" id="bgColorHex" class="hex-inp" value="#FFFFFF" maxlength="7" placeholder="#RRGGBB"
+          oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)){document.getElementById('bgColorInp').value=this.value;setBgC(this.value)}">
         <div style="flex:1"></div>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('bgImgInp').click()">上傳底圖</button>
         <input type="file" id="bgImgInp" accept="image/*" style="display:none" onchange="addBgImg(this)">
@@ -513,6 +545,126 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
   </div>
 
+  <!-- ═══ IMAGE EDITOR TAB ═══ -->
+  <div class="pg" id="pg-ie">
+
+    <div class="sec-title">上傳圖片</div>
+    <div class="sec">
+      <button class="btn btn-blue btn-full" onclick="document.getElementById('ie-file').click()">
+        ＋ 載入圖片
+      </button>
+      <input type="file" id="ie-file" accept="image/*" style="display:none" onchange="ieLoad(this)">
+    </div>
+
+    <div id="ie-controls" style="display:none">
+
+      <div class="sec-title">白平衡</div>
+      <div class="sec">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="ieAutoWB()">⚡ 自動白平衡</button>
+      </div>
+
+      <div class="sec-title">基礎調光調色</div>
+      <div class="sec">
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">亮度</span>
+          <input type="range" id="ie-brightness" min="-100" max="100" value="0" oninput="ieSlider('brightness',this)">
+          <span id="ie-brightness-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">對比</span>
+          <input type="range" id="ie-contrast" min="-100" max="100" value="0" oninput="ieSlider('contrast',this)">
+          <span id="ie-contrast-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">飽和度</span>
+          <input type="range" id="ie-saturation" min="-100" max="100" value="0" oninput="ieSlider('saturation',this)">
+          <span id="ie-saturation-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span>
+        </div>
+        <div class="inp-row">
+          <span class="inp-label">色相</span>
+          <input type="range" id="ie-hue" min="-180" max="180" value="0" oninput="ieSlider('hue',this)">
+          <span id="ie-hue-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0°</span>
+        </div>
+      </div>
+
+      <div class="sec-title">裁切</div>
+      <div class="sec">
+        <div class="row">
+          <button class="btn btn-ghost btn-full btn-sm" id="ie-crop-btn" onclick="ieCropToggle()">✂ 選取裁切區域</button>
+          <button class="btn btn-blue btn-sm" id="ie-crop-confirm" onclick="ieCropConfirm()" style="display:none">✓ 確認</button>
+          <button class="btn btn-ghost btn-sm" id="ie-crop-cancel" onclick="ieCropCancel()" style="display:none">✕</button>
+        </div>
+      </div>
+
+      <div class="sec-title">旋轉</div>
+      <div class="sec">
+        <div class="row" style="margin-bottom:6px">
+          <button class="btn btn-ghost btn-full btn-sm" onclick="ieRotate(-90)">↺ −90°</button>
+          <button class="btn btn-ghost btn-full btn-sm" onclick="ieRotate(90)">↻ ＋90°</button>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">微調</span>
+          <input type="range" id="ie-rotate" min="-45" max="45" value="0" oninput="ieRotatePreview(this)">
+          <span id="ie-rotate-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0°</span>
+        </div>
+        <button class="btn btn-ghost btn-full btn-sm" onclick="ieRotateCommit()">套用微調角度</button>
+      </div>
+
+      <div class="sec-title">調整尺寸</div>
+      <div class="sec">
+        <div class="inp-row" style="margin-bottom:5px">
+          <span class="inp-label">寬 W</span>
+          <input class="inp" type="number" id="ie-resize-w" value="" min="1" style="width:70px" oninput="ieResizeWChange()">
+          <span class="inp-unit">px</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:5px">
+          <span class="inp-label">高 H</span>
+          <input class="inp" type="number" id="ie-resize-h" value="" min="1" style="width:70px" oninput="ieResizeHChange()">
+          <span class="inp-unit">px</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <label style="font-size:11px;color:var(--g500);display:flex;gap:4px;align-items:center;cursor:pointer">
+            <input type="checkbox" id="ie-lock" checked>鎖定比例
+          </label>
+        </div>
+        <button class="btn btn-ghost btn-full btn-sm" onclick="ieResize()">套用尺寸</button>
+      </div>
+
+      <div class="sec-title">區域效果</div>
+      <div class="sec">
+        <div class="row" style="margin-bottom:6px">
+          <button class="btn btn-ghost btn-full btn-sm" id="ie-region-blur-btn" onclick="ieRegionMode('blur')">〰 高斯模糊</button>
+          <button class="btn btn-ghost btn-full btn-sm" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')">⊞ 馬賽克</button>
+        </div>
+        <div id="ie-region-controls" style="display:none">
+          <div class="inp-row" style="margin-bottom:6px">
+            <span class="inp-label">強度</span>
+            <input type="range" id="ie-effect-strength" min="1" max="30" value="10"
+              oninput="document.getElementById('ie-effect-lbl').textContent=this.value">
+            <span id="ie-effect-lbl" style="font-size:11px;color:var(--g500);min-width:28px">10</span>
+          </div>
+          <div class="row">
+            <button class="btn btn-blue btn-full btn-sm" onclick="ieApplyRegion()">✓ 套用</button>
+            <button class="btn btn-ghost btn-sm" onclick="ieRegionCancel()">✕ 取消</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-title">操作</div>
+      <div class="sec">
+        <div class="row" style="margin-bottom:6px">
+          <button class="btn btn-ghost btn-full btn-sm" onclick="ieUndo()">↩ 復原</button>
+          <button class="btn btn-ghost btn-full btn-sm" onclick="ieReset()">🔄 重置調整</button>
+        </div>
+        <div class="row">
+          <button class="btn btn-blue btn-full btn-sm" onclick="ieDownload('png')">⬇ PNG</button>
+          <button class="btn btn-ghost btn-full btn-sm" onclick="ieDownload('jpeg')">⬇ JPG</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /pg-ie -->
+
   </div><!-- /sb-scroll -->
 
   <!-- PROPERTIES PANEL -->
@@ -547,6 +699,19 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div id="pw">
       <canvas id="bgc"></canvas>
       <div id="ol"></div>
+    </div>
+  </div>
+
+  <!-- IMAGE EDITOR VIEW -->
+  <div id="ie-area" style="display:none">
+    <div class="ie-canvas-wrap">
+      <canvas id="ie-canvas"></canvas>
+      <canvas id="ie-overlay"></canvas>
+    </div>
+    <div id="ie-size-lbl"></div>
+    <div id="ie-upload-hint">
+      <div style="font-size:48px;margin-bottom:12px">🖼</div>
+      <div>請從左側上傳圖片以開始編輯</div>
     </div>
   </div>
 </div>
@@ -712,6 +877,7 @@ function pushHistory(){
   if(S.history.length > 50) S.history.shift();
   S.future = [];
   updUndoButtons();
+  scheduleAutoSave();
 }
 
 function applySnapshot(snap){
@@ -1073,7 +1239,6 @@ function attachDrag(el, obj){
 
   function onDown(e){
     e.stopPropagation();
-    if(e.target.classList.contains('tinner')) return;
     selObj(obj.id);
 
     sx=e.clientX; sy=e.clientY;
@@ -1234,7 +1399,10 @@ function renderTxtPP(obj){
   <div class="pp-row">
     <span class="pp-label">字色</span>
     <input type="color" id="pp-color" value="${obj.color}">
-    <span class="pp-label" style="margin-left:8px">大小</span>
+    <input type="text" id="pp-color-hex" class="hex-inp" value="${obj.color}" maxlength="7" style="width:66px">
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">大小</span>
     <input class="inp" type="number" id="pp-size" value="${obj.size}" style="width:55px">
     <span style="font-size:11px;color:var(--g400);margin-left:2px">px</span>
   </div>
@@ -1270,7 +1438,19 @@ function bindPPEvents(obj){
   bind('pp-op','opacity',v=>v/100);
   if(obj.type==='txt'){
     bind('pp-font','fontFamily');
-    bind('pp-color','color');
+    // color picker → also sync hex
+    const colorEl=document.getElementById('pp-color');
+    if(colorEl) colorEl.addEventListener('input',()=>{
+      upP(obj.id,'color',colorEl.value);
+      const h=document.getElementById('pp-color-hex');if(h)h.value=colorEl.value;
+    });
+    // hex text → also sync color picker
+    const hexEl=document.getElementById('pp-color-hex');
+    if(hexEl) hexEl.addEventListener('input',()=>{
+      if(!/^#[0-9A-Fa-f]{6}$/.test(hexEl.value)) return;
+      if(colorEl) colorEl.value=hexEl.value;
+      upP(obj.id,'color',hexEl.value);
+    });
     bind('pp-size','size',v=>Math.max(8,parseFloat(v)||12));
     bind('pp-weight','weight');
   }
@@ -1708,12 +1888,34 @@ function switchTab(tab, btn){
   document.getElementById('pg-'+tab).classList.add('on');
   const dlBtn=document.getElementById('dl-btn');
   const wmpBtn=document.getElementById('wm-preview-btn');
+  const dlBar=document.getElementById('dlbar');
+  const tplPanel=document.getElementById('tpl-panel');
+  const catop=document.querySelector('.catop');
+  const cscroll=document.getElementById('cscroll');
+  const ieArea=document.getElementById('ie-area');
   if(tab==='poster'){
     dlBtn.textContent='⬇ 下載海報 PNG';
     wmpBtn.style.display='none';
-  } else {
+    dlBar.style.display='';
+    tplPanel.style.display='';
+    catop.style.display='';
+    cscroll.style.display='';
+    ieArea.style.display='none';
+  } else if(tab==='wm'){
     dlBtn.textContent='⬇ 批次壓 LOGO 下載';
     wmpBtn.style.display='block';
+    dlBar.style.display='';
+    tplPanel.style.display='';
+    catop.style.display='';
+    cscroll.style.display='';
+    ieArea.style.display='none';
+  } else if(tab==='ie'){
+    dlBar.style.display='none';
+    wmpBtn.style.display='none';
+    tplPanel.style.display='none';
+    catop.style.display='none';
+    cscroll.style.display='none';
+    ieArea.style.display='flex';
   }
 }
 
@@ -2022,6 +2224,529 @@ function applyTemplate(id){
 }
 
 // ═══════════════════════════════════════════════
+//  AUTO-SAVE
+// ═══════════════════════════════════════════════
+const AUTOSAVE_KEY = 'kt_poster_autosave';
+let _autoSaveTimer = null;
+
+function scheduleAutoSave(){
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(doAutoSave, 3000);
+}
+
+function doAutoSave(){
+  if(!S.objs.length && !S.bgImgEl) return;
+  try{
+    const data = {
+      W:S.W, H:S.H, name:S.name,
+      bgColor:S.bgColor,
+      bgImgDataUrl: S.bgImgEl ? imgElToDataUrl(S.bgImgEl) : null,
+      objs: S.objs.map(o=>{
+        if(o.type==='img'&&o.imgEl) return{...o,imgEl:undefined,imgDataUrl:imgElToDataUrl(o.imgEl)};
+        return{...o,imgEl:undefined};
+      }),
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
+  } catch(e){}
+}
+
+async function checkAutoSave(){
+  try{
+    const raw = localStorage.getItem(AUTOSAVE_KEY);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    if(!data.objs||!data.objs.length) return;
+    const ago = Math.round((Date.now()-data.savedAt)/60000);
+    const label = ago<1?'剛剛':ago+'分鐘前';
+    if(confirm(`發現${label}的自動存檔（${data.objs.length} 個物件），是否還原？`)){
+      await restoreAutoSave(data);
+    }
+  } catch(e){}
+}
+
+async function restoreAutoSave(data){
+  document.getElementById('ol').innerHTML='';
+  S.objs=[]; S.selId=null;
+  document.getElementById('pp').style.display='none';
+  S.W=data.W; S.H=data.H; S.name=data.name||'';
+  S.bgColor=data.bgColor||'#FFFFFF';
+  document.getElementById('bgColorInp').value=S.bgColor;
+  document.getElementById('bgColorHex').value=S.bgColor;
+  document.getElementById('inW').value=S.W;
+  document.getElementById('inH').value=S.H;
+  document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
+  if(data.bgImgDataUrl){
+    const bgImg=new Image();
+    bgImg.onload=()=>{S.bgImgEl=bgImg;renderBg();};
+    bgImg.src=data.bgImgDataUrl;
+  } else {
+    S.bgImgEl=null;
+  }
+  S._skipHistory=true;
+  const promises=[];
+  data.objs.forEach(o=>{
+    const id=mkId();
+    if(o.type==='txt'){
+      S.objs.push({...o,id,imgEl:undefined});
+      mkEl(id);
+    } else if(o.type==='img'){
+      const obj={...o,id,imgEl:null,imgDataUrl:undefined};
+      S.objs.push(obj);
+      if(o.imgDataUrl){
+        promises.push(new Promise(res=>{
+          const img=new Image();
+          img.onload=()=>{obj.imgEl=img;obj.aspectRatio=img.naturalHeight/img.naturalWidth;mkEl(id);res();};
+          img.src=o.imgDataUrl;
+        }));
+      }
+    }
+  });
+  S._skipHistory=false;
+  const fin=()=>{renderBg();updLayerList();setTimeout(zfit,50);};
+  promises.length?Promise.all(promises).then(fin):fin();
+  snack('已還原自動存檔');
+}
+
+// ═══════════════════════════════════════════════
+//  IMAGE EDITOR (IE)
+// ═══════════════════════════════════════════════
+const IE = {
+  origCanvas: null,
+  brightness:0, contrast:0, saturation:0, hue:0,
+  cropMode:false, _cropStart:null, _cropRect:null,
+  regionMode:null, _regStart:null, _regRect:null,
+  undoStack:[],
+};
+
+function ieC(){ return document.getElementById('ie-canvas'); }
+function ieO(){ return document.getElementById('ie-overlay'); }
+
+function ieLoad(inp){
+  const file=inp.files[0]; if(!file) return;
+  inp.value='';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      c.width=img.naturalWidth; c.height=img.naturalHeight;
+      c.getContext('2d').drawImage(img,0,0);
+      IE.origCanvas=c;
+      IE.undoStack=[];
+      IE.brightness=0; IE.contrast=0; IE.saturation=0; IE.hue=0;
+      ['brightness','contrast','saturation','hue'].forEach(k=>{
+        const el=document.getElementById('ie-'+k);
+        if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
+      });
+      document.getElementById('ie-rotate').value=0;
+      document.getElementById('ie-rotate-lbl').textContent='0°';
+      const dc=ieC(); dc.width=c.width; dc.height=c.height; dc.style.display='block';
+      const oc=ieO(); oc.width=c.width; oc.height=c.height;
+      document.getElementById('ie-resize-w').value=c.width;
+      document.getElementById('ie-resize-h').value=c.height;
+      document.getElementById('ie-size-lbl').textContent=`${c.width} × ${c.height} px`;
+      document.getElementById('ie-controls').style.display='block';
+      document.getElementById('ie-upload-hint').style.display='none';
+      ieRedraw();
+      snack('圖片已載入');
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function ieRedraw(){
+  if(!IE.origCanvas) return;
+  const dc=ieC(), dctx=dc.getContext('2d');
+  const adj=ieApplyAdjust(IE.origCanvas);
+  dctx.clearRect(0,0,dc.width,dc.height);
+  dctx.drawImage(adj,0,0);
+}
+
+function ieApplyAdjust(srcCanvas){
+  const w=srcCanvas.width,h=srcCanvas.height;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(srcCanvas,0,0);
+  if(IE.brightness===0&&IE.contrast===0&&IE.saturation===0&&IE.hue===0) return c;
+  const id=ctx.getImageData(0,0,w,h),d=id.data;
+  const br=IE.brightness*2.55;
+  const co=IE.contrast;
+  const cf=co!==0?(259*(co+255))/(255*(259-co)):1;
+  const sa=IE.saturation/100;
+  const hu=IE.hue/360;
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i],g=d[i+1],b=d[i+2];
+    if(br!==0){r+=br;g+=br;b+=br;}
+    if(co!==0){r=cf*(r-128)+128;g=cf*(g-128)+128;b=cf*(b-128)+128;}
+    if(sa!==0||hu!==0){
+      const[hh,ss,ll]=ieRgbHsl(clamp(r,0,255),clamp(g,0,255),clamp(b,0,255));
+      const ns=clamp(sa>0?ss+(1-ss)*sa:ss+ss*sa,0,1);
+      const nh=(hh+hu+1)%1;
+      [r,g,b]=ieHslRgb(nh,ns,ll);
+    }
+    d[i]=clamp(Math.round(r),0,255);d[i+1]=clamp(Math.round(g),0,255);d[i+2]=clamp(Math.round(b),0,255);
+  }
+  ctx.putImageData(id,0,0);
+  return c;
+}
+
+function ieRgbHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+  let h,s,l=(mx+mn)/2;
+  if(mx===mn){h=s=0;}
+  else{
+    const d=mx-mn;
+    s=l>.5?d/(2-mx-mn):d/(mx+mn);
+    switch(mx){
+      case r:h=((g-b)/d+(g<b?6:0))/6;break;
+      case g:h=((b-r)/d+2)/6;break;
+      default:h=((r-g)/d+4)/6;
+    }
+  }
+  return[h,s,l];
+}
+
+function ieHslRgb(h,s,l){
+  if(s===0){const v=Math.round(l*255);return[v,v,v];}
+  const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;
+  const hue=(p,q,t)=>{
+    if(t<0)t+=1;if(t>1)t-=1;
+    if(t<1/6)return p+(q-p)*6*t;if(t<.5)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;
+  };
+  return[Math.round(hue(p,q,h+1/3)*255),Math.round(hue(p,q,h)*255),Math.round(hue(p,q,h-1/3)*255)];
+}
+
+function ieSlider(key,inp){
+  IE[key]=+inp.value;
+  const lbl=document.getElementById('ie-'+key+'-lbl');
+  if(lbl) lbl.textContent=key==='hue'?inp.value+'°':inp.value;
+  ieRedraw();
+}
+
+function ieAutoWB(){
+  if(!IE.origCanvas) return;
+  iePushUndo();
+  const w=IE.origCanvas.width,h=IE.origCanvas.height;
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(IE.origCanvas,0,0);
+  const id=ctx.getImageData(0,0,w,h),d=id.data;
+  let sr=0,sg=0,sb=0; const n=d.length/4;
+  for(let i=0;i<d.length;i+=4){sr+=d[i];sg+=d[i+1];sb+=d[i+2];}
+  const avg=(sr+sg+sb)/3/n;
+  const kr=avg/(sr/n),kg=avg/(sg/n),kb=avg/(sb/n);
+  for(let i=0;i<d.length;i+=4){
+    d[i]=clamp(Math.round(d[i]*kr),0,255);
+    d[i+1]=clamp(Math.round(d[i+1]*kg),0,255);
+    d[i+2]=clamp(Math.round(d[i+2]*kb),0,255);
+  }
+  ctx.putImageData(id,0,0);
+  IE.origCanvas=c;
+  ieRedraw();
+  snack('已套用自動白平衡');
+}
+
+function ieRotate(deg){
+  if(!IE.origCanvas) return;
+  iePushUndo();
+  const sw=IE.origCanvas.width,sh=IE.origCanvas.height;
+  const c=document.createElement('canvas');
+  c.width=Math.abs(deg)===90?sh:sw; c.height=Math.abs(deg)===90?sw:sh;
+  const ctx=c.getContext('2d');
+  ctx.translate(c.width/2,c.height/2);
+  ctx.rotate(deg*Math.PI/180);
+  ctx.drawImage(IE.origCanvas,-sw/2,-sh/2);
+  IE.origCanvas=c;
+  ieAfterDestructive();
+}
+
+function ieRotatePreview(inp){
+  const deg=+inp.value;
+  document.getElementById('ie-rotate-lbl').textContent=deg+'°';
+  if(!IE.origCanvas) return;
+  const dc=ieC(),dctx=dc.getContext('2d');
+  const rad=deg*Math.PI/180;
+  const ow=IE.origCanvas.width,oh=IE.origCanvas.height;
+  const nw=Math.ceil(Math.abs(ow*Math.cos(rad))+Math.abs(oh*Math.sin(rad)));
+  const nh=Math.ceil(Math.abs(ow*Math.sin(rad))+Math.abs(oh*Math.cos(rad)));
+  dc.width=nw; dc.height=nh;
+  dctx.clearRect(0,0,nw,nh);
+  dctx.save();
+  dctx.translate(nw/2,nh/2);
+  dctx.rotate(rad);
+  const adj=ieApplyAdjust(IE.origCanvas);
+  dctx.drawImage(adj,-ow/2,-oh/2);
+  dctx.restore();
+}
+
+function ieRotateCommit(){
+  const deg=+document.getElementById('ie-rotate').value;
+  if(deg===0){snack('角度為 0°，無需套用');return;}
+  iePushUndo();
+  const rad=deg*Math.PI/180;
+  const ow=IE.origCanvas.width,oh=IE.origCanvas.height;
+  const nw=Math.ceil(Math.abs(ow*Math.cos(rad))+Math.abs(oh*Math.sin(rad)));
+  const nh=Math.ceil(Math.abs(ow*Math.sin(rad))+Math.abs(oh*Math.cos(rad)));
+  const c=document.createElement('canvas');c.width=nw;c.height=nh;
+  const ctx=c.getContext('2d');
+  ctx.translate(nw/2,nh/2);ctx.rotate(rad);
+  ctx.drawImage(IE.origCanvas,-ow/2,-oh/2);
+  IE.origCanvas=c;
+  document.getElementById('ie-rotate').value=0;
+  document.getElementById('ie-rotate-lbl').textContent='0°';
+  ieAfterDestructive();
+}
+
+function ieAfterDestructive(){
+  const dc=ieC(),oc=ieO();
+  dc.width=IE.origCanvas.width; dc.height=IE.origCanvas.height;
+  oc.width=IE.origCanvas.width; oc.height=IE.origCanvas.height;
+  document.getElementById('ie-resize-w').value=IE.origCanvas.width;
+  document.getElementById('ie-resize-h').value=IE.origCanvas.height;
+  document.getElementById('ie-size-lbl').textContent=`${IE.origCanvas.width} × ${IE.origCanvas.height} px`;
+  ieRedraw();
+}
+
+function ieResize(){
+  if(!IE.origCanvas) return;
+  const w=+document.getElementById('ie-resize-w').value;
+  const h=+document.getElementById('ie-resize-h').value;
+  if(!w||!h||w<1||h<1){snack('請輸入有效尺寸');return;}
+  iePushUndo();
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  c.getContext('2d').drawImage(IE.origCanvas,0,0,w,h);
+  IE.origCanvas=c;
+  ieAfterDestructive();
+  snack(`已調整尺寸：${w} × ${h} px`);
+}
+
+function ieResizeWChange(){
+  if(!document.getElementById('ie-lock').checked||!IE.origCanvas) return;
+  const w=+document.getElementById('ie-resize-w').value;
+  if(!w) return;
+  document.getElementById('ie-resize-h').value=Math.round(w*IE.origCanvas.height/IE.origCanvas.width);
+}
+
+function ieResizeHChange(){
+  if(!document.getElementById('ie-lock').checked||!IE.origCanvas) return;
+  const h=+document.getElementById('ie-resize-h').value;
+  if(!h) return;
+  document.getElementById('ie-resize-w').value=Math.round(h*IE.origCanvas.width/IE.origCanvas.height);
+}
+
+function ieCropToggle(){
+  if(!IE.origCanvas) return;
+  IE.cropMode=true;
+  const ov=ieO(); ov.style.display='block';
+  document.getElementById('ie-crop-btn').style.display='none';
+  document.getElementById('ie-crop-confirm').style.display='';
+  document.getElementById('ie-crop-cancel').style.display='';
+  snack('請在圖片上拖曳選取裁切範圍');
+}
+
+function ieCropCancel(){
+  IE.cropMode=false; IE._cropRect=null;
+  ieClearOverlay();
+  ieO().style.display='none';
+  document.getElementById('ie-crop-btn').style.display='';
+  document.getElementById('ie-crop-confirm').style.display='none';
+  document.getElementById('ie-crop-cancel').style.display='none';
+}
+
+function ieCropConfirm(){
+  if(!IE._cropRect||!IE.origCanvas){snack('請先拖曳選取裁切範圍');return;}
+  const{x,y,w,h}=IE._cropRect;
+  if(w<2||h<2){snack('裁切範圍太小');return;}
+  iePushUndo();
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  c.getContext('2d').drawImage(IE.origCanvas,x,y,w,h,0,0,w,h);
+  IE.origCanvas=c;
+  ieCropCancel();
+  ieAfterDestructive();
+  snack('裁切完成');
+}
+
+function ieClearOverlay(){
+  const oc=ieO();
+  oc.getContext('2d').clearRect(0,0,oc.width,oc.height);
+}
+
+function ieRegionMode(effect){
+  if(!IE.origCanvas) return;
+  IE.regionMode=effect; IE._regRect=null;
+  ieClearOverlay();
+  ieO().style.display='block';
+  document.getElementById('ie-region-controls').style.display='block';
+  document.getElementById('ie-region-blur-btn').classList.toggle('btn-blue',effect==='blur');
+  document.getElementById('ie-region-blur-btn').classList.toggle('btn-ghost',effect!=='blur');
+  document.getElementById('ie-region-mosaic-btn').classList.toggle('btn-blue',effect==='mosaic');
+  document.getElementById('ie-region-mosaic-btn').classList.toggle('btn-ghost',effect!=='mosaic');
+  snack('請在圖片上拖曳選取區域');
+}
+
+function ieRegionCancel(){
+  IE.regionMode=null; IE._regRect=null;
+  ieClearOverlay();
+  ieO().style.display='none';
+  document.getElementById('ie-region-controls').style.display='none';
+  document.getElementById('ie-region-blur-btn').classList.remove('btn-blue');
+  document.getElementById('ie-region-blur-btn').classList.add('btn-ghost');
+  document.getElementById('ie-region-mosaic-btn').classList.remove('btn-blue');
+  document.getElementById('ie-region-mosaic-btn').classList.add('btn-ghost');
+}
+
+function ieApplyRegion(){
+  if(!IE._regRect||!IE.origCanvas||!IE.regionMode){snack('請先拖曳選取區域');return;}
+  const{x,y,w,h}=IE._regRect;
+  if(w<2||h<2){snack('選取範圍太小');return;}
+  iePushUndo();
+  const strength=+document.getElementById('ie-effect-strength').value;
+  const ctx=IE.origCanvas.getContext('2d');
+  const id=ctx.getImageData(x,y,w,h);
+  if(IE.regionMode==='blur') ieBoxBlur(id,Math.round(strength));
+  else ieMosaic(id,Math.max(2,Math.round(strength)));
+  ctx.putImageData(id,x,y);
+  ieRegionCancel();
+  ieRedraw();
+  snack('已套用區域效果');
+}
+
+function ieBoxBlur(imgData,radius){
+  const w=imgData.width,h=imgData.height,d=imgData.data;
+  const tmp=new Uint8ClampedArray(d);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      let r=0,g=0,b=0,cnt=0;
+      for(let dx=-radius;dx<=radius;dx++){
+        const nx=clamp(x+dx,0,w-1);
+        const idx=(y*w+nx)*4;
+        r+=tmp[idx];g+=tmp[idx+1];b+=tmp[idx+2];cnt++;
+      }
+      const i=(y*w+x)*4;
+      d[i]=r/cnt;d[i+1]=g/cnt;d[i+2]=b/cnt;
+    }
+  }
+  const tmp2=new Uint8ClampedArray(d);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      let r=0,g=0,b=0,cnt=0;
+      for(let dy=-radius;dy<=radius;dy++){
+        const ny=clamp(y+dy,0,h-1);
+        const idx=(ny*w+x)*4;
+        r+=tmp2[idx];g+=tmp2[idx+1];b+=tmp2[idx+2];cnt++;
+      }
+      const i=(y*w+x)*4;
+      d[i]=r/cnt;d[i+1]=g/cnt;d[i+2]=b/cnt;
+    }
+  }
+}
+
+function ieMosaic(imgData,size){
+  const w=imgData.width,h=imgData.height,d=imgData.data;
+  for(let y=0;y<h;y+=size){
+    for(let x=0;x<w;x+=size){
+      let r=0,g=0,b=0,cnt=0;
+      for(let dy=0;dy<size&&y+dy<h;dy++){
+        for(let dx=0;dx<size&&x+dx<w;dx++){
+          const idx=((y+dy)*w+(x+dx))*4;
+          r+=d[idx];g+=d[idx+1];b+=d[idx+2];cnt++;
+        }
+      }
+      r=Math.round(r/cnt);g=Math.round(g/cnt);b=Math.round(b/cnt);
+      for(let dy=0;dy<size&&y+dy<h;dy++){
+        for(let dx=0;dx<size&&x+dx<w;dx++){
+          const idx=((y+dy)*w+(x+dx))*4;
+          d[idx]=r;d[idx+1]=g;d[idx+2]=b;
+        }
+      }
+    }
+  }
+}
+
+function iePushUndo(){
+  IE.undoStack.push(IE.origCanvas.toDataURL());
+  if(IE.undoStack.length>10) IE.undoStack.shift();
+}
+
+function ieUndo(){
+  if(!IE.undoStack.length){snack('沒有可復原的步驟');return;}
+  const dataUrl=IE.undoStack.pop();
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+    c.getContext('2d').drawImage(img,0,0);
+    IE.origCanvas=c;
+    ieAfterDestructive();
+    snack('已復原');
+  };
+  img.src=dataUrl;
+}
+
+function ieReset(){
+  IE.brightness=0;IE.contrast=0;IE.saturation=0;IE.hue=0;
+  ['brightness','contrast','saturation','hue'].forEach(k=>{
+    const el=document.getElementById('ie-'+k);
+    if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
+  });
+  ieRedraw();
+  snack('調整已重置');
+}
+
+function ieDownload(fmt){
+  if(!IE.origCanvas){snack('請先載入圖片');return;}
+  const url=ieC().toDataURL(fmt==='jpeg'?'image/jpeg':'image/png',0.95);
+  const a=document.createElement('a');
+  a.href=url;a.download=`edited_${Date.now()}.${fmt==='jpeg'?'jpg':'png'}`;a.click();
+}
+
+function ieInitMouseEvents(){
+  const ov=ieO();
+  let dragging=false;
+
+  function getImgPos(e){
+    const dc=ieC();
+    const rect=dc.getBoundingClientRect();
+    const scaleX=dc.width/rect.width;
+    const scaleY=dc.height/rect.height;
+    return{
+      x:Math.round((e.clientX-rect.left)*scaleX),
+      y:Math.round((e.clientY-rect.top)*scaleY)
+    };
+  }
+
+  ov.addEventListener('mousedown',e=>{
+    dragging=true;
+    const p=getImgPos(e);
+    if(IE.cropMode) IE._cropStart={...p};
+    else if(IE.regionMode) IE._regStart={...p};
+  });
+
+  ov.addEventListener('mousemove',e=>{
+    if(!dragging) return;
+    const p=getImgPos(e);
+    const start=IE.cropMode?IE._cropStart:IE._regStart;
+    if(!start) return;
+    const x=Math.min(start.x,p.x),y=Math.min(start.y,p.y);
+    const w=Math.abs(p.x-start.x),h=Math.abs(p.y-start.y);
+    const ctx=ov.getContext('2d');
+    ctx.clearRect(0,0,ov.width,ov.height);
+    ctx.strokeStyle='rgba(37,99,235,.9)';ctx.lineWidth=2;
+    ctx.setLineDash([5,3]);
+    ctx.strokeRect(x,y,w,h);
+    ctx.fillStyle='rgba(37,99,235,.12)';
+    ctx.fillRect(x,y,w,h);
+    if(IE.cropMode) IE._cropRect={x,y,w,h};
+    else if(IE.regionMode) IE._regRect={x,y,w,h};
+  });
+
+  ov.addEventListener('mouseup',()=>{dragging=false;});
+  ov.addEventListener('mouseleave',()=>{dragging=false;});
+}
+
+// ═══════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('load', ()=>{
@@ -2030,6 +2755,8 @@ window.addEventListener('load', ()=>{
   setTimeout(zfit, 100);
   addLogoSlot();
   updUndoButtons();
+  ieInitMouseEvents();
+  checkAutoSave();
 });
 </script>
 </body>
