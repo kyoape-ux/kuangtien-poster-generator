@@ -3812,6 +3812,7 @@ function applyTemplate(id, force=false){
   // 還原背景圖
   if(tpl.bgImgDataUrl){
     const bgImg=new Image();
+    bgImg._srcDataUrl=tpl.bgImgDataUrl;
     bgImg.onload=()=>{ S.bgImgEl=bgImg; showBgImgControls(); renderBg(); };
     bgImg.src=tpl.bgImgDataUrl;
   } else {
@@ -4117,6 +4118,7 @@ async function restoreAutoSave(data){
   document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
   if(data.bgImgDataUrl){
     const bgImg=new Image();
+    bgImg._srcDataUrl=data.bgImgDataUrl;
     bgImg.onload=()=>{S.bgImgEl=bgImg;showBgImgControls();renderBg();};
     bgImg.src=data.bgImgDataUrl;
   } else {
