@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<!-- QR 改用 api.qrserver.com REST API，不依賴 CDN library -->
 <style>
 :root{
   --blue:#005BAC;--blue-l:#1A7DC4;--blue-d:#003F7A;
@@ -1097,27 +1097,6 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         </select>
       </div>
 
-      <!-- 角落樣式 -->
-      <div class="qr-sec-title" style="margin-top:10px">角落樣式</div>
-      <div style="font-size:10px;color:var(--g400);margin-bottom:4px">外框形狀</div>
-      <div class="qr-corner-grid">
-        <button class="qr-corner-btn on" id="qc-outer-square" onclick="qrSetCornerOuter('square')">⬛ 方形</button>
-        <button class="qr-corner-btn" id="qc-outer-round" onclick="qrSetCornerOuter('round')">🔵 圓形</button>
-      </div>
-      <div style="font-size:10px;color:var(--g400);margin:6px 0 4px">內框形狀</div>
-      <div class="qr-corner-grid">
-        <button class="qr-corner-btn on" id="qc-inner-square" onclick="qrSetCornerInner('square')">▪ 方形</button>
-        <button class="qr-corner-btn" id="qc-inner-round" onclick="qrSetCornerInner('round')">• 圓形</button>
-      </div>
-      <div class="inp-row" style="margin:8px 0 6px">
-        <span class="inp-label">角落色</span>
-        <input type="color" id="qr-corner-color" value="#000000" oninput="qrGenerate()" style="width:32px;height:24px;padding:0;border:1px solid var(--g200);border-radius:4px;cursor:pointer">
-      </div>
-      <div class="qr-sec-title">點陣樣式</div>
-      <div class="qr-corner-grid" style="margin-bottom:16px">
-        <button class="qr-corner-btn on" id="qd-square" onclick="qrSetDotStyle('square')">▪ 方形</button>
-        <button class="qr-corner-btn" id="qd-round" onclick="qrSetDotStyle('round')">• 圓形</button>
-      </div>
 
       <!-- 產生與下載 -->
       <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--g100);display:flex;flex-direction:column;gap:6px">
@@ -1133,8 +1112,15 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div id="qr-center" style="flex:1;display:flex;align-items:center;justify-content:center;background:#f0f2f5;overflow:auto;padding:24px">
       <div id="qr-preview-box" style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:14px">
         <div style="font-size:12px;font-weight:600;color:var(--g500);letter-spacing:.5px">QR 碼預覽</div>
-        <canvas id="qr-canvas" width="400" height="400" style="border-radius:8px;display:block"></canvas>
-        <div id="qr-info" style="font-size:11px;color:var(--g400);text-align:center"></div>
+        <div id="qr-preview-wrap" style="position:relative;min-width:300px;min-height:300px;display:flex;align-items:center;justify-content:center">
+          <img id="qr-preview-img" src="" alt="" style="border-radius:8px;display:none;max-width:500px;max-height:500px">
+          <div id="qr-placeholder" style="width:300px;height:300px;border:2px dashed var(--g200);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--g400);font-size:13px;gap:10px">
+            <div style="font-size:48px">⬛</div>
+            <div>點擊「產生 QR 碼預覽」</div>
+          </div>
+          <div id="qr-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.8);border-radius:12px;display:none;align-items:center;justify-content:center;font-size:13px;color:var(--g500)">產生中…</div>
+        </div>
+        <div id="qr-info" style="font-size:11px;color:var(--g400);text-align:center;min-height:16px"></div>
       </div>
     </div>
 
@@ -2290,9 +2276,12 @@ async function dlPoster(){
       ctx.textBaseline = 'top';
       ctx.textAlign = obj.align;
       const lines = obj.text.split('\n');
-      let ax = obj.align==='center'?0 : obj.align==='right'?obj.w/2 : -obj.w/2;
+      const ax = obj.align==='center'?0 : obj.align==='right'?obj.w/2 : -obj.w/2;
+      // CSS line-height:1.4 adds 0.2×size half-leading above first line;
+      // compensate here so canvas matches the DOM preview exactly
+      const halfLead = obj.size * 0.2;
       lines.forEach((line,i)=>{
-        ctx.fillText(line, ax, -obj.h/2 + i*obj.size*1.4);
+        ctx.fillText(line, ax, -obj.h/2 + halfLead + i*obj.size*1.4);
       });
     }
     ctx.restore();
@@ -2553,12 +2542,7 @@ function loadPresetLogo(lid, url, name){
 // ═══════════════════════════════════════════════
 //  QR CODE 產生器
 // ═══════════════════════════════════════════════
-const QR_STATE={
-  type:'url',
-  cornerOuter:'square',
-  cornerInner:'square',
-  dotStyle:'square'
-};
+const QR_STATE={ type:'url' };
 
 function qrSetType(t){
   QR_STATE.type=t;
@@ -2603,196 +2587,103 @@ function syncQrColor(which, val){
   qrGenerate();
 }
 
-function qrSetCornerOuter(style){
-  QR_STATE.cornerOuter=style;
-  document.getElementById('qc-outer-square').classList.toggle('on', style==='square');
-  document.getElementById('qc-outer-round').classList.toggle('on', style==='round');
-  qrGenerate();
-}
-function qrSetCornerInner(style){
-  QR_STATE.cornerInner=style;
-  document.getElementById('qc-inner-square').classList.toggle('on', style==='square');
-  document.getElementById('qc-inner-round').classList.toggle('on', style==='round');
-  qrGenerate();
-}
-function qrSetDotStyle(style){
-  QR_STATE.dotStyle=style;
-  document.getElementById('qd-square').classList.toggle('on', style==='square');
-  document.getElementById('qd-round').classList.toggle('on', style==='round');
-  qrGenerate();
-}
 
-let _qrTimer=null;
+// ── QR Code：使用 api.qrserver.com REST API ──
+let _qrLastUrl = null;
+let _qrTimer = null;
+
 function qrGenerate(){
   clearTimeout(_qrTimer);
-  _qrTimer=setTimeout(_qrDraw, 150);
+  _qrTimer = setTimeout(_qrDraw, 300);
+}
+
+function _qrBuildUrl(fmt){
+  const content = qrGetContent();
+  if(!content) return null;
+  const size    = parseInt(document.getElementById('qr-size').value)||400;
+  const fg      = (document.getElementById('qr-color').value||'#000000').replace('#','');
+  const bg      = (document.getElementById('qr-bg').value||'#ffffff').replace('#','');
+  const transp  = document.getElementById('qr-transparent').checked;
+  const ecl     = document.getElementById('qr-ecl').value||'H';
+  const margin  = parseInt(document.getElementById('qr-margin').value)||4;
+  // api.qrserver.com 參數說明：
+  //   size=WxH, data=URL encoded content, color=RRGGBB, bgcolor=RRGGBB,
+  //   ecc=L/M/Q/H, margin=N(px), format=png/svg
+  const base = 'https://api.qrserver.com/v1/create-qr-code/';
+  const params = new URLSearchParams({
+    size:    `${size}x${size}`,
+    data:    content,
+    color:   fg,
+    bgcolor: transp ? 'ffffff00' : bg,
+    ecc:     ecl,
+    margin:  margin,
+    format:  fmt||'png'
+  });
+  return `${base}?${params.toString()}`;
 }
 
 function _qrDraw(){
-  const content=qrGetContent();
-  const canvas=document.getElementById('qr-canvas');
-  const info=document.getElementById('qr-info');
-  if(!canvas) return;
+  const info    = document.getElementById('qr-info');
+  const img     = document.getElementById('qr-preview-img');
+  const holder  = document.getElementById('qr-placeholder');
+  const loading = document.getElementById('qr-loading');
+
+  const content = qrGetContent();
   if(!content){
-    const ctx=canvas.getContext('2d');
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    if(info) info.textContent='請輸入內容以產生 QR 碼';
+    if(info) info.textContent = '請輸入內容以產生 QR 碼';
     return;
   }
-  const size=parseInt(document.getElementById('qr-size').value)||320;
-  const fgColor=document.getElementById('qr-color').value||'#000000';
-  const bgColor=document.getElementById('qr-bg').value||'#ffffff';
-  const transparent=document.getElementById('qr-transparent').checked;
-  const ecl=document.getElementById('qr-ecl').value||'H';
-  const margin=parseInt(document.getElementById('qr-margin').value)||4;
-  const cornerColor=document.getElementById('qr-corner-color').value||fgColor;
 
-  // Update hex inputs
-  document.getElementById('qr-color-hex').value=fgColor;
-  document.getElementById('qr-bg-hex').value=bgColor;
-  document.getElementById('qr-transparent-lbl').textContent=transparent?'開':'關';
+  const size = parseInt(document.getElementById('qr-size').value)||400;
+  // Update hex display
+  const fg = document.getElementById('qr-color').value||'#000000';
+  const bg = document.getElementById('qr-bg').value||'#ffffff';
+  document.getElementById('qr-color-hex').value = fg;
+  document.getElementById('qr-bg-hex').value = bg;
+  const transp = document.getElementById('qr-transparent').checked;
+  document.getElementById('qr-transparent-lbl').textContent = transp?'開':'關';
 
-  canvas.width=size; canvas.height=size;
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,size,size);
+  const url = _qrBuildUrl('png');
+  _qrLastUrl = url;
 
-  QRCode.toCanvas(canvas, content, {
-    width: size,
-    margin: margin,
-    errorCorrectionLevel: ecl,
-    color:{
-      dark: fgColor,
-      light: transparent ? '#00000000' : bgColor
-    }
-  }, err=>{
-    if(err){ if(info) info.textContent='⚠ 內容過長，請縮短或提高容錯率'; return; }
-    // Apply corner + dot custom rendering
-    _qrApplyStyle(canvas, size, fgColor, bgColor, transparent, margin, cornerColor);
-    if(info) info.textContent=`${size}×${size}px｜${content.length} 字元`;
-  });
-}
+  // Show loading
+  if(loading){ loading.style.display='flex'; }
+  if(info) info.textContent = '產生中…';
 
-function _qrApplyStyle(canvas, size, fg, bg, transparent, margin, cornerColor){
-  // Re-read the raw QR data and redraw with custom styles
-  const ctx=canvas.getContext('2d');
-  const imgData=ctx.getImageData(0,0,size,size);
-  const data=imgData.data;
-  const fgR=parseInt(fg.slice(1,3),16), fgG=parseInt(fg.slice(3,5),16), fgB=parseInt(fg.slice(5,7),16);
-
-  // Detect module size by looking at first dark pixel run
-  let moduleSize=1;
-  const cy=Math.floor(size/2);
-  for(let x=0;x<size;x++){
-    const i=(cy*size+x)*4;
-    if(data[i]<128&&data[i+1]<128&&data[i+2]<128&&data[i+3]>200){
-      moduleSize=1;
-      // Find next light
-      for(let x2=x+1;x2<size;x2++){
-        const j=(cy*size+x2)*4;
-        if(data[j]>200||data[j+3]<50){ moduleSize=x2-x; break; }
-      }
-      break;
-    }
-  }
-
-  // Round dots if needed
-  if(QR_STATE.dotStyle==='round'||QR_STATE.cornerOuter==='round'||QR_STATE.cornerInner==='round'||cornerColor!==fg){
-    const ms=moduleSize;
-    const modules=Math.round(size/ms);
-    const cvs2=document.createElement('canvas'); cvs2.width=size; cvs2.height=size;
-    const ctx2=cvs2.getContext('2d');
-    if(!transparent){ ctx2.fillStyle=bg; ctx2.fillRect(0,0,size,size); }
-    // Build module matrix
-    const mat=[];
-    for(let r=0;r<modules;r++){
-      mat[r]=[];
-      for(let c=0;c<modules;c++){
-        const px=Math.floor(c*ms+ms/2), py=Math.floor(r*ms+ms/2);
-        const i=(py*size+px)*4;
-        mat[r][c]=(data[i]<128&&data[i+3]>200)?1:0;
-      }
-    }
-    // Identify the 3 corner finder positions
-    const fp=margin; // finder start in modules
-    const fp2=modules-margin-7; // bottom-left, top-right
-    function isCornerOuter(r,c){
-      return (r>=fp&&r<fp+7&&c>=fp&&c<fp+7)||
-             (r>=fp&&r<fp+7&&c>=fp2&&c<fp2+7)||
-             (r>=fp2&&r<fp2+7&&c>=fp&&c<fp+7);
-    }
-    function isCornerInner(r,c){
-      return (r>=fp+2&&r<fp+5&&c>=fp+2&&c<fp+5)||
-             (r>=fp+2&&r<fp+5&&c>=fp2+2&&c<fp2+5)||
-             (r>=fp2+2&&r<fp2+5&&c>=fp+2&&c<fp+5);
-    }
-    for(let r=0;r<modules;r++){
-      for(let c=0;c<modules;c++){
-        if(!mat[r][c]) continue;
-        const x=c*ms, y=r*ms;
-        const inOuter=isCornerOuter(r,c);
-        const inInner=isCornerInner(r,c);
-        const useRound=inInner?(QR_STATE.cornerInner==='round'):
-                       inOuter?(QR_STATE.cornerOuter==='round'):
-                       (QR_STATE.dotStyle==='round');
-        ctx2.fillStyle=(inOuter||inInner)?cornerColor:fg;
-        if(useRound){
-          const r2=ms*0.5;
-          ctx2.beginPath();
-          ctx2.arc(x+ms/2,y+ms/2,r2*0.85,0,Math.PI*2);
-          ctx2.fill();
-        } else {
-          const pad=ms*0.05;
-          ctx2.fillRect(x+pad,y+pad,ms-pad*2,ms-pad*2);
-        }
-      }
-    }
-    ctx.clearRect(0,0,size,size);
-    ctx.drawImage(cvs2,0,0);
-  }
-}
-
-function qrDownload(fmt){
-  const canvas=document.getElementById('qr-canvas');
-  if(!canvas) return;
-  const a=document.createElement('a');
-  if(fmt==='svg'){
-    const content=qrGetContent();
-    if(!content){ snack('請先輸入內容'); return; }
-    const size=parseInt(document.getElementById('qr-size').value)||320;
-    const ecl=document.getElementById('qr-ecl').value||'H';
-    const fg=document.getElementById('qr-color').value||'#000000';
-    const bg=document.getElementById('qr-bg').value||'#ffffff';
-    const margin=parseInt(document.getElementById('qr-margin').value)||4;
-    const transparent=document.getElementById('qr-transparent').checked;
-    QRCode.toString(content,{type:'svg',width:size,margin,errorCorrectionLevel:ecl,color:{dark:fg,light:transparent?'#00000000':bg}},(err,str)=>{
-      if(err){ snack('SVG 產生失敗'); return; }
-      const blob=new Blob([str],{type:'image/svg+xml'});
-      a.href=URL.createObjectURL(blob);
-      a.download='qrcode.svg'; a.click();
-    });
-  } else {
-    a.href=canvas.toDataURL('image/png');
-    a.download='qrcode.png'; a.click();
-  }
-  snack('✓ QR 碼已下載');
-}
-
-function qrAddToPoster(){
-  const canvas=document.getElementById('qr-canvas');
-  if(!canvas||canvas.width<10){ snack('請先產生 QR 碼'); return; }
-  const dataUrl=canvas.toDataURL('image/png');
-  const img=new Image();
-  img.onload=()=>{
-    const id=mkId();
-    const sz=Math.min(S.W*0.3,300);
-    const obj={id,type:'img',x:S.W-sz-30,y:S.H-sz-30,w:sz,h:sz,rot:0,opacity:1,imgEl:img,aspectRatio:1};
-    S.objs.push(obj); mkEl(id); selObj(id); updLayerList(); pushHistory();
-    const posterBtn=document.getElementById('ntab-poster');
-    if(posterBtn) switchTab('poster',posterBtn);
-    snack('✓ QR 碼已加入海報');
+  img.onload = ()=>{
+    if(holder) holder.style.display='none';
+    img.style.display='block';
+    if(loading) loading.style.display='none';
+    if(info) info.textContent = `${size}×${size}px｜${content.length} 字元`;
   };
-  img.src=dataUrl;
+  img.onerror = ()=>{
+    if(loading) loading.style.display='none';
+    if(info) info.textContent = '⚠ 產生失敗，請確認網路連線';
+  };
+  img.src = url;
 }
+
+async function qrDownload(fmt){
+  if(!_qrLastUrl){ snack('請先按「產生 QR 碼預覽」'); return; }
+  const url = _qrBuildUrl(fmt);
+  if(!url){ snack('請先輸入內容'); return; }
+  snack('下載中…');
+  try{
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('fetch failed');
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `qrcode.${fmt}`;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(blobUrl), 2000);
+    snack(`QR 碼 ${fmt.toUpperCase()} 已下載`);
+  } catch(e){
+    snack('下載失敗，請確認網路連線');
+  }
+}
+
 
 function compositeOne(baseImgEl){
   const cvs=document.createElement('canvas');
@@ -3120,7 +3011,9 @@ async function exportPDF(){
         ctx.textAlign=obj.align||'left';
         const lines=(obj.text||'').split('\n');
         const ax=obj.align==='center'?0:obj.align==='right'?obj.w/2:-obj.w/2;
-        lines.forEach((line,i)=>ctx.fillText(line,ax,-obj.h/2+i*obj.size*1.4));
+        // CSS line-height:1.4 半行距補償，使匯出位置與編輯器一致
+        const halfLead=obj.size*0.2;
+        lines.forEach((line,i)=>ctx.fillText(line,ax,-obj.h/2+halfLead+i*obj.size*1.4));
       }
       ctx.restore();
     }
