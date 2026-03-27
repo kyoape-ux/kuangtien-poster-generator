@@ -3906,21 +3906,28 @@ async function initCloudSync(){
 
   setCloudUI('loading');
   try{
-    // 讀取 SHA + 資料（用 API 可取得 SHA，用 raw CDN 也可讀資料）
-    const headers = {'Accept':'application/vnd.github.v3+json'};
     const token = getGhToken();
-    if(token) headers['Authorization'] = `token ${token}`;
 
-    const res = await fetch(GH_API_URL+'?t='+Date.now(), {headers});
-    if(!res.ok){ setCloudUI('error'); return; }
-    const meta = await res.json();
-    _ghFileSha = meta.sha;
+    let data, sha;
+    if(token){
+      // 有 token：用 API 取得 SHA（寫入時需要）
+      const res = await fetch(GH_API_URL+'?t='+Date.now(), {
+        headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}
+      });
+      if(!res.ok){ setCloudUI('error'); return; }
+      const meta = await res.json();
+      sha = meta.sha;
+      data = JSON.parse(atob(meta.content.replace(/\n/g,'')));
+    } else {
+      // 無 token：用 raw CDN（公開，無速率限制，唯讀）
+      const res = await fetch(GH_RAW_URL+'?t='+Date.now());
+      if(!res.ok){ setCloudUI('error'); return; }
+      data = await res.json();
+    }
 
-    // 解碼資料
-    const raw = atob(meta.content.replace(/\n/g,''));
-    const data = JSON.parse(raw);
+    if(sha) _ghFileSha = sha;
 
-    // 合併到 localStorage（雲端優先，但保留本機比雲端新的部分）
+    // 合併到 localStorage（雲端優先）
     if(Array.isArray(data.custom_templates)){
       localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(data.custom_templates));
     }
