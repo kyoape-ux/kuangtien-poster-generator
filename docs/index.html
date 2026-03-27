@@ -1869,7 +1869,7 @@ function mkEl(id){
 
     // 同步文字，編輯中以 ti.offsetHeight 撐高（ti 為 relative，直接量）
     ti.addEventListener('input', ()=>{
-      obj.text = ti.innerText.replace(/\n$/, '');
+      obj.text = ti.innerText.replace(/\u200B/g, '').replace(/\n$/, '');
       if(ti.contentEditable === 'true'){
         obj.h = Math.max(obj.size, Math.round(ti.offsetHeight / S.zoom));
         renderBg();
@@ -1878,7 +1878,7 @@ function mkEl(id){
 
     // 失焦：同步最終高度、還原樣式
     ti.addEventListener('blur', ()=>{
-      obj.text = ti.innerText.replace(/\n$/, '');
+      obj.text = ti.innerText.replace(/\u200B/g, '').replace(/\n$/, '');
       ti.contentEditable = 'false';
       const parentEl = document.getElementById('o'+obj.id);
       if(parentEl){
@@ -1899,9 +1899,13 @@ function mkEl(id){
         if(sel && sel.rangeCount){
           const range = sel.getRangeAt(0);
           range.deleteContents();
+          // 插入 <br> + \u200B 錨點：避免末尾 bogus-br 導致游標 snap 回前一行
           const br = document.createElement('br');
-          range.insertNode(br);
-          range.setStartAfter(br);
+          const anchor = document.createTextNode('\u200B');
+          range.insertNode(anchor);  // 先插 anchor（佔住位置）
+          range.insertNode(br);      // 再插 br（br 排在 anchor 前）
+          // 游標放在 anchor 文字節點開頭（視覺上在新行）
+          range.setStart(anchor, 0);
           range.collapse(true);
           sel.removeAllRanges();
           sel.addRange(range);
