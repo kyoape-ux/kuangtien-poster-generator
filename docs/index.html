@@ -370,9 +370,30 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   opacity:0;transition:opacity .15s;z-index:5;line-height:1;
 }
 .tpl-card.custom:hover .tpl-del-btn,.tpl-card.custom:hover .tpl-edit-btn{opacity:1}
+.tpl-card.builtin:hover .tpl-del-btn,.tpl-card.builtin:hover .tpl-edit-btn{opacity:1}
+.tpl-card.builtin .tpl-edit-btn{background:rgba(67,56,202,.75)}
+.tpl-card.builtin .tpl-del-btn{background:rgba(185,28,28,.7)}
 .tpl-badge{
   position:absolute;top:5px;left:5px;background:var(--teal);color:#fff;
   font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;pointer-events:none;
+}
+.tpl-badge-modified{
+  position:absolute;top:5px;left:5px;background:var(--amber);color:#fff;
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;pointer-events:none;
+}
+/* 編輯內建範本 bar */
+#tpl-edit-bar{
+  background:linear-gradient(135deg,#EEF2FF,#E0E7FF);
+  border:1.5px solid var(--indigo-l);border-radius:8px;
+  padding:8px 10px;margin-bottom:6px;
+}
+#tpl-edit-bar .ebar-title{
+  font-size:10px;color:var(--indigo);font-weight:700;margin-bottom:6px;
+  display:flex;align-items:center;gap:4px;
+}
+#tpl-edit-bar .ebar-name{
+  font-size:11px;color:var(--g700);font-weight:600;
+  flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
 /* ── SAVE TEMPLATE MODAL ── */
@@ -647,8 +668,21 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="tpl-grid" id="tpl-grid"></div>
   </div>
   <div id="tpl-panel-footer">
+    <!-- 內建範本編輯模式 bar（平時隱藏） -->
+    <div id="tpl-edit-bar" style="display:none">
+      <div class="ebar-title">✏ 正在編輯內建範本</div>
+      <div class="ebar-name" id="tpl-edit-bar-name"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px">
+        <button class="btn btn-indigo btn-sm" onclick="saveBuiltinEdit()">✓ 更新儲存</button>
+        <button class="btn btn-ghost btn-sm" onclick="renameBuiltinFromBar()">✎ 改名</button>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-full" onclick="cancelBuiltinEdit()" style="margin-top:4px;color:var(--g500)">✕ 取消編輯</button>
+    </div>
     <button class="btn btn-teal btn-full btn-sm" onclick="openSaveTplModal()">
       💾 另存為公版範本
+    </button>
+    <button class="btn btn-ghost btn-full btn-sm" id="restore-builtin-btn" onclick="restoreAllBuiltins()" style="display:none;margin-top:4px;font-size:10px;color:var(--g500)">
+      🔄 還原已隱藏的內建範本
     </button>
   </div>
 </div>
@@ -3231,11 +3265,135 @@ document.addEventListener('keydown', e=>{
 //  TEMPLATES
 // ═══════════════════════════════════════════════
 // ── 自訂範本 localStorage ──
-const CUSTOM_TPLS_KEY = 'kt_poster_custom_tpls';
+const CUSTOM_TPLS_KEY     = 'kt_poster_custom_tpls';
+const BUILTIN_OVERRIDES_KEY = 'kt_poster_builtin_overrides'; // 內建範本的編輯覆寫
+const BUILTIN_DELETED_KEY   = 'kt_poster_builtin_deleted';   // 被隱藏的內建範本 id 陣列
+
+let _editingBuiltinId = null; // 目前正在編輯的內建範本 id
 
 function loadCustomTemplates(){
   try{ return JSON.parse(localStorage.getItem(CUSTOM_TPLS_KEY)||'[]'); }
   catch{ return []; }
+}
+
+function loadBuiltinOverrides(){
+  try{ return JSON.parse(localStorage.getItem(BUILTIN_OVERRIDES_KEY)||'{}'); }
+  catch{ return {}; }
+}
+function saveBuiltinOverrides(obj){
+  localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(obj));
+}
+function loadBuiltinDeleted(){
+  try{ return JSON.parse(localStorage.getItem(BUILTIN_DELETED_KEY)||'[]'); }
+  catch{ return []; }
+}
+
+// 取得內建範本的「有效資料」（加入覆寫）
+function getEffectiveBuiltin(id){
+  const base = TEMPLATES.find(t=>t.id===id);
+  if(!base) return null;
+  const ov = loadBuiltinOverrides()[id];
+  return ov ? {...base, ...ov} : base;
+}
+
+// 開始編輯內建範本（套用到畫布，顯示編輯 bar）
+function startEditBuiltin(id){
+  _editingBuiltinId = id;
+  applyTemplate(id, true); // force=true 略過確認對話框
+  const tpl = getEffectiveBuiltin(id);
+  const bar = document.getElementById('tpl-edit-bar');
+  const nameEl = document.getElementById('tpl-edit-bar-name');
+  if(bar){ bar.style.display='block'; }
+  if(nameEl && tpl){ nameEl.textContent = tpl.name; }
+  snack('範本已套用，修改後請按「更新儲存」');
+}
+
+// 更新儲存：把當前畫布狀態存為覆寫
+function saveBuiltinEdit(){
+  if(!_editingBuiltinId){ cancelBuiltinEdit(); return; }
+  const id = _editingBuiltinId;
+  const overrides = loadBuiltinOverrides();
+  const existing = overrides[id] || {};
+
+  // 序列化物件（同 auto-save 邏輯）
+  const objsData = S.objs.map(o=>{
+    if(o.type==='img' && o.imgEl) return {...o, imgEl:undefined, imgDataUrl:imgElToDataUrl(o.imgEl)};
+    if(o.type==='table') return {...o};
+    return {...o};
+  });
+
+  overrides[id] = {
+    name: existing.name || TEMPLATES.find(t=>t.id===id)?.name || id,
+    w: S.W, h: S.H, bg: S.bgColor,
+    bgColor: S.bgColor,
+    bgImgDataUrl: S.bgImgEl ? imgElToDataUrl(S.bgImgEl) : null,
+    bgScale: S.bgScale, bgOffsetX: S.bgOffsetX, bgOffsetY: S.bgOffsetY,
+    objs: objsData,
+    thumbDataUrl: genCurrentThumbDataUrl()
+  };
+
+  try{
+    saveBuiltinOverrides(overrides);
+    snack('✅ 內建範本已更新儲存');
+  } catch(e){
+    snack('❌ 儲存失敗：瀏覽器空間不足');
+    return;
+  }
+  cancelBuiltinEdit();
+  renderTemplates();
+}
+
+// 重命名（在 editing bar 裡操作）
+function renameBuiltinFromBar(){
+  if(!_editingBuiltinId) return;
+  const id = _editingBuiltinId;
+  const overrides = loadBuiltinOverrides();
+  const currentName = overrides[id]?.name || TEMPLATES.find(t=>t.id===id)?.name || id;
+  const newName = prompt('重命名範本：', currentName);
+  if(!newName || !newName.trim()) return;
+  if(!overrides[id]) overrides[id] = {};
+  overrides[id].name = newName.trim();
+  saveBuiltinOverrides(overrides);
+  document.getElementById('tpl-edit-bar-name').textContent = newName.trim();
+  renderTemplates();
+  snack('已重命名：' + newName.trim());
+}
+
+// 取消編輯模式
+function cancelBuiltinEdit(){
+  _editingBuiltinId = null;
+  const bar = document.getElementById('tpl-edit-bar');
+  if(bar) bar.style.display = 'none';
+}
+
+// 隱藏（刪除）內建範本
+function deleteBuiltinTemplate(id, name){
+  if(!confirm(`隱藏內建範本「${name}」？\n（可在面板底部點「還原」恢復）`)) return;
+  const deleted = loadBuiltinDeleted();
+  if(!deleted.includes(id)){
+    deleted.push(id);
+    localStorage.setItem(BUILTIN_DELETED_KEY, JSON.stringify(deleted));
+  }
+  renderTemplates();
+  snack('已隱藏範本');
+}
+
+// 重置某內建範本的修改
+function resetBuiltinOverride(id, name){
+  if(!confirm(`將「${name}」重置回原始內建版本？`)) return;
+  const overrides = loadBuiltinOverrides();
+  delete overrides[id];
+  saveBuiltinOverrides(overrides);
+  renderTemplates();
+  snack('已重置為原始版本');
+}
+
+// 還原所有隱藏的內建範本
+function restoreAllBuiltins(){
+  if(!confirm('還原所有已隱藏的內建範本？')) return;
+  localStorage.removeItem(BUILTIN_DELETED_KEY);
+  renderTemplates();
+  snack('已還原所有內建範本');
 }
 
 function saveCustomTplToStorage(tpl){
@@ -3378,9 +3536,9 @@ function genTplThumb(tpl){
   return cvs;
 }
 
-function buildTplCard(tpl, isCustom){
+function buildTplCard(tpl, isCustom, isModified=false){
   const card=document.createElement('div');
-  card.className='tpl-card'+(isCustom?' custom':'');
+  card.className='tpl-card'+(isCustom?' custom':' builtin');
   card.id='tpl-'+tpl.id;
   card.onclick=()=>applyTemplate(tpl.id);
 
@@ -3394,31 +3552,44 @@ function buildTplCard(tpl, isCustom){
     thumbEl.style.cssText='width:100%;height:auto;display:block;';
   }
 
+  const szLabel = getSzLabel(tpl.w, tpl.h, tpl.name);
   const info=document.createElement('div');
   info.className='tpl-info';
-  info.innerHTML=`<div class="tpl-name">${tpl.name}</div><div class="tpl-size">${tpl.w}×${tpl.h}</div>`;
+  info.innerHTML=`<div class="tpl-name">${tpl.name}</div><div class="tpl-size">${szLabel}</div>`;
 
   card.append(thumbEl,info);
 
   if(isCustom){
+    // 自訂範本
     const badge=document.createElement('div');
     badge.className='tpl-badge'; badge.textContent='自訂';
     card.appendChild(badge);
     const edit=document.createElement('button');
     edit.className='tpl-edit-btn'; edit.innerHTML='✎';
     edit.title='重命名範本';
-    edit.onclick=e=>{
-      e.stopPropagation();
-      renameCustomTemplate(tpl.id, tpl.name);
-    };
+    edit.onclick=e=>{ e.stopPropagation(); renameCustomTemplate(tpl.id, tpl.name); };
     card.appendChild(edit);
     const del=document.createElement('button');
     del.className='tpl-del-btn'; del.innerHTML='✕';
     del.title='刪除此範本';
-    del.onclick=e=>{
-      e.stopPropagation();
-      if(confirm(`刪除範本「${tpl.name}」？`)) deleteCustomTemplate(tpl.id);
-    };
+    del.onclick=e=>{ e.stopPropagation(); if(confirm(`刪除範本「${tpl.name}」？`)) deleteCustomTemplate(tpl.id); };
+    card.appendChild(del);
+  } else {
+    // 內建範本 — 編輯與刪除
+    if(isModified){
+      const badge=document.createElement('div');
+      badge.className='tpl-badge-modified'; badge.textContent='已修改';
+      card.appendChild(badge);
+    }
+    const edit=document.createElement('button');
+    edit.className='tpl-edit-btn'; edit.innerHTML='✎';
+    edit.title='編輯此範本';
+    edit.onclick=e=>{ e.stopPropagation(); startEditBuiltin(tpl.id); };
+    card.appendChild(edit);
+    const del=document.createElement('button');
+    del.className='tpl-del-btn'; del.innerHTML='✕';
+    del.title='隱藏此範本';
+    del.onclick=e=>{ e.stopPropagation(); deleteBuiltinTemplate(tpl.id, tpl.name); };
     card.appendChild(del);
   }
   return card;
@@ -3460,23 +3631,40 @@ function renderTemplates(){
   if(!grid) return;
   grid.innerHTML='';
   const cat=document.getElementById('tpl-cat-sel')?.value||'';
+  const deleted=loadBuiltinDeleted();
+  const overrides=loadBuiltinOverrides();
+
   // 自訂範本優先顯示
   loadCustomTemplates()
     .filter(t=>!cat||t.category===cat)
     .forEach(tpl=>grid.appendChild(buildTplCard(tpl,true)));
-  // 內建範本
+
+  // 內建範本（跳過已隱藏；使用覆寫資料）
   TEMPLATES
     .filter(t=>!cat||t.category===cat)
-    .forEach(tpl=>grid.appendChild(buildTplCard(tpl,false)));
+    .filter(t=>!deleted.includes(t.id))
+    .forEach(tpl=>{
+      const ov=overrides[tpl.id];
+      const effective=ov ? {...tpl,...ov} : tpl;
+      grid.appendChild(buildTplCard(effective, false, !!ov));
+    });
+
+  // 顯示「還原隱藏範本」按鈕
+  const restoreBtn=document.getElementById('restore-builtin-btn');
+  if(restoreBtn) restoreBtn.style.display=deleted.length>0?'block':'none';
 }
 
-function applyTemplate(id){
-  const builtIn=TEMPLATES.find(t=>t.id===id);
+function applyTemplate(id, force=false){
   const custom=loadCustomTemplates().find(t=>t.id===id);
-  const tpl=builtIn||custom;
+  let tpl;
+  if(custom){
+    tpl=custom;
+  } else {
+    tpl=getEffectiveBuiltin(id); // 含覆寫資料
+  }
   if(!tpl) return;
 
-  if(S.objs.length>0){
+  if(!force && S.objs.length>0){
     if(!confirm(`套用「${tpl.name}」將清除目前所有物件，確定嗎？`)) return;
   }
 
@@ -3486,9 +3674,9 @@ function applyTemplate(id){
   document.getElementById('pp').style.display='none';
 
   S.W=tpl.w; S.H=tpl.h; S.name=tpl.name;
-  S.bgColor=tpl.bg;
-  S.bgScale=1; S.bgOffsetX=0; S.bgOffsetY=0; S.bgLocked=false;
-  document.getElementById('bgColorInp').value=tpl.bg;
+  S.bgColor=tpl.bgColor||tpl.bg||'#FFFFFF'; // 覆寫用 bgColor，內建用 bg
+  S.bgScale=tpl.bgScale||1; S.bgOffsetX=tpl.bgOffsetX||0; S.bgOffsetY=tpl.bgOffsetY||0; S.bgLocked=false;
+  document.getElementById('bgColorInp').value=S.bgColor;
   document.getElementById('inW').value=tpl.w;
   document.getElementById('inH').value=tpl.h;
   document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
@@ -3511,6 +3699,9 @@ function applyTemplate(id){
     if(o.type==='txt'){
       const obj={...o,id:objId};
       S.objs.push(obj); mkEl(objId);
+    } else if(o.type==='table'){
+      const obj={...o,id:objId};
+      S.objs.push(obj); mkEl(objId);
     } else if(o.type==='img'){
       const {imgDataUrl,...rest}=o;
       const obj={...rest,id:objId,imgEl:null};
@@ -3519,7 +3710,7 @@ function applyTemplate(id){
         imgPromises.push(new Promise(res=>{
           const img=new Image();
           img.onload=()=>{
-            img._srcDataUrl=imgDataUrl; // 保留 data URL，下次儲存不走 canvas
+            img._srcDataUrl=imgDataUrl;
             obj.imgEl=img;
             obj.aspectRatio=img.naturalHeight/img.naturalWidth;
             mkEl(objId); res();
