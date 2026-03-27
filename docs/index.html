@@ -3920,7 +3920,7 @@ async function initCloudSync(){
       if(!res.ok){ setCloudUI('error'); return; }
       const meta = await res.json();
       sha = meta.sha;
-      data = JSON.parse(atob(meta.content.replace(/\n/g,'')));
+      data = JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\n/g,'')))));
     } else {
       // 無 token：用 raw CDN（公開，無速率限制，唯讀）
       const res = await fetch(GH_RAW_URL+'?t='+Date.now());
