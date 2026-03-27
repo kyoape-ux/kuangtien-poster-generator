@@ -3921,7 +3921,15 @@ async function initCloudSync(){
       if(!res.ok){ setCloudUI('error'); return; }
       const meta = await res.json();
       sha = meta.sha;
-      data = JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\n/g,'')))));
+      if(meta.content){
+        // 小檔案：直接解碼 base64 內容
+        data = JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\n/g,'')))));
+      } else {
+        // 大檔案（>1MB）：GitHub API 不回傳 content，改用 raw CDN
+        const r2 = await fetch(GH_RAW_URL+'?t='+Date.now());
+        if(!r2.ok){ setCloudUI('error'); return; }
+        data = await r2.json();
+      }
     } else {
       // 無 token：用 raw CDN（公開，無速率限制，唯讀）
       const res = await fetch(GH_RAW_URL+'?t='+Date.now());
