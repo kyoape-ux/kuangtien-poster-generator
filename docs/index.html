@@ -2226,7 +2226,7 @@ function updLayerList(){
     const name = document.createElement('div');
     name.className = 'layer-name';
     name.textContent = obj.type==='txt'
-      ? (obj.text.substring(0,16)||(obj.text||'文字'))
+      ? ((obj.text||'文字').substring(0,16)||'文字')
       : obj.type==='table' ? '表格'
       : '圖片';
 
