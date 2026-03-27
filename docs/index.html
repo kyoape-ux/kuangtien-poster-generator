@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田綜合醫院｜美編小助手</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <!-- QR 改用 api.qrserver.com REST API，不依賴 CDN library -->
@@ -634,6 +636,31 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 .page-thumb-wrap:hover .page-thumb-del{opacity:1}
 .page-thumb.drag-over{border-color:var(--blue);background:#EBF4FF;opacity:.65}
+
+/* ── CLOUD SYNC ── */
+#cloud-status-wrap{display:flex;align-items:center;gap:5px;margin-bottom:6px;padding:5px 8px;border-radius:6px;background:var(--g100);cursor:pointer}
+#cloud-status-wrap:hover{background:var(--g200)}
+.cloud-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--g300)}
+.cloud-dot.connected{background:#16A34A}
+.cloud-dot.error{background:#DC2626}
+.cloud-dot.syncing{background:#2563EB;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.cloud-txt{font-size:10px;color:var(--g500);flex:1}
+.cloud-sync-btn{font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--g200);background:#fff;color:var(--blue);cursor:pointer;font-weight:600}
+.cloud-sync-btn:hover{background:var(--blue);color:#fff}
+
+/* ── CLOUD SETTINGS MODAL ── */
+#cloud-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;align-items:center;justify-content:center}
+#cloud-modal.open{display:flex}
+.cloud-box{background:#fff;border-radius:14px;padding:22px 24px;width:440px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.cloud-box h3{font-size:16px;font-weight:700;color:var(--g800);margin:0 0 14px}
+.cloud-step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;font-size:12px;color:var(--g600);line-height:1.6}
+.cloud-step-num{width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.cloud-config-area{width:100%;box-sizing:border-box;height:130px;font-size:11px;font-family:monospace;border:1.5px solid var(--g200);border-radius:6px;padding:8px;resize:none;margin:8px 0}
+.cloud-config-area:focus{outline:none;border-color:var(--blue)}
+.cloud-status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;background:var(--g100);color:var(--g500)}
+.cloud-status-badge.ok{background:#DCFCE7;color:#15803D}
+.cloud-status-badge.err{background:#FEE2E2;color:#B91C1C}
 </style>
 </head>
 <body>
@@ -668,6 +695,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="tpl-grid" id="tpl-grid"></div>
   </div>
   <div id="tpl-panel-footer">
+    <!-- 雲端同步狀態列 -->
+    <div id="cloud-status-wrap" onclick="openCloudModal()" title="點擊設定雲端同步">
+      <div class="cloud-dot" id="cloud-dot"></div>
+      <div class="cloud-txt" id="cloud-txt">雲端同步未設定</div>
+      <button class="cloud-sync-btn" id="cloud-sync-btn" onclick="event.stopPropagation();cloudPushNow()" style="display:none">↑ 同步</button>
+    </div>
     <!-- 內建範本編輯模式 bar（平時隱藏） -->
     <div id="tpl-edit-bar" style="display:none">
       <div class="ebar-title">✏ 正在編輯內建範本</div>
@@ -1174,6 +1207,39 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
 </div><!-- /ca -->
 </div><!-- /main -->
+
+<!-- CLOUD SYNC SETTINGS MODAL -->
+<div id="cloud-modal">
+  <div class="cloud-box">
+    <h3>☁ 雲端同步設定</h3>
+    <div id="cloud-current-status" style="margin-bottom:14px"></div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:8px">設定說明（免費，一次設定永久使用）</div>
+    <div class="cloud-step"><div class="cloud-step-num">1</div><div>前往 <b>console.firebase.google.com</b>，使用 Google 帳號登入</div></div>
+    <div class="cloud-step"><div class="cloud-step-num">2</div><div>點「新增專案」→ 輸入名稱（如 kuangtien-poster）→ 繼續到完成</div></div>
+    <div class="cloud-step"><div class="cloud-step-num">3</div><div>左側選單「建構」→「Firestore Database」→「建立資料庫」→ 選「以測試模式啟動」→「啟用」</div></div>
+    <div class="cloud-step"><div class="cloud-step-num">4</div><div>點左上齒輪「專案設定」→ 向下滾到「您的應用程式」→ 點「&lt;/&gt;」(網頁) → 輸入暱稱 → 「註冊應用程式」→ 複製 <b>firebaseConfig</b> 的 <b>{ }</b> 內容</div></div>
+    <div class="cloud-step"><div class="cloud-step-num">5</div><div>貼到下方欄位，點「儲存並連線」</div></div>
+
+    <textarea class="cloud-config-area" id="cloud-config-inp" placeholder='貼上 Firebase config JSON，例如：
+{
+  "apiKey": "AIza...",
+  "authDomain": "your-project.firebaseapp.com",
+  "projectId": "your-project",
+  "storageBucket": "your-project.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123..."
+}'></textarea>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+      <button class="btn btn-blue" onclick="saveCloudSettings()">✓ 儲存並連線</button>
+      <button class="btn btn-ghost" onclick="closeCloudModal()">取消</button>
+    </div>
+    <div id="cloud-remove-wrap" style="display:none;margin-top:10px;text-align:center">
+      <button class="btn btn-ghost btn-sm" onclick="clearCloudSettings()" style="font-size:11px;color:var(--red)">移除雲端同步設定</button>
+    </div>
+  </div>
+</div>
 
 <!-- WATERMARK PREVIEW MODAL -->
 <div id="modal">
@@ -3346,6 +3412,7 @@ function saveBuiltinEdit(){
   }
   cancelBuiltinEdit();
   renderTemplates();
+  scheduleCloudSync();
 }
 
 // 重命名（在 editing bar 裡操作）
@@ -3380,6 +3447,7 @@ function deleteBuiltinTemplate(id, name){
     localStorage.setItem(BUILTIN_DELETED_KEY, JSON.stringify(deleted));
   }
   renderTemplates();
+  scheduleCloudSync();
   snack('已隱藏範本');
 }
 
@@ -3406,6 +3474,7 @@ function saveCustomTplToStorage(tpl){
   list.unshift(tpl);
   try{
     localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(list));
+    scheduleCloudSync();
     return true;
   } catch(e){
     snack('儲存失敗：瀏覽器空間不足，請先刪除舊範本');
@@ -3417,6 +3486,7 @@ function deleteCustomTemplate(id){
   const list = loadCustomTemplates().filter(t=>t.id!==id);
   localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(list));
   renderTemplates();
+  scheduleCloudSync();
   snack('已刪除範本');
 }
 
@@ -3664,6 +3734,7 @@ function renameCustomTemplate(id, currentName){
   list[idx].name=newName.trim();
   localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(list));
   renderTemplates();
+  scheduleCloudSync();
   snack('已重命名：'+newName.trim());
 }
 
@@ -3789,6 +3860,143 @@ function applyTemplate(id, force=false){
   const ac=document.getElementById('tpl-'+tpl.id);
   if(ac) ac.classList.add('active');
   snack(`已套用：${tpl.name}`);
+}
+
+// ═══════════════════════════════════════════════
+//  CLOUD SYNC — Firebase Firestore
+// ═══════════════════════════════════════════════
+const FIREBASE_CONFIG_KEY = 'kt_firebase_config';
+let _fbDb = null;
+let _cloudSyncing = false;
+
+function loadFirebaseConfig(){
+  try{ return JSON.parse(localStorage.getItem(FIREBASE_CONFIG_KEY)||'null'); }
+  catch{ return null; }
+}
+
+function setCloudStatus(state){ // state: 'off'|'connected'|'error'|'syncing'
+  const dot=document.getElementById('cloud-dot');
+  const txt=document.getElementById('cloud-txt');
+  const btn=document.getElementById('cloud-sync-btn');
+  if(!dot) return;
+  dot.className='cloud-dot'+(state!=='off'?' '+state:'');
+  const labels={off:'雲端同步未設定',connected:'雲端同步已連線',error:'同步錯誤（點擊重設）',syncing:'同步中...'};
+  if(txt) txt.textContent=labels[state]||'';
+  if(btn) btn.style.display=state==='connected'?'block':'none';
+}
+
+async function initCloudSync(){
+  const config=loadFirebaseConfig();
+  if(!config){ setCloudStatus('off'); return false; }
+  try{
+    if(typeof firebase==='undefined'){ setCloudStatus('off'); return false; }
+    if(!firebase.apps.length) firebase.initializeApp(config);
+    _fbDb=firebase.firestore();
+    setCloudStatus('connected');
+    // 頁面載入時先從雲端拉資料
+    await cloudPull();
+    return true;
+  } catch(e){
+    console.error('Firebase init:',e);
+    setCloudStatus('error');
+    return false;
+  }
+}
+
+async function cloudPull(){
+  if(!_fbDb) return;
+  try{
+    const snap=await _fbDb.collection('poster_gen').doc('shared_data').get();
+    if(!snap.exists) return;
+    const d=snap.data();
+    if(d.custom_templates) localStorage.setItem(CUSTOM_TPLS_KEY,JSON.stringify(d.custom_templates));
+    if(d.builtin_overrides) localStorage.setItem(BUILTIN_OVERRIDES_KEY,JSON.stringify(d.builtin_overrides));
+    if(d.builtin_deleted) localStorage.setItem(BUILTIN_DELETED_KEY,JSON.stringify(d.builtin_deleted));
+    renderTemplates();
+    snack('☁ 已從雲端載入最新範本');
+  } catch(e){ console.error('cloudPull:',e); }
+}
+
+async function cloudPushNow(){
+  if(!_fbDb){ snack('請先設定雲端同步'); return; }
+  if(_cloudSyncing) return;
+  _cloudSyncing=true;
+  setCloudStatus('syncing');
+  try{
+    // 移除 thumbDataUrl 以縮小資料量（套用時會重新產生）
+    const tpls=loadCustomTemplates().map(t=>{ const {thumbDataUrl,...rest}=t; return rest; });
+    await _fbDb.collection('poster_gen').doc('shared_data').set({
+      custom_templates: tpls,
+      builtin_overrides: loadBuiltinOverrides(),
+      builtin_deleted: loadBuiltinDeleted(),
+      last_updated: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    setCloudStatus('connected');
+    snack('✅ 範本已同步至雲端（所有裝置即時更新）');
+  } catch(e){
+    setCloudStatus('error');
+    snack('❌ 同步失敗：'+e.message);
+  }
+  _cloudSyncing=false;
+}
+
+// 儲存/刪除/修改範本後自動觸發雲端同步
+function scheduleCloudSync(){
+  if(!_fbDb) return;
+  clearTimeout(window._cloudSyncTimer);
+  window._cloudSyncTimer=setTimeout(cloudPushNow, 1500);
+}
+
+function openCloudModal(){
+  const modal=document.getElementById('cloud-modal');
+  if(!modal) return;
+  const config=loadFirebaseConfig();
+  const inp=document.getElementById('cloud-config-inp');
+  if(inp && config) inp.value=JSON.stringify(config,null,2);
+  // 顯示目前狀態
+  const st=document.getElementById('cloud-current-status');
+  if(st){
+    if(_fbDb){
+      st.innerHTML='<span class="cloud-status-badge ok">✓ 已連線</span>';
+    } else if(config){
+      st.innerHTML='<span class="cloud-status-badge err">⚠ 設定存在但未連線</span>';
+    } else {
+      st.innerHTML='<span class="cloud-status-badge">尚未設定</span>';
+    }
+  }
+  const rm=document.getElementById('cloud-remove-wrap');
+  if(rm) rm.style.display=config?'block':'none';
+  modal.classList.add('open');
+}
+
+function closeCloudModal(){
+  const modal=document.getElementById('cloud-modal');
+  if(modal) modal.classList.remove('open');
+}
+
+async function saveCloudSettings(){
+  const val=document.getElementById('cloud-config-inp')?.value.trim();
+  if(!val){ snack('請輸入 Firebase 設定'); return; }
+  let config;
+  try{ config=JSON.parse(val); } catch(e){ snack('❌ JSON 格式錯誤，請重新確認'); return; }
+  if(!config.apiKey||!config.projectId){ snack('❌ 設定不完整，需包含 apiKey 和 projectId'); return; }
+  localStorage.setItem(FIREBASE_CONFIG_KEY,JSON.stringify(config));
+  closeCloudModal();
+  // 重置 firebase (若已初始化)
+  try{ if(firebase.apps.length) firebase.app().delete(); _fbDb=null; } catch(e){}
+  const ok=await initCloudSync();
+  if(ok){ await cloudPushNow(); snack('✅ 雲端同步設定完成，範本已上傳！'); }
+  else{ snack('❌ 連線失敗，請確認 Firebase 設定是否正確'); }
+}
+
+function clearCloudSettings(){
+  if(!confirm('確定要移除雲端同步設定？\n（本機資料不受影響）')) return;
+  localStorage.removeItem(FIREBASE_CONFIG_KEY);
+  try{ if(firebase.apps.length) firebase.app().delete(); } catch(e){}
+  _fbDb=null;
+  setCloudStatus('off');
+  closeCloudModal();
+  snack('已移除雲端同步設定');
 }
 
 // ═══════════════════════════════════════════════
@@ -4863,6 +5071,7 @@ function ieInitMouseEvents(){
 window.addEventListener('load', ()=>{
   initTplCategories();
   renderTemplates();
+  initCloudSync();
   renderBg();
   setTimeout(zfit, 100);
   addLogoSlot();
