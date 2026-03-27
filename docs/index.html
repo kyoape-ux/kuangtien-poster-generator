@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田綜合醫院｜美編小助手</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <!-- QR 改用 api.qrserver.com REST API，不依賴 CDN library -->
@@ -637,30 +635,32 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .page-thumb-wrap:hover .page-thumb-del{opacity:1}
 .page-thumb.drag-over{border-color:var(--blue);background:#EBF4FF;opacity:.65}
 
-/* ── CLOUD SYNC ── */
-#cloud-status-wrap{display:flex;align-items:center;gap:5px;margin-bottom:6px;padding:5px 8px;border-radius:6px;background:var(--g100);cursor:pointer}
-#cloud-status-wrap:hover{background:var(--g200)}
-.cloud-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--g300)}
-.cloud-dot.connected{background:#16A34A}
-.cloud-dot.error{background:#DC2626}
-.cloud-dot.syncing{background:#2563EB;animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.cloud-txt{font-size:10px;color:var(--g500);flex:1}
-.cloud-sync-btn{font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--g200);background:#fff;color:var(--blue);cursor:pointer;font-weight:600}
-.cloud-sync-btn:hover{background:var(--blue);color:#fff}
+/* ── CLOUD SYNC STATUS ── */
+#cloud-bar{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:var(--g100);margin-bottom:6px;cursor:pointer;transition:background .15s;}
+#cloud-bar:hover{background:var(--g200)}
+#cloud-bar .cb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--g300);transition:background .3s}
+#cloud-bar .cb-dot.on{background:#16A34A}
+#cloud-bar .cb-dot.err{background:#DC2626}
+#cloud-bar .cb-dot.sync{background:#2563EB;animation:cbpulse .9s infinite}
+@keyframes cbpulse{0%,100%{opacity:1}50%{opacity:.3}}
+#cloud-bar .cb-txt{font-size:10px;color:var(--g500);flex:1;line-height:1.3}
+#cloud-bar .cb-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1.5px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;font-weight:700;white-space:nowrap}
+#cloud-bar .cb-btn:hover{background:var(--blue);color:#fff}
 
-/* ── CLOUD SETTINGS MODAL ── */
-#cloud-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;align-items:center;justify-content:center}
-#cloud-modal.open{display:flex}
-.cloud-box{background:#fff;border-radius:14px;padding:22px 24px;width:440px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.cloud-box h3{font-size:16px;font-weight:700;color:var(--g800);margin:0 0 14px}
-.cloud-step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;font-size:12px;color:var(--g600);line-height:1.6}
-.cloud-step-num{width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.cloud-config-area{width:100%;box-sizing:border-box;height:130px;font-size:11px;font-family:monospace;border:1.5px solid var(--g200);border-radius:6px;padding:8px;resize:none;margin:8px 0}
-.cloud-config-area:focus{outline:none;border-color:var(--blue)}
-.cloud-status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;background:var(--g100);color:var(--g500)}
-.cloud-status-badge.ok{background:#DCFCE7;color:#15803D}
-.cloud-status-badge.err{background:#FEE2E2;color:#B91C1C}
+/* ── CLOUD TOKEN SETUP MODAL ── */
+#cloud-setup-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;align-items:center;justify-content:center}
+#cloud-setup-modal.open{display:flex}
+.cs-box{background:#fff;border-radius:14px;padding:20px 22px;width:420px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.cs-box h3{font-size:15px;font-weight:700;color:var(--g800);margin:0 0 4px}
+.cs-box .cs-sub{font-size:11px;color:var(--g400);margin-bottom:14px}
+.cs-step{display:flex;gap:10px;margin-bottom:9px;font-size:11px;color:var(--g600);line-height:1.6;align-items:flex-start}
+.cs-n{width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.cs-box input.cs-inp{width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--g200);border-radius:6px;font-size:12px;font-family:monospace;margin:6px 0}
+.cs-box input.cs-inp:focus{outline:none;border-color:var(--blue)}
+.cs-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700}
+.cs-badge.ok{background:#DCFCE7;color:#15803D}
+.cs-badge.no{background:#F1F5F9;color:#64748B}
+
 </style>
 </head>
 <body>
@@ -695,11 +695,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="tpl-grid" id="tpl-grid"></div>
   </div>
   <div id="tpl-panel-footer">
-    <!-- 雲端同步狀態列 -->
-    <div id="cloud-status-wrap" onclick="openCloudModal()" title="點擊設定雲端同步">
-      <div class="cloud-dot" id="cloud-dot"></div>
-      <div class="cloud-txt" id="cloud-txt">雲端同步未設定</div>
-      <button class="cloud-sync-btn" id="cloud-sync-btn" onclick="event.stopPropagation();cloudPushNow()" style="display:none">↑ 同步</button>
+    <!-- 雲端同步 -->
+    <div id="cloud-bar" onclick="openCloudSetup()">
+      <div class="cb-dot" id="cb-dot"></div>
+      <div class="cb-txt" id="cb-txt">雲端同步載入中...</div>
+      <button class="cb-btn" id="cb-push-btn" style="display:none" onclick="event.stopPropagation();cloudPush()">↑ 同步</button>
     </div>
     <!-- 內建範本編輯模式 bar（平時隱藏） -->
     <div id="tpl-edit-bar" style="display:none">
@@ -1208,35 +1208,29 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 </div><!-- /ca -->
 </div><!-- /main -->
 
-<!-- CLOUD SYNC SETTINGS MODAL -->
-<div id="cloud-modal">
-  <div class="cloud-box">
+<!-- CLOUD TOKEN SETUP MODAL -->
+<div id="cloud-setup-modal">
+  <div class="cs-box">
     <h3>☁ 雲端同步設定</h3>
-    <div id="cloud-current-status" style="margin-bottom:14px"></div>
+    <div class="cs-sub">設定後，所有裝置開啟此網址都能看到相同的範本</div>
+    <div id="cs-current" style="margin-bottom:12px"></div>
 
-    <div style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:8px">設定說明（免費，一次設定永久使用）</div>
-    <div class="cloud-step"><div class="cloud-step-num">1</div><div>前往 <b>console.firebase.google.com</b>，使用 Google 帳號登入</div></div>
-    <div class="cloud-step"><div class="cloud-step-num">2</div><div>點「新增專案」→ 輸入名稱（如 kuangtien-poster）→ 繼續到完成</div></div>
-    <div class="cloud-step"><div class="cloud-step-num">3</div><div>左側選單「建構」→「Firestore Database」→「建立資料庫」→ 選「以測試模式啟動」→「啟用」</div></div>
-    <div class="cloud-step"><div class="cloud-step-num">4</div><div>點左上齒輪「專案設定」→ 向下滾到「您的應用程式」→ 點「&lt;/&gt;」(網頁) → 輸入暱稱 → 「註冊應用程式」→ 複製 <b>firebaseConfig</b> 的 <b>{ }</b> 內容</div></div>
-    <div class="cloud-step"><div class="cloud-step-num">5</div><div>貼到下方欄位，點「儲存並連線」</div></div>
+    <div style="font-size:11px;font-weight:700;color:var(--g700);margin-bottom:8px">如何取得 GitHub Token（免費，一次設定）</div>
+    <div class="cs-step"><div class="cs-n">1</div><div>前往 <b>github.com</b> → 右上角頭像 → <b>Settings</b></div></div>
+    <div class="cs-step"><div class="cs-n">2</div><div>左側點 <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Tokens (classic)</b> → <b>Generate new token</b></div></div>
+    <div class="cs-step"><div class="cs-n">3</div><div>名稱輸入 <b>poster-sync</b>，勾選 <b>public_repo</b>，點 <b>Generate token</b></div></div>
+    <div class="cs-step"><div class="cs-n">4</div><div>複製 token（ghp_開頭的字串），貼到下方，點「儲存」</div></div>
 
-    <textarea class="cloud-config-area" id="cloud-config-inp" placeholder='貼上 Firebase config JSON，例如：
-{
-  "apiKey": "AIza...",
-  "authDomain": "your-project.firebaseapp.com",
-  "projectId": "your-project",
-  "storageBucket": "your-project.appspot.com",
-  "messagingSenderId": "123456789",
-  "appId": "1:123..."
-}'></textarea>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-      <button class="btn btn-blue" onclick="saveCloudSettings()">✓ 儲存並連線</button>
-      <button class="btn btn-ghost" onclick="closeCloudModal()">取消</button>
+    <input type="password" class="cs-inp" id="cs-token-inp" placeholder="貼上 GitHub Token（ghp_ 或 gho_ 開頭）" autocomplete="off">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+      <button class="btn btn-blue" onclick="saveCloudToken()">✓ 儲存並同步</button>
+      <button class="btn btn-ghost" onclick="closeCloudSetup()">取消</button>
     </div>
-    <div id="cloud-remove-wrap" style="display:none;margin-top:10px;text-align:center">
-      <button class="btn btn-ghost btn-sm" onclick="clearCloudSettings()" style="font-size:11px;color:var(--red)">移除雲端同步設定</button>
+    <div id="cs-remove-wrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--g100);text-align:center">
+      <button class="btn btn-ghost btn-sm" onclick="removeCloudToken()" style="font-size:10px;color:var(--red)">移除同步 Token</button>
+      <div style="margin-top:6px">
+        <button class="btn btn-ghost btn-sm btn-full" onclick="copySetupUrl()" style="font-size:10px">📋 複製「設定連結」給其他電腦</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3863,140 +3857,201 @@ function applyTemplate(id, force=false){
 }
 
 // ═══════════════════════════════════════════════
-//  CLOUD SYNC — Firebase Firestore
+//  CLOUD SYNC — GitHub Data Repo
 // ═══════════════════════════════════════════════
-const FIREBASE_CONFIG_KEY = 'kt_firebase_config';
-let _fbDb = null;
+const GH_DATA_REPO  = 'kyoape-ux/kuangtien-poster-data';
+const GH_DATA_FILE  = 'templates.json';
+const GH_RAW_URL    = `https://raw.githubusercontent.com/${GH_DATA_REPO}/main/${GH_DATA_FILE}`;
+const GH_API_URL    = `https://api.github.com/repos/${GH_DATA_REPO}/contents/${GH_DATA_FILE}`;
+const GH_TOKEN_KEY  = 'kt_gh_sync_token';
+
+let _ghFileSha = null; // 最新 SHA（更新時需要）
 let _cloudSyncing = false;
 
-function loadFirebaseConfig(){
-  try{ return JSON.parse(localStorage.getItem(FIREBASE_CONFIG_KEY)||'null'); }
-  catch{ return null; }
-}
+function getGhToken(){ return localStorage.getItem(GH_TOKEN_KEY)||''; }
 
-function setCloudStatus(state){ // state: 'off'|'connected'|'error'|'syncing'
-  const dot=document.getElementById('cloud-dot');
-  const txt=document.getElementById('cloud-txt');
-  const btn=document.getElementById('cloud-sync-btn');
+function setCloudUI(state){ // 'loading'|'readonly'|'write'|'syncing'|'error'
+  const dot=document.getElementById('cb-dot');
+  const txt=document.getElementById('cb-txt');
+  const btn=document.getElementById('cb-push-btn');
   if(!dot) return;
-  dot.className='cloud-dot'+(state!=='off'?' '+state:'');
-  const labels={off:'雲端同步未設定',connected:'雲端同步已連線',error:'同步錯誤（點擊重設）',syncing:'同步中...'};
+  dot.className='cb-dot'+(state==='write'||state==='syncing'?' on':state==='error'?' err':state==='syncing'?' sync':'');
+  if(state==='syncing') dot.className='cb-dot sync';
+  const labels={
+    loading:'雲端同步初始化中...',
+    readonly:'☁ 已讀取雲端範本（唯讀）— 設定 Token 可寫入',
+    write:'☁ 雲端同步已連線（可讀寫）',
+    syncing:'☁ 同步中...',
+    error:'☁ 讀取雲端失敗（點擊重試）'
+  };
   if(txt) txt.textContent=labels[state]||'';
-  if(btn) btn.style.display=state==='connected'?'block':'none';
+  if(btn) btn.style.display=(state==='write')?'block':'none';
 }
 
+// ── 初始化：從 GitHub raw CDN 讀取範本 ──
 async function initCloudSync(){
-  const config=loadFirebaseConfig();
-  if(!config){ setCloudStatus('off'); return false; }
+  // 檢查 URL 是否有自動設定 token 的參數
+  const hash = window.location.hash;
+  if(hash.startsWith('#kt-sync=')){
+    try{
+      const encoded = hash.slice(9);
+      const token = decodeURIComponent(atob(encoded));
+      if(token && (token.startsWith('ghp_')||token.startsWith('gho_')||token.startsWith('github_pat_'))){
+        localStorage.setItem(GH_TOKEN_KEY, token);
+        window.history.replaceState(null,'',window.location.pathname+window.location.search);
+        snack('✅ 同步 Token 已自動設定！');
+      }
+    } catch(e){}
+  }
+
+  setCloudUI('loading');
   try{
-    if(typeof firebase==='undefined'){ setCloudStatus('off'); return false; }
-    if(!firebase.apps.length) firebase.initializeApp(config);
-    _fbDb=firebase.firestore();
-    setCloudStatus('connected');
-    // 頁面載入時先從雲端拉資料
-    await cloudPull();
-    return true;
+    // 讀取 SHA + 資料（用 API 可取得 SHA，用 raw CDN 也可讀資料）
+    const headers = {'Accept':'application/vnd.github.v3+json'};
+    const token = getGhToken();
+    if(token) headers['Authorization'] = `token ${token}`;
+
+    const res = await fetch(GH_API_URL+'?t='+Date.now(), {headers});
+    if(!res.ok){ setCloudUI('error'); return; }
+    const meta = await res.json();
+    _ghFileSha = meta.sha;
+
+    // 解碼資料
+    const raw = atob(meta.content.replace(/\n/g,''));
+    const data = JSON.parse(raw);
+
+    // 合併到 localStorage（雲端優先，但保留本機比雲端新的部分）
+    if(Array.isArray(data.custom_templates)){
+      localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(data.custom_templates));
+    }
+    if(data.builtin_overrides && typeof data.builtin_overrides==='object'){
+      localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(data.builtin_overrides));
+    }
+    if(Array.isArray(data.builtin_deleted)){
+      localStorage.setItem(BUILTIN_DELETED_KEY, JSON.stringify(data.builtin_deleted));
+    }
+    renderTemplates();
+    setCloudUI(token ? 'write' : 'readonly');
   } catch(e){
-    console.error('Firebase init:',e);
-    setCloudStatus('error');
-    return false;
+    console.warn('Cloud sync init error:', e);
+    setCloudUI('error');
   }
 }
 
-async function cloudPull(){
-  if(!_fbDb) return;
-  try{
-    const snap=await _fbDb.collection('poster_gen').doc('shared_data').get();
-    if(!snap.exists) return;
-    const d=snap.data();
-    if(d.custom_templates) localStorage.setItem(CUSTOM_TPLS_KEY,JSON.stringify(d.custom_templates));
-    if(d.builtin_overrides) localStorage.setItem(BUILTIN_OVERRIDES_KEY,JSON.stringify(d.builtin_overrides));
-    if(d.builtin_deleted) localStorage.setItem(BUILTIN_DELETED_KEY,JSON.stringify(d.builtin_deleted));
-    renderTemplates();
-    snack('☁ 已從雲端載入最新範本');
-  } catch(e){ console.error('cloudPull:',e); }
-}
-
-async function cloudPushNow(){
-  if(!_fbDb){ snack('請先設定雲端同步'); return; }
+// ── 推送：把本機資料同步到 GitHub ──
+async function cloudPush(){
+  const token = getGhToken();
+  if(!token){ openCloudSetup(); return; }
   if(_cloudSyncing) return;
-  _cloudSyncing=true;
-  setCloudStatus('syncing');
+  _cloudSyncing = true;
+  setCloudUI('syncing');
+
   try{
-    // 移除 thumbDataUrl 以縮小資料量（套用時會重新產生）
-    const tpls=loadCustomTemplates().map(t=>{ const {thumbDataUrl,...rest}=t; return rest; });
-    await _fbDb.collection('poster_gen').doc('shared_data').set({
+    // 準備資料（移除 thumbDataUrl 減少大小）
+    const tpls = loadCustomTemplates().map(t=>{
+      const {thumbDataUrl, ...rest} = t;
+      return rest;
+    });
+    const payload = {
       custom_templates: tpls,
       builtin_overrides: loadBuiltinOverrides(),
       builtin_deleted: loadBuiltinDeleted(),
-      last_updated: firebase.firestore.FieldValue.serverTimestamp()
+      last_updated: new Date().toISOString()
+    };
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+
+    const body = {
+      message: `sync: 更新範本 ${new Date().toLocaleString('zh-TW')}`,
+      content
+    };
+    if(_ghFileSha) body.sha = _ghFileSha;
+
+    const res = await fetch(GH_API_URL, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify(body)
     });
-    setCloudStatus('connected');
-    snack('✅ 範本已同步至雲端（所有裝置即時更新）');
-  } catch(e){
-    setCloudStatus('error');
-    snack('❌ 同步失敗：'+e.message);
-  }
-  _cloudSyncing=false;
-}
 
-// 儲存/刪除/修改範本後自動觸發雲端同步
-function scheduleCloudSync(){
-  if(!_fbDb) return;
-  clearTimeout(window._cloudSyncTimer);
-  window._cloudSyncTimer=setTimeout(cloudPushNow, 1500);
-}
-
-function openCloudModal(){
-  const modal=document.getElementById('cloud-modal');
-  if(!modal) return;
-  const config=loadFirebaseConfig();
-  const inp=document.getElementById('cloud-config-inp');
-  if(inp && config) inp.value=JSON.stringify(config,null,2);
-  // 顯示目前狀態
-  const st=document.getElementById('cloud-current-status');
-  if(st){
-    if(_fbDb){
-      st.innerHTML='<span class="cloud-status-badge ok">✓ 已連線</span>';
-    } else if(config){
-      st.innerHTML='<span class="cloud-status-badge err">⚠ 設定存在但未連線</span>';
+    if(res.ok){
+      const d = await res.json();
+      _ghFileSha = d.content?.sha || _ghFileSha;
+      setCloudUI('write');
+      snack('✅ 範本已同步至雲端（所有裝置即時更新）');
     } else {
-      st.innerHTML='<span class="cloud-status-badge">尚未設定</span>';
+      const err = await res.json();
+      setCloudUI('error');
+      snack('❌ 同步失敗：'+(err.message||res.status));
     }
+  } catch(e){
+    setCloudUI('error');
+    snack('❌ 網路錯誤，請稍後再試');
   }
-  const rm=document.getElementById('cloud-remove-wrap');
-  if(rm) rm.style.display=config?'block':'none';
+  _cloudSyncing = false;
+}
+
+// ── 自動排程同步 ──
+function scheduleCloudSync(){
+  if(!getGhToken()) return;
+  clearTimeout(window._cloudSyncTimer);
+  window._cloudSyncTimer = setTimeout(cloudPush, 2000);
+}
+
+// ── 設定 Modal ──
+function openCloudSetup(){
+  const modal = document.getElementById('cloud-setup-modal');
+  if(!modal) return;
+  const token = getGhToken();
+  const cur = document.getElementById('cs-current');
+  if(cur) cur.innerHTML = token
+    ? '<span class="cs-badge ok">✓ Token 已設定</span>'
+    : '<span class="cs-badge no">尚未設定</span>';
+  const inp = document.getElementById('cs-token-inp');
+  if(inp) inp.value = '';
+  const rm = document.getElementById('cs-remove-wrap');
+  if(rm) rm.style.display = token ? 'block' : 'none';
   modal.classList.add('open');
 }
 
-function closeCloudModal(){
-  const modal=document.getElementById('cloud-modal');
+function closeCloudSetup(){
+  const modal = document.getElementById('cloud-setup-modal');
   if(modal) modal.classList.remove('open');
 }
 
-async function saveCloudSettings(){
-  const val=document.getElementById('cloud-config-inp')?.value.trim();
-  if(!val){ snack('請輸入 Firebase 設定'); return; }
-  let config;
-  try{ config=JSON.parse(val); } catch(e){ snack('❌ JSON 格式錯誤，請重新確認'); return; }
-  if(!config.apiKey||!config.projectId){ snack('❌ 設定不完整，需包含 apiKey 和 projectId'); return; }
-  localStorage.setItem(FIREBASE_CONFIG_KEY,JSON.stringify(config));
-  closeCloudModal();
-  // 重置 firebase (若已初始化)
-  try{ if(firebase.apps.length) firebase.app().delete(); _fbDb=null; } catch(e){}
-  const ok=await initCloudSync();
-  if(ok){ await cloudPushNow(); snack('✅ 雲端同步設定完成，範本已上傳！'); }
-  else{ snack('❌ 連線失敗，請確認 Firebase 設定是否正確'); }
+async function saveCloudToken(){
+  const inp = document.getElementById('cs-token-inp');
+  const val = inp?.value.trim();
+  if(!val){ snack('請輸入 GitHub Token'); return; }
+  if(!val.startsWith('ghp_') && !val.startsWith('gho_') && !val.startsWith('github_pat_')){
+    snack('❌ Token 格式不正確，請確認以 ghp_ 或 gho_ 開頭'); return;
+  }
+  localStorage.setItem(GH_TOKEN_KEY, val);
+  closeCloudSetup();
+  await initCloudSync();
+  await cloudPush();
 }
 
-function clearCloudSettings(){
-  if(!confirm('確定要移除雲端同步設定？\n（本機資料不受影響）')) return;
-  localStorage.removeItem(FIREBASE_CONFIG_KEY);
-  try{ if(firebase.apps.length) firebase.app().delete(); } catch(e){}
-  _fbDb=null;
-  setCloudStatus('off');
-  closeCloudModal();
-  snack('已移除雲端同步設定');
+function removeCloudToken(){
+  if(!confirm('移除 Token 後此裝置只能讀取範本，無法儲存。確定嗎？')) return;
+  localStorage.removeItem(GH_TOKEN_KEY);
+  setCloudUI('readonly');
+  closeCloudSetup();
+  snack('已移除 Token，目前為唯讀模式');
+}
+
+function copySetupUrl(){
+  const token = getGhToken();
+  if(!token){ snack('尚未設定 Token'); return; }
+  const encoded = btoa(encodeURIComponent(token));
+  const url = `${window.location.origin}${window.location.pathname}#kt-sync=${encoded}`;
+  navigator.clipboard.writeText(url).then(()=>{
+    snack('✅ 設定連結已複製！在其他電腦開啟此連結即可自動設定同步');
+  }).catch(()=>{
+    prompt('複製這個連結到其他電腦開啟：', url);
+  });
 }
 
 // ═══════════════════════════════════════════════
