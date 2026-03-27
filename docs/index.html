@@ -682,9 +682,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       </div>
       <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:nowrap">
         <span class="inp-label" style="white-space:nowrap;flex-shrink:0">自訂</span>
-        <input class="inp" type="number" id="inW" placeholder="W" min="100" max="4000" value="794" style="width:62px;flex-shrink:0">
+        <input class="inp" type="number" id="inW" placeholder="W" min="100" max="4000" value="794" style="width:80px;flex-shrink:0">
         <span style="color:var(--g400);font-size:13px;flex-shrink:0">×</span>
-        <input class="inp" type="number" id="inH" placeholder="H" min="100" max="4000" value="1123" style="width:62px;flex-shrink:0">
+        <input class="inp" type="number" id="inH" placeholder="H" min="100" max="4000" value="1123" style="width:80px;flex-shrink:0">
         <span class="inp-unit" style="flex-shrink:0">px</span>
         <button class="btn btn-blue btn-sm" onclick="applyCustom()" style="flex-shrink:0;padding:4px 8px;font-size:11px">套用</button>
       </div>
@@ -3140,7 +3140,8 @@ function switchTab(tab, btn){
   document.querySelectorAll('.ntab').forEach(e=>e.classList.remove('on'));
   btn.classList.add('on');
   document.querySelectorAll('.pg').forEach(e=>e.classList.remove('on'));
-  document.getElementById('pg-'+tab).classList.add('on');
+  if(tab!=='qr') document.getElementById('pg-'+tab).classList.add('on');
+
   const dlBtn=document.getElementById('dl-btn');
   const wmpBtn=document.getElementById('wm-preview-btn');
   const dlBar=document.getElementById('dlbar');
@@ -3150,6 +3151,15 @@ function switchTab(tab, btn){
   const ieArea=document.getElementById('ie-area');
   const pagesPanel=document.getElementById('pages-panel');
   const dlPdfBtn=document.getElementById('dl-pdf-btn');
+  const sbEl=document.getElementById('sb');
+  const caEl=document.getElementById('ca');
+  const pgQr=document.getElementById('pg-qr');
+
+  // QR 頁面：隱藏所有其他區塊，全版顯示
+  pgQr.style.display = (tab==='qr') ? 'flex' : 'none';
+  if(sbEl) sbEl.style.display = (tab==='qr') ? 'none' : '';
+  if(caEl) caEl.style.display = (tab==='qr') ? 'none' : '';
+
   if(tab==='poster'){
     dlBtn.textContent='⬇ 下載海報 PNG';
     wmpBtn.style.display='none';
@@ -3178,8 +3188,9 @@ function switchTab(tab, btn){
     cscroll.style.display='none';
     ieArea.style.display='flex';
     if(pagesPanel) pagesPanel.style.display='none';
-    // 圖片編輯不顯示物件屬性面板
     document.getElementById('pp').style.display='none';
+  } else if(tab==='qr'){
+    setTimeout(qrGenerate, 100);
   }
 }
 
