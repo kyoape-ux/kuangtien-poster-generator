@@ -3902,7 +3902,7 @@ async function fbPush() {
       custom_templates: customTpls,
       builtin_overrides: cleanOverrides,
       builtin_deleted: deleted,
-      last_updated: firebase.firestore.FieldValue.serverTimestamp(),
+      last_updated: new Date().toISOString(),
       _auth: FB_WRITE_KEY
     });
     updateCloudDot('ok');
@@ -3932,16 +3932,40 @@ function updateCloudDot(state) {
 }
 
 function toggleAdminMode() {
-  const pwd = prompt('請輸入管理員密碼以啟用寫入功能：');
-  if (pwd === FB_WRITE_KEY) {
-    _fbAdminMode = true;
-    localStorage.setItem(FB_ADMIN_LS_KEY, '1');
-    updateCloudDot('off');
-    snack('✅ 管理員模式已開啟，範本變更將自動同步');
-    renderTemplates();
-  } else if (pwd !== null) {
-    snack('密碼錯誤');
-  }
+  // 使用自訂對話框（prompt 在某些環境會被瀏覽器限制）
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:24px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <div style="font-weight:700;font-size:15px;margin-bottom:12px">🔑 管理員登入</div>
+      <div style="color:#666;font-size:12px;margin-bottom:12px">輸入管理員密碼以啟用範本寫入功能</div>
+      <input id="_admin_pwd_input" type="password" placeholder="請輸入密碼"
+        style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;margin-bottom:12px">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="this.closest('div[style]').remove()"
+          style="padding:6px 16px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#f5f5f5">取消</button>
+        <button id="_admin_ok_btn"
+          style="padding:6px 16px;border:none;border-radius:6px;cursor:pointer;background:#005BAC;color:#fff">確認</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const inp = overlay.querySelector('#_admin_pwd_input');
+  inp.focus();
+  const doLogin = () => {
+    const pwd = inp.value;
+    overlay.remove();
+    if (pwd === FB_WRITE_KEY) {
+      _fbAdminMode = true;
+      localStorage.setItem(FB_ADMIN_LS_KEY, '1');
+      updateCloudDot('off');
+      snack('✅ 管理員模式已開啟，範本變更將自動同步');
+      renderTemplates();
+    } else {
+      snack('密碼錯誤');
+    }
+  };
+  overlay.querySelector('#_admin_ok_btn').onclick = doLogin;
+  inp.onkeydown = e => { if(e.key==='Enter') doLogin(); if(e.key==='Escape') overlay.remove(); };
 }
 
 function exitAdminMode() {
