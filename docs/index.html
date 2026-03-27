@@ -1892,12 +1892,12 @@ function mkEl(id){
       renderBg();
     });
 
-    // Enter 鍵：插入換行（不產生多餘 <div>），Escape 結束編輯
+    // Enter 鍵：插入 \n 文字節點（避免 insertLineBreak 產生多餘空白行），Escape 結束編輯
     ti.addEventListener('keydown', e=>{
       if(ti.contentEditable !== 'true') return;
       if(e.key === 'Enter'){
         e.preventDefault();
-        document.execCommand('insertLineBreak');
+        document.execCommand('insertText', false, '\n');
       }
       if(e.key === 'Escape') ti.blur();
     });
