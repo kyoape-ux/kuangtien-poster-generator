@@ -3631,16 +3631,19 @@ async function confirmSaveTpl(){
 // ── Thumbnail ──
 function genTplThumb(tpl){
   const MAX_W=130, MAX_H=100;
-  const scale=Math.min(MAX_W/tpl.w, MAX_H/tpl.h);
-  const cw=Math.round(tpl.w*scale), ch=Math.round(tpl.h*scale);
+  const w = tpl.w || tpl.canvasW || 1920;
+  const h = tpl.h || tpl.canvasH || 1080;
+  const scale=Math.min(MAX_W/w, MAX_H/h);
+  const cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
   const cvs=document.createElement('canvas');
   cvs.width=cw; cvs.height=ch;
   const ctx=cvs.getContext('2d');
+  const grad = tpl.previewGrad || [tpl.bg||tpl.bgColor||'#555', tpl.bg||tpl.bgColor||'#333'];
   const grd=ctx.createLinearGradient(0,0,cw,ch);
-  grd.addColorStop(0,tpl.previewGrad[0]);
-  grd.addColorStop(1,tpl.previewGrad[1]);
+  grd.addColorStop(0,grad[0]);
+  grd.addColorStop(1,grad[1]);
   ctx.fillStyle=grd; ctx.fillRect(0,0,cw,ch);
-  tpl.objs.filter(o=>o.type==='txt').forEach(o=>{
+  (tpl.objs||tpl.objects||[]).filter(o=>o.type==='txt').forEach(o=>{
     const ox=o.x*scale, oy=o.y*scale, ow=o.w*scale, oh=o.h*scale;
     const fsize=Math.max(5, Math.round(o.size*scale));
     ctx.save();
