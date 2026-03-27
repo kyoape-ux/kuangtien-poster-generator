@@ -1864,17 +1864,14 @@ function mkEl(id){
     const ti = document.createElement('div');
     ti.className = 'tinner';
     ti.contentEditable = 'false';
-    ti.innerText = obj.text;  // innerText 正確渲染 \n 換行
+    // 用 <br> 表示換行，避免 \n 文字節點在 contentEditable 的瀏覽器差異
+    ti.innerHTML = txtToHtml(obj.text);
 
-    // 同步文字，編輯中同時自動撐高
+    // 同步文字，編輯中以 ti.offsetHeight 撐高（ti 為 relative，直接量）
     ti.addEventListener('input', ()=>{
       obj.text = ti.innerText.replace(/\n$/, '');
       if(ti.contentEditable === 'true'){
-        const z = S.zoom;
-        const parentEl = document.getElementById('o'+obj.id);
-        if(parentEl){
-          obj.h = Math.max(obj.size, Math.round(parentEl.scrollHeight / z));
-        }
+        obj.h = Math.max(obj.size, Math.round(ti.offsetHeight / S.zoom));
         renderBg();
       }
     });
@@ -1885,19 +1882,31 @@ function mkEl(id){
       ti.contentEditable = 'false';
       const parentEl = document.getElementById('o'+obj.id);
       if(parentEl){
-        obj.h = Math.max(obj.size, Math.round(parentEl.scrollHeight / S.zoom));
+        obj.h = Math.max(obj.size, Math.round(ti.offsetHeight / S.zoom));
         applyStyle(parentEl, obj);
       }
       pushHistory();
       renderBg();
     });
 
-    // Enter 鍵：插入 \n 文字節點（避免 insertLineBreak 產生多餘空白行），Escape 結束編輯
+    // Enter：直接插入 <br>（Selection API，無 execCommand 副作用），Escape 結束
     ti.addEventListener('keydown', e=>{
       if(ti.contentEditable !== 'true') return;
       if(e.key === 'Enter'){
         e.preventDefault();
-        document.execCommand('insertText', false, '\n');
+        e.stopPropagation();
+        const sel = window.getSelection();
+        if(sel && sel.rangeCount){
+          const range = sel.getRangeAt(0);
+          range.deleteContents();
+          const br = document.createElement('br');
+          range.insertNode(br);
+          range.setStartAfter(br);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ti.dispatchEvent(new Event('input', {bubbles:true}));
+        }
       }
       if(e.key === 'Escape') ti.blur();
     });
@@ -1907,20 +1916,23 @@ function mkEl(id){
       if(ti.contentEditable === 'true') e.stopPropagation();
     });
 
-    // 雙擊：進入編輯，切換為自動高度
+    // 雙擊：進入編輯，ti 改 relative 讓 el 能正確追蹤高度（避免框塌陷）
     ti.addEventListener('dblclick', e=>{
       e.stopPropagation();
       if(ti.contentEditable === 'true') return;
       ti.contentEditable = 'true';
-      // 切換容器為自動高度，讓文字自由撐開
       const parentEl = document.getElementById('o'+obj.id);
-      if(parentEl){
-        parentEl.style.height = 'auto';
-        parentEl.style.overflow = 'visible';
-      }
-      ti.style.position = 'absolute';
-      ti.style.top = '0'; ti.style.left = '0'; ti.style.right = '0'; ti.style.bottom = 'auto';
-      ti.style.height = 'auto'; ti.style.overflow = 'visible';
+      if(parentEl){ parentEl.style.height = 'auto'; parentEl.style.overflow = 'visible'; }
+      ti.style.cssText = `
+        position:relative; width:100%; height:auto; overflow:visible;
+        min-height:${obj.h * S.zoom}px;
+        white-space:pre-wrap; word-break:break-word;
+        cursor:text; line-height:1.4;
+        font-size:${obj.size * S.zoom}px;
+        color:${obj.color}; font-weight:${obj.weight};
+        text-align:${obj.align};
+        font-family:${obj.fontFamily==='Noto Serif TC'?"'Noto Serif TC',serif":"'Noto Sans TC',sans-serif"};
+      `;
       ti.focus();
       const range = document.createRange();
       range.selectNodeContents(ti);
@@ -1978,6 +1990,11 @@ function mkEl(id){
   attachDrag(el, obj);
 }
 
+// \n → <br> HTML，避免 contentEditable 的 \n 文字節點瀏覽器差異
+function txtToHtml(text){
+  return (text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
 function applyStyle(el, obj){
   const z = S.zoom;
   el.style.cssText = `
@@ -1997,8 +2014,8 @@ function applyStyle(el, obj){
     if(ti){
       const ff = obj.fontFamily||'Noto Sans TC';
       const ffStack = ff==='Noto Serif TC' ? `'Noto Serif TC',serif` : `'Noto Sans TC',sans-serif`;
-      // 編輯中不覆蓋自動高度佈局
       if(ti.contentEditable !== 'true'){
+        // 非編輯：還原 absolute 佈局，同步 innerHTML
         ti.style.cssText = `
           position:absolute;inset:0;overflow:hidden;
           white-space:pre-wrap;word-break:break-word;
@@ -2009,17 +2026,10 @@ function applyStyle(el, obj){
           text-align:${obj.align};
           font-family:${ffStack};
         `;
-      } else {
-        // 編輯中只更新字型相關屬性，不動佈局
-        ti.style.fontSize = `${obj.size*z}px`;
-        ti.style.color = obj.color;
-        ti.style.fontWeight = obj.weight;
-        ti.style.textAlign = obj.align;
-        ti.style.fontFamily = ffStack;
-        ti.style.whiteSpace = 'pre-wrap';
-        ti.style.wordBreak = 'break-word';
-        ti.style.lineHeight = '1.4';
+        const expected = txtToHtml(obj.text);
+        if(ti.innerHTML !== expected) ti.innerHTML = expected;
       }
+      // 編輯中：dblclick handler 已設好完整樣式，不在此覆蓋
     }
   } else if(obj.type==='table'){
     renderTableInEl(el, obj);
