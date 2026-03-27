@@ -2241,6 +2241,21 @@ function buildSlotEl(slot){
 
   body.innerHTML=`
   <div style="margin:8px 0 6px">
+    <div style="font-size:10px;color:var(--g400);font-weight:600;margin-bottom:5px;letter-spacing:.3px">光田預設 LOGO</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+      ${PRESET_LOGOS.map(p=>`
+        <div onclick="loadPresetLogo(${slot.id},'${p.url}','${p.name}')" title="${p.name}"
+          style="cursor:pointer;border:2px solid ${slot.name===p.name?'var(--blue)':'var(--g200)'};border-radius:5px;padding:3px 5px;background:${p.bg};display:flex;align-items:center;justify-content:center;width:58px;height:30px;overflow:hidden;transition:border-color .15s;flex-shrink:0"
+          onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='${slot.name===p.name?'var(--blue)':'var(--g200)'}'">
+          <img src="${p.url}" style="max-width:100%;max-height:100%;object-fit:contain" onerror="this.parentNode.innerHTML='<span style=font-size:9px;color:#aaa>${p.name}</span>'">
+        </div>
+      `).join('')}
+    </div>
+    <div style="display:flex;gap:5px;align-items:center;margin-bottom:6px">
+      <div style="flex:1;height:1px;background:var(--g100)"></div>
+      <span style="font-size:10px;color:var(--g300)">或自行上傳</span>
+      <div style="flex:1;height:1px;background:var(--g100)"></div>
+    </div>
     <button class="btn btn-ghost btn-full btn-sm" onclick="document.getElementById('slotInp${slot.id}').click()">
       ${slot.imgEl?'更換 LOGO':'上傳 LOGO'}
     </button>
@@ -2328,6 +2343,31 @@ function setSlotPos(lid, pos){
 function setSlotProp(lid, key, val){
   const slot=S.wm.logos.find(l=>l.id===lid);
   if(slot) slot[key]=val;
+}
+
+/* ── 光田預設 LOGO ── */
+const PRESET_LOGOS=[
+  {name:'橫式(正常)', url:'./logos/logo-h-normal.png',   bg:'#fff'},
+  {name:'橫式(白)',   url:'./logos/logo-h-white.png',    bg:'#2563EB'},
+  {name:'橫式(全白)', url:'./logos/logo-h-fullwhite.png',bg:'#1E293B'},
+  {name:'直式',       url:'./logos/logo-v.png',          bg:'#fff'},
+  {name:'單獨',       url:'./logos/logo-solo.png',       bg:'#fff'},
+];
+
+function loadPresetLogo(lid, url, name){
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=()=>{
+    const slot=S.wm.logos.find(l=>l.id===lid);
+    if(!slot) return;
+    slot.imgEl=img;
+    slot.name=name;
+    slot._open=true;
+    renderLogoSlots();
+    snack('✓ 已套用：'+name);
+  };
+  img.onerror=()=>snack('⚠ LOGO 載入失敗（請確認已部署至 GitHub Pages）');
+  img.src=url+'?v=1';
 }
 
 function compositeOne(baseImgEl){
