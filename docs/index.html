@@ -3156,9 +3156,11 @@ function switchTab(tab, btn){
   const pgQr=document.getElementById('pg-qr');
 
   // QR 頁面：隱藏所有其他區塊，全版顯示
-  pgQr.style.display = (tab==='qr') ? 'flex' : 'none';
-  if(sbEl) sbEl.style.display = (tab==='qr') ? 'none' : '';
-  if(caEl) caEl.style.display = (tab==='qr') ? 'none' : '';
+  const isQr = (tab==='qr');
+  pgQr.style.display   = isQr ? 'flex' : 'none';
+  if(sbEl)  sbEl.style.display  = isQr ? 'none' : '';
+  if(caEl)  caEl.style.display  = isQr ? 'none' : '';
+  tplPanel.style.display         = isQr ? 'none' : '';
 
   if(tab==='poster'){
     dlBtn.textContent='⬇ 下載海報 PNG';
@@ -3190,7 +3192,13 @@ function switchTab(tab, btn){
     if(pagesPanel) pagesPanel.style.display='none';
     document.getElementById('pp').style.display='none';
   } else if(tab==='qr'){
-    setTimeout(qrGenerate, 100);
+    dlBar.style.display='none';
+    wmpBtn.style.display='none';
+    catop.style.display='none';
+    cscroll.style.display='none';
+    ieArea.style.display='none';
+    if(pagesPanel) pagesPanel.style.display='none';
+    setTimeout(qrGenerate, 150);
   }
 }
 
