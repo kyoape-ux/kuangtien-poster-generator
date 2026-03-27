@@ -636,30 +636,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .page-thumb.drag-over{border-color:var(--blue);background:#EBF4FF;opacity:.65}
 
 /* ── CLOUD SYNC STATUS ── */
-#cloud-bar{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:var(--g100);margin-bottom:6px;cursor:pointer;transition:background .15s;}
-#cloud-bar:hover{background:var(--g200)}
-#cloud-bar .cb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--g300);transition:background .3s}
-#cloud-bar .cb-dot.on{background:#16A34A}
-#cloud-bar .cb-dot.err{background:#DC2626}
-#cloud-bar .cb-dot.sync{background:#2563EB;animation:cbpulse .9s infinite}
-@keyframes cbpulse{0%,100%{opacity:1}50%{opacity:.3}}
-#cloud-bar .cb-txt{font-size:10px;color:var(--g500);flex:1;line-height:1.3}
-#cloud-bar .cb-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1.5px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;font-weight:700;white-space:nowrap}
-#cloud-bar .cb-btn:hover{background:var(--blue);color:#fff}
-
-/* ── CLOUD TOKEN SETUP MODAL ── */
-#cloud-setup-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1200;align-items:center;justify-content:center}
-#cloud-setup-modal.open{display:flex}
-.cs-box{background:#fff;border-radius:14px;padding:20px 22px;width:420px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.cs-box h3{font-size:15px;font-weight:700;color:var(--g800);margin:0 0 4px}
-.cs-box .cs-sub{font-size:11px;color:var(--g400);margin-bottom:14px}
-.cs-step{display:flex;gap:10px;margin-bottom:9px;font-size:11px;color:var(--g600);line-height:1.6;align-items:flex-start}
-.cs-n{width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.cs-box input.cs-inp{width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--g200);border-radius:6px;font-size:12px;font-family:monospace;margin:6px 0}
-.cs-box input.cs-inp:focus{outline:none;border-color:var(--blue)}
-.cs-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700}
-.cs-badge.ok{background:#DCFCE7;color:#15803D}
-.cs-badge.no{background:#F1F5F9;color:#64748B}
+#cloud-bar{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:var(--g100);margin-bottom:6px;}
+#cloud-bar #cloud-sync-btn,#cloud-bar #cloud-admin-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1.5px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;font-weight:700;white-space:nowrap}
+#cloud-bar #cloud-sync-btn:hover,#cloud-bar #cloud-admin-btn:hover{background:var(--blue);color:#fff}
+#cloud-status-txt{font-size:10px;color:var(--g500);flex:1;line-height:1.3}
+.cloud-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+.cloud-dot.ok{background:#4CAF50;}
+.cloud-dot.syncing{background:#FF9800;animation:pulse 1s infinite;}
+.cloud-dot.error{background:#f44336;}
+.cloud-dot.off{background:#888;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 </style>
 </head>
@@ -696,10 +682,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   </div>
   <div id="tpl-panel-footer">
     <!-- 雲端同步 -->
-    <div id="cloud-bar" onclick="openCloudSetup()">
-      <div class="cb-dot" id="cb-dot"></div>
-      <div class="cb-txt" id="cb-txt">雲端同步載入中...</div>
-      <button class="cb-btn" id="cb-push-btn" style="display:none" onclick="event.stopPropagation();cloudPush()">↑ 同步</button>
+    <div id="cloud-bar">
+      <span id="cloud-dot" class="cloud-dot off"></span>
+      <span id="cloud-status-txt">載入中...</span>
+      <button id="cloud-sync-btn" onclick="fbPush()" title="立即同步">↑ 同步</button>
+      <button id="cloud-admin-btn" onclick="_fbAdminMode ? exitAdminMode() : toggleAdminMode()" title="管理員模式">🔑</button>
     </div>
     <!-- 內建範本編輯模式 bar（平時隱藏） -->
     <div id="tpl-edit-bar" style="display:none">
@@ -1207,33 +1194,6 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
 </div><!-- /ca -->
 </div><!-- /main -->
-
-<!-- CLOUD TOKEN SETUP MODAL -->
-<div id="cloud-setup-modal">
-  <div class="cs-box">
-    <h3>☁ 雲端同步設定</h3>
-    <div class="cs-sub">設定後，所有裝置開啟此網址都能看到相同的範本</div>
-    <div id="cs-current" style="margin-bottom:12px"></div>
-
-    <div style="font-size:11px;font-weight:700;color:var(--g700);margin-bottom:8px">如何取得 GitHub Token（免費，一次設定）</div>
-    <div class="cs-step"><div class="cs-n">1</div><div>前往 <b>github.com</b> → 右上角頭像 → <b>Settings</b></div></div>
-    <div class="cs-step"><div class="cs-n">2</div><div>左側點 <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Tokens (classic)</b> → <b>Generate new token</b></div></div>
-    <div class="cs-step"><div class="cs-n">3</div><div>名稱輸入 <b>poster-sync</b>，勾選 <b>public_repo</b>，點 <b>Generate token</b></div></div>
-    <div class="cs-step"><div class="cs-n">4</div><div>複製 token（ghp_開頭的字串），貼到下方，點「儲存」</div></div>
-
-    <input type="password" class="cs-inp" id="cs-token-inp" placeholder="貼上 GitHub Token（ghp_ 或 gho_ 開頭）" autocomplete="off">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-      <button class="btn btn-blue" onclick="saveCloudToken()">✓ 儲存並同步</button>
-      <button class="btn btn-ghost" onclick="closeCloudSetup()">取消</button>
-    </div>
-    <div id="cs-remove-wrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--g100);text-align:center">
-      <button class="btn btn-ghost btn-sm" onclick="removeCloudToken()" style="font-size:10px;color:var(--red)">移除同步 Token</button>
-      <div style="margin-top:6px">
-        <button class="btn btn-ghost btn-sm btn-full" onclick="copySetupUrl()" style="font-size:10px">📋 複製「設定連結」給其他電腦</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- WATERMARK PREVIEW MODAL -->
 <div id="modal">
@@ -3860,217 +3820,136 @@ function applyTemplate(id, force=false){
   snack(`已套用：${tpl.name}`);
 }
 
-// ═══════════════════════════════════════════════
-//  CLOUD SYNC — GitHub Data Repo
-// ═══════════════════════════════════════════════
-const GH_DATA_REPO  = 'kyoape-ux/kuangtien-poster-data';
-const GH_DATA_FILE  = 'templates.json';
-const GH_RAW_URL    = `https://raw.githubusercontent.com/${GH_DATA_REPO}/main/${GH_DATA_FILE}`;
-const GH_API_URL    = `https://api.github.com/repos/${GH_DATA_REPO}/contents/${GH_DATA_FILE}`;
-const GH_TOKEN_KEY  = 'kt_gh_sync_token';
+// ── Firebase / Firestore 同步 ──────────────────────────
+const FB_CONFIG = {
+  apiKey: "AIzaSyB3zod9zQ_11AHx2g62v8Rj9VqYUM8bOYM",
+  authDomain: "kuangtien-poster.firebaseapp.com",
+  projectId: "kuangtien-poster",
+  storageBucket: "kuangtien-poster.firebasestorage.app",
+  messagingSenderId: "294368545338",
+  appId: "1:294368545338:web:259e49ae4bd093bfeec303"
+};
+const FB_WRITE_KEY = 'KT_POSTER_ADMIN_2024';
+const FB_ADMIN_LS_KEY = 'kt_fb_admin';   // localStorage key to remember admin mode
 
-let _ghFileSha = null; // 最新 SHA（更新時需要）
-let _cloudSyncing = false;
+let _fbApp = null;
+let _fbDb  = null;
+let _fbAdminMode = false;
+let _syncTimer = null;
 
-function getGhToken(){ return localStorage.getItem(GH_TOKEN_KEY)||''; }
-
-function setCloudUI(state){ // 'loading'|'readonly'|'write'|'syncing'|'error'
-  const dot=document.getElementById('cb-dot');
-  const txt=document.getElementById('cb-txt');
-  const btn=document.getElementById('cb-push-btn');
-  if(!dot) return;
-  dot.className='cb-dot'+(state==='write'||state==='syncing'?' on':state==='error'?' err':state==='syncing'?' sync':'');
-  if(state==='syncing') dot.className='cb-dot sync';
-  const labels={
-    loading:'雲端同步初始化中...',
-    readonly:'☁ 已讀取雲端範本（唯讀）— 設定 Token 可寫入',
-    write:'☁ 雲端同步已連線（可讀寫）',
-    syncing:'☁ 同步中...',
-    error:'☁ 讀取雲端失敗（點擊重試）'
-  };
-  if(txt) txt.textContent=labels[state]||'';
-  if(btn) btn.style.display=(state==='write')?'block':'none';
+function fbInit() {
+  if (_fbApp) return;
+  try {
+    _fbApp = firebase.initializeApp(FB_CONFIG);
+    _fbDb  = firebase.firestore(_fbApp);
+    _fbAdminMode = !!localStorage.getItem(FB_ADMIN_LS_KEY);
+    console.log('[FB] Firestore 初始化完成，管理模式:', _fbAdminMode);
+  } catch(e) {
+    console.error('[FB] 初始化失敗', e);
+  }
 }
 
-// ── 初始化：從 GitHub raw CDN 讀取範本 ──
-async function initCloudSync(){
-  // 檢查 URL 是否有自動設定 token 的參數
-  const hash = window.location.hash;
-  if(hash.startsWith('#kt-sync=')){
-    try{
-      const encoded = hash.slice(9);
-      const token = decodeURIComponent(atob(encoded));
-      if(token && (token.startsWith('ghp_')||token.startsWith('gho_')||token.startsWith('github_pat_'))){
-        localStorage.setItem(GH_TOKEN_KEY, token);
-        window.history.replaceState(null,'',window.location.pathname+window.location.search);
-        snack('✅ 同步 Token 已自動設定！');
+async function fbPull() {
+  if (!_fbDb) return;
+  try {
+    updateCloudDot('syncing');
+    const doc = await _fbDb.collection('data').doc('templates').get();
+    if (doc.exists) {
+      const d = doc.data();
+      // 更新自訂範本
+      if (Array.isArray(d.custom_templates)) {
+        localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(d.custom_templates));
       }
-    } catch(e){}
-  }
-
-  setCloudUI('loading');
-  try{
-    const token = getGhToken();
-
-    let data, sha;
-    if(token){
-      // 有 token：用 API 取得 SHA（寫入時需要）
-      const res = await fetch(GH_API_URL+'?t='+Date.now(), {
-        headers:{'Authorization':`token ${token}`,'Accept':'application/vnd.github.v3+json'}
-      });
-      if(!res.ok){ setCloudUI('error'); return; }
-      const meta = await res.json();
-      sha = meta.sha;
-      if(meta.content){
-        // 小檔案：直接解碼 base64 內容
-        data = JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\n/g,'')))));
-      } else {
-        // 大檔案（>1MB）：GitHub API 不回傳 content，改用 raw CDN
-        const r2 = await fetch(GH_RAW_URL+'?t='+Date.now());
-        if(!r2.ok){ setCloudUI('error'); return; }
-        data = await r2.json();
+      // 更新內建範本覆寫
+      if (d.builtin_overrides && typeof d.builtin_overrides === 'object') {
+        localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(d.builtin_overrides));
       }
+      // 更新已刪除內建範本
+      if (Array.isArray(d.builtin_deleted)) {
+        localStorage.setItem(BUILTIN_DELETED_KEY, JSON.stringify(d.builtin_deleted));
+      }
+      renderTemplates();
+      updateCloudDot('ok');
+      console.log('[FB] 雲端同步完成');
     } else {
-      // 無 token：用 raw CDN（公開，無速率限制，唯讀）
-      const res = await fetch(GH_RAW_URL+'?t='+Date.now());
-      if(!res.ok){ setCloudUI('error'); return; }
-      data = await res.json();
+      updateCloudDot('ok');
+      console.log('[FB] 雲端尚無資料，使用本機');
     }
-
-    if(sha) _ghFileSha = sha;
-
-    // 合併到 localStorage（雲端優先）
-    if(Array.isArray(data.custom_templates)){
-      localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(data.custom_templates));
-    }
-    if(data.builtin_overrides && typeof data.builtin_overrides==='object'){
-      localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(data.builtin_overrides));
-    }
-    if(Array.isArray(data.builtin_deleted)){
-      localStorage.setItem(BUILTIN_DELETED_KEY, JSON.stringify(data.builtin_deleted));
-    }
-    renderTemplates();
-    setCloudUI(token ? 'write' : 'readonly');
-  } catch(e){
-    console.warn('Cloud sync init error:', e);
-    setCloudUI('error');
+  } catch(e) {
+    console.error('[FB] 讀取失敗', e);
+    updateCloudDot('error');
   }
 }
 
-// ── 推送：把本機資料同步到 GitHub ──
-async function cloudPush(){
-  const token = getGhToken();
-  if(!token){ openCloudSetup(); return; }
-  if(_cloudSyncing) return;
-  _cloudSyncing = true;
-  setCloudUI('syncing');
-
-  try{
-    // 準備資料（移除 thumbDataUrl 減少大小）
-    const tpls = loadCustomTemplates().map(t=>{
+async function fbPush() {
+  if (!_fbDb || !_fbAdminMode) return;
+  try {
+    updateCloudDot('syncing');
+    const customTpls = loadCustomTemplates().map(t => {
+      // 移除縮圖以節省空間
       const {thumbDataUrl, ...rest} = t;
       return rest;
     });
-    const payload = {
-      custom_templates: tpls,
-      builtin_overrides: loadBuiltinOverrides(),
-      builtin_deleted: loadBuiltinDeleted(),
-      last_updated: new Date().toISOString()
-    };
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
-
-    const body = {
-      message: `sync: 更新範本 ${new Date().toLocaleString('zh-TW')}`,
-      content
-    };
-    if(_ghFileSha) body.sha = _ghFileSha;
-
-    const res = await fetch(GH_API_URL, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      body: JSON.stringify(body)
-    });
-
-    if(res.ok){
-      const d = await res.json();
-      _ghFileSha = d.content?.sha || _ghFileSha;
-      setCloudUI('write');
-      snack('✅ 範本已同步至雲端（所有裝置即時更新）');
-    } else {
-      const err = await res.json();
-      setCloudUI('error');
-      snack('❌ 同步失敗：'+(err.message||res.status));
+    const overrides = loadBuiltinOverrides();
+    // 清理 overrides 中的縮圖
+    const cleanOverrides = {};
+    for (const [k,v] of Object.entries(overrides)) {
+      const {thumbDataUrl, ...rest} = v;
+      cleanOverrides[k] = rest;
     }
-  } catch(e){
-    setCloudUI('error');
-    snack('❌ 網路錯誤，請稍後再試');
+    const deleted = loadBuiltinDeleted();
+    await _fbDb.collection('data').doc('templates').set({
+      custom_templates: customTpls,
+      builtin_overrides: cleanOverrides,
+      builtin_deleted: deleted,
+      last_updated: firebase.firestore.FieldValue.serverTimestamp(),
+      _auth: FB_WRITE_KEY
+    });
+    updateCloudDot('ok');
+    console.log('[FB] 推送成功');
+  } catch(e) {
+    console.error('[FB] 推送失敗', e);
+    updateCloudDot('error');
+    snack('雲端同步失敗，請確認網路連線');
   }
-  _cloudSyncing = false;
 }
 
-// ── 自動排程同步 ──
-function scheduleCloudSync(){
-  if(!getGhToken()) return;
-  clearTimeout(window._cloudSyncTimer);
-  window._cloudSyncTimer = setTimeout(cloudPush, 2000);
+function scheduleCloudSync() {
+  if (!_fbAdminMode) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => fbPush(), 2000);
 }
 
-// ── 設定 Modal ──
-function openCloudSetup(){
-  const modal = document.getElementById('cloud-setup-modal');
-  if(!modal) return;
-  const token = getGhToken();
-  const cur = document.getElementById('cs-current');
-  if(cur) cur.innerHTML = token
-    ? '<span class="cs-badge ok">✓ Token 已設定</span>'
-    : '<span class="cs-badge no">尚未設定</span>';
-  const inp = document.getElementById('cs-token-inp');
-  if(inp) inp.value = '';
-  const rm = document.getElementById('cs-remove-wrap');
-  if(rm) rm.style.display = token ? 'block' : 'none';
-  modal.classList.add('open');
+function updateCloudDot(state) {
+  const dot = document.getElementById('cloud-dot');
+  const txt = document.getElementById('cloud-status-txt');
+  if (!dot || !txt) return;
+  dot.className = 'cloud-dot ' + state;
+  if (state === 'ok')      txt.textContent = _fbAdminMode ? '已同步（管理員）' : '已同步';
+  if (state === 'syncing') txt.textContent = '同步中...';
+  if (state === 'error')   txt.textContent = '同步失敗';
+  if (state === 'off')     txt.textContent = _fbAdminMode ? '管理員模式' : '唯讀模式';
 }
 
-function closeCloudSetup(){
-  const modal = document.getElementById('cloud-setup-modal');
-  if(modal) modal.classList.remove('open');
-}
-
-async function saveCloudToken(){
-  const inp = document.getElementById('cs-token-inp');
-  const val = inp?.value.trim();
-  if(!val){ snack('請輸入 GitHub Token'); return; }
-  if(!val.startsWith('ghp_') && !val.startsWith('gho_') && !val.startsWith('github_pat_')){
-    snack('❌ Token 格式不正確，請確認以 ghp_ 或 gho_ 開頭'); return;
+function toggleAdminMode() {
+  const pwd = prompt('請輸入管理員密碼以啟用寫入功能：');
+  if (pwd === FB_WRITE_KEY) {
+    _fbAdminMode = true;
+    localStorage.setItem(FB_ADMIN_LS_KEY, '1');
+    updateCloudDot('off');
+    snack('✅ 管理員模式已開啟，範本變更將自動同步');
+    renderTemplates();
+  } else if (pwd !== null) {
+    snack('密碼錯誤');
   }
-  localStorage.setItem(GH_TOKEN_KEY, val);
-  closeCloudSetup();
-  await initCloudSync();
-  await cloudPush();
 }
 
-function removeCloudToken(){
-  if(!confirm('移除 Token 後此裝置只能讀取範本，無法儲存。確定嗎？')) return;
-  localStorage.removeItem(GH_TOKEN_KEY);
-  setCloudUI('readonly');
-  closeCloudSetup();
-  snack('已移除 Token，目前為唯讀模式');
-}
-
-function copySetupUrl(){
-  const token = getGhToken();
-  if(!token){ snack('尚未設定 Token'); return; }
-  const encoded = btoa(encodeURIComponent(token));
-  const url = `${window.location.origin}${window.location.pathname}#kt-sync=${encoded}`;
-  navigator.clipboard.writeText(url).then(()=>{
-    snack('✅ 設定連結已複製！在其他電腦開啟此連結即可自動設定同步');
-  }).catch(()=>{
-    prompt('複製這個連結到其他電腦開啟：', url);
-  });
+function exitAdminMode() {
+  _fbAdminMode = false;
+  localStorage.removeItem(FB_ADMIN_LS_KEY);
+  updateCloudDot('off');
+  snack('已切換為唯讀模式');
+  renderTemplates();
 }
 
 // ═══════════════════════════════════════════════
@@ -5146,7 +5025,9 @@ function ieInitMouseEvents(){
 window.addEventListener('load', ()=>{
   initTplCategories();
   renderTemplates();
-  initCloudSync();
+  fbInit();
+  fbPull();  // 頁面載入時自動從雲端讀取
+  updateCloudDot('off');
   renderBg();
   setTimeout(zfit, 100);
   addLogoSlot();
@@ -5161,5 +5042,7 @@ window.addEventListener('load', ()=>{
   setTimeout(qrGenerate, 200);
 });
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </body>
 </html>
