@@ -681,6 +681,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <button class="btn btn-teal btn-full btn-sm" onclick="openSaveTplModal()">
       💾 另存為公版範本
     </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px">
+      <button class="btn btn-ghost btn-sm" onclick="exportCustomTemplates()" title="將自訂範本匯出為備份檔案（可在其他電腦匯入）">⬆ 匯出備份</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('tpl-import-inp').click()" title="從備份檔案匯入自訂範本">⬇ 匯入範本</button>
+    </div>
+    <input type="file" id="tpl-import-inp" accept=".json" style="display:none" onchange="importCustomTemplates(this)">
     <button class="btn btn-ghost btn-full btn-sm" id="restore-builtin-btn" onclick="restoreAllBuiltins()" style="display:none;margin-top:4px;font-size:10px;color:var(--g500)">
       🔄 還原已隱藏的內建範本
     </button>
@@ -3413,6 +3418,61 @@ function deleteCustomTemplate(id){
   localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(list));
   renderTemplates();
   snack('已刪除範本');
+}
+
+// ── 匯出自訂範本備份 ──
+function exportCustomTemplates(){
+  const list = loadCustomTemplates();
+  if(!list.length){ snack('目前沒有自訂範本可匯出'); return; }
+  const data = {
+    _type: 'kt-poster-templates',
+    _version: 1,
+    _exportedAt: new Date().toISOString(),
+    templates: list
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `公版範本備份_${dateStr}.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  snack(`已匯出 ${list.length} 個自訂範本`);
+}
+
+// ── 匯入自訂範本備份 ──
+function importCustomTemplates(inp){
+  const file = inp.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      let imported = [];
+      // 支援兩種格式：備份 JSON 或直接陣列
+      if(data._type==='kt-poster-templates' && Array.isArray(data.templates)){
+        imported = data.templates;
+      } else if(Array.isArray(data)){
+        imported = data;
+      } else {
+        snack('❌ 檔案格式不正確'); inp.value=''; return;
+      }
+      if(!imported.length){ snack('備份檔中沒有範本'); inp.value=''; return; }
+
+      const existing = loadCustomTemplates();
+      const existingIds = new Set(existing.map(t=>t.id));
+      // 跳過已存在的（依 id 判斷）
+      const newOnes = imported.filter(t=>!existingIds.has(t.id));
+      const merged = [...newOnes, ...existing];
+      localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(merged));
+      renderTemplates();
+      snack(`✅ 已匯入 ${newOnes.length} 個範本（跳過 ${imported.length-newOnes.length} 個重複）`);
+    } catch(err){
+      snack('❌ 讀取失敗：檔案損毀或格式錯誤');
+    }
+    inp.value='';
+  };
+  reader.readAsText(file);
 }
 
 function imgElToDataUrl(imgEl){
