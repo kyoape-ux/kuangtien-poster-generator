@@ -673,10 +673,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       </div>
       <div class="row" style="margin-bottom:6px">
         <div class="sc" id="sc-a2v" onclick="selSz(this,'A2 直式',1587,2245)">A2 直式<span>1587×2245px</span></div>
-        <div class="sc" id="sc-sq" onclick="selSz(this,'正方形',1000,1000)">正方形<span>1000×1000px</span></div>
+        <div class="sc" id="sc-a2h" onclick="selSz(this,'A2 橫式',2245,1587)">A2 橫式<span>2245×1587px</span></div>
       </div>
       <div class="row" style="margin-bottom:6px">
+        <div class="sc" id="sc-sq" onclick="selSz(this,'正方形',2000,2000)">正方形封面<span>2000×2000px</span></div>
         <div class="sc" id="sc-yt" onclick="selSz(this,'YouTube 封面',1920,1080)">YouTube封面<span>1920×1080px</span></div>
+        <div class="sc" id="sc-shorts" onclick="selSz(this,'Shorts 封面',1080,1920)">Shorts封面<span>1080×1920px</span></div>
       </div>
       <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:nowrap">
         <span class="inp-label" style="white-space:nowrap;flex-shrink:0">自訂</span>
@@ -916,145 +918,6 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
   </div><!-- /pg-ie -->
 
-  <!-- ═══ QR CODE 產生器 TAB ═══ -->
-  <div class="pg" id="pg-qr">
-    <div id="qr-layout">
-
-      <!-- 左欄：內容輸入 -->
-      <div id="qr-left">
-        <div class="qr-sec-title">QR 碼類型</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
-          <button class="qr-type-btn on" id="qrt-url"   onclick="qrSetType('url')">🌐 網址</button>
-          <button class="qr-type-btn"    id="qrt-text"  onclick="qrSetType('text')">📝 文字</button>
-          <button class="qr-type-btn"    id="qrt-email" onclick="qrSetType('email')">✉ 郵件</button>
-          <button class="qr-type-btn"    id="qrt-phone" onclick="qrSetType('phone')">📞 電話</button>
-          <button class="qr-type-btn"    id="qrt-sms"   onclick="qrSetType('sms')">💬 SMS</button>
-          <button class="qr-type-btn"    id="qrt-wifi"  onclick="qrSetType('wifi')">📶 Wi-Fi</button>
-        </div>
-
-        <!-- 動態表單 -->
-        <div id="qr-form-url">
-          <div class="qr-sec-title" style="margin-top:4px">網址</div>
-          <textarea id="qri-url" class="inp" style="width:100%;box-sizing:border-box;resize:vertical;min-height:60px;font-size:12px" placeholder="https://example.com" oninput="qrGenerate()">https://kyoape-ux.github.io/kuangtien-poster-generator/</textarea>
-        </div>
-        <div id="qr-form-text" style="display:none">
-          <div class="qr-sec-title" style="margin-top:4px">文字內容</div>
-          <textarea id="qri-text" class="inp" style="width:100%;box-sizing:border-box;resize:vertical;min-height:80px;font-size:12px" placeholder="在此輸入文字內容" oninput="qrGenerate()"></textarea>
-        </div>
-        <div id="qr-form-email" style="display:none">
-          <div class="qr-sec-title" style="margin-top:4px">電子郵件</div>
-          <input id="qri-email" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" type="email" placeholder="example@email.com" oninput="qrGenerate()">
-          <div style="font-size:10px;color:var(--g400);margin-top:4px">主旨（選填）</div>
-          <input id="qri-email-sub" class="inp" style="width:100%;box-sizing:border-box;font-size:12px;margin-top:3px" placeholder="主旨" oninput="qrGenerate()">
-        </div>
-        <div id="qr-form-phone" style="display:none">
-          <div class="qr-sec-title" style="margin-top:4px">電話號碼</div>
-          <input id="qri-phone" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" type="tel" placeholder="0912-345-678" oninput="qrGenerate()">
-        </div>
-        <div id="qr-form-sms" style="display:none">
-          <div class="qr-sec-title" style="margin-top:4px">SMS 號碼</div>
-          <input id="qri-sms-phone" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" placeholder="0912-345-678" oninput="qrGenerate()">
-          <div style="font-size:10px;color:var(--g400);margin-top:4px">簡訊內容（選填）</div>
-          <textarea id="qri-sms-msg" class="inp" style="width:100%;box-sizing:border-box;resize:vertical;min-height:50px;font-size:12px;margin-top:3px" oninput="qrGenerate()"></textarea>
-        </div>
-        <div id="qr-form-wifi" style="display:none">
-          <div class="qr-sec-title" style="margin-top:4px">Wi-Fi 設定</div>
-          <input id="qri-wifi-ssid" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" placeholder="網路名稱 (SSID)" oninput="qrGenerate()">
-          <input id="qri-wifi-pass" class="inp" style="width:100%;box-sizing:border-box;font-size:12px;margin-top:4px" placeholder="密碼" oninput="qrGenerate()">
-          <select id="qri-wifi-enc" class="inp" style="width:100%;box-sizing:border-box;font-size:12px;margin-top:4px" onchange="qrGenerate()">
-            <option value="WPA">WPA/WPA2</option>
-            <option value="WEP">WEP</option>
-            <option value="nopass">無密碼</option>
-          </select>
-        </div>
-
-        <!-- 下載 -->
-        <div class="qr-dl-row">
-          <button class="btn btn-indigo btn-sm" onclick="qrDownload('png')">⬇ PNG</button>
-          <button class="btn btn-ghost btn-sm" onclick="qrDownload('svg')">⬇ SVG</button>
-        </div>
-        <div style="text-align:center;margin-top:8px">
-          <button class="btn btn-teal btn-sm btn-full" onclick="qrAddToPoster()">➕ 匯入到海報</button>
-        </div>
-      </div>
-
-      <!-- 中欄：預覽 -->
-      <div id="qr-center">
-        <div id="qr-preview-box">
-          <canvas id="qr-canvas" width="320" height="320"></canvas>
-          <div id="qr-info" style="font-size:11px;color:var(--g400);text-align:center;max-width:200px"></div>
-        </div>
-      </div>
-
-      <!-- 右欄：樣式設定 -->
-      <div id="qr-right">
-        <div class="qr-sec-title" style="margin-top:0">QR 碼設定</div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">尺寸</span>
-          <input type="range" id="qr-size" min="100" max="800" value="320" step="10" oninput="document.getElementById('qr-size-val').textContent=this.value+'px';qrGenerate()" style="flex:1">
-          <span id="qr-size-val" style="font-size:11px;color:var(--g500);min-width:38px">320px</span>
-        </div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">前景色</span>
-          <input type="color" id="qr-color" value="#000000" oninput="qrGenerate()" style="width:32px;height:24px;padding:0;border:1px solid var(--g200);border-radius:4px;cursor:pointer">
-          <input type="text" id="qr-color-hex" value="#000000" class="hex-inp" style="width:68px" oninput="syncQrColor('fg',this.value)">
-        </div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">背景色</span>
-          <input type="color" id="qr-bg" value="#ffffff" oninput="qrGenerate()" style="width:32px;height:24px;padding:0;border:1px solid var(--g200);border-radius:4px;cursor:pointer">
-          <input type="text" id="qr-bg-hex" value="#ffffff" class="hex-inp" style="width:68px" oninput="syncQrColor('bg',this.value)">
-        </div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">透明背景</span>
-          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px">
-            <input type="checkbox" id="qr-transparent" onchange="qrGenerate()">
-            <span id="qr-transparent-lbl">關</span>
-          </label>
-        </div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">容錯率</span>
-          <select id="qr-ecl" class="inp" style="flex:1;font-size:11px" onchange="qrGenerate()">
-            <option value="L">L — 低 7%</option>
-            <option value="M">M — 中 15%</option>
-            <option value="Q">Q — 高 25%</option>
-            <option value="H" selected>H — 超高 30%</option>
-          </select>
-        </div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">邊框</span>
-          <select id="qr-margin" class="inp" style="flex:1;font-size:11px" onchange="qrGenerate()">
-            <option value="4" selected>有（標準）</option>
-            <option value="1">小</option>
-            <option value="0">無</option>
-          </select>
-        </div>
-
-        <div class="qr-sec-title">角落樣式</div>
-        <div style="font-size:10px;color:var(--g400);margin-bottom:4px">外框形狀</div>
-        <div class="qr-corner-grid">
-          <button class="qr-corner-btn on" id="qc-outer-square" onclick="qrSetCornerOuter('square')">⬛ 方形</button>
-          <button class="qr-corner-btn" id="qc-outer-round" onclick="qrSetCornerOuter('round')">🔵 圓形</button>
-        </div>
-        <div style="font-size:10px;color:var(--g400);margin:6px 0 4px">內框形狀</div>
-        <div class="qr-corner-grid">
-          <button class="qr-corner-btn on" id="qc-inner-square" onclick="qrSetCornerInner('square')">▪ 方形</button>
-          <button class="qr-corner-btn" id="qc-inner-round" onclick="qrSetCornerInner('round')">• 圓形</button>
-        </div>
-        <div class="inp-row" style="margin:8px 0 6px">
-          <span class="inp-label">角落色</span>
-          <input type="color" id="qr-corner-color" value="#000000" oninput="qrGenerate()" style="width:32px;height:24px;padding:0;border:1px solid var(--g200);border-radius:4px;cursor:pointer">
-        </div>
-
-        <div class="qr-sec-title">點陣樣式</div>
-        <div class="qr-corner-grid">
-          <button class="qr-corner-btn on" id="qd-square" onclick="qrSetDotStyle('square')">▪ 方形</button>
-          <button class="qr-corner-btn" id="qd-round" onclick="qrSetDotStyle('round')">• 圓形</button>
-        </div>
-      </div>
-
-    </div>
-  </div><!-- /pg-qr -->
-
   <!-- PROPERTIES PANEL -->
   <div id="pp"></div>
 
@@ -1136,6 +999,147 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <button class="btn btn-ghost btn-full btn-sm" onclick="addPage()" style="font-size:11px;padding:5px 4px">＋ 頁</button>
     </div>
   </div>
+
+</div><!-- /ca -->
+
+<!-- ═══ QR CODE 全版頁面（#main 直屬子層，切換時蓋住其他欄）═══ -->
+<div id="pg-qr" style="display:none;flex:1;overflow:hidden;background:#f0f2f5;">
+  <div id="qr-layout" style="display:flex;height:100%;overflow:hidden;">
+
+    <!-- 左欄：所有功能控制 -->
+    <div id="qr-left" style="width:300px;flex-shrink:0;background:#fff;border-right:1px solid var(--g200);overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:0">
+
+      <div class="qr-sec-title" style="margin-top:0">QR 碼類型</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:12px">
+        <button class="qr-type-btn on" id="qrt-url"   onclick="qrSetType('url')">🌐 網址</button>
+        <button class="qr-type-btn"    id="qrt-text"  onclick="qrSetType('text')">📝 文字</button>
+        <button class="qr-type-btn"    id="qrt-email" onclick="qrSetType('email')">✉ 郵件</button>
+        <button class="qr-type-btn"    id="qrt-phone" onclick="qrSetType('phone')">📞 電話</button>
+        <button class="qr-type-btn"    id="qrt-sms"   onclick="qrSetType('sms')">💬 SMS</button>
+        <button class="qr-type-btn"    id="qrt-wifi"  onclick="qrSetType('wifi')">📶 Wi-Fi</button>
+      </div>
+
+      <!-- 動態表單 -->
+      <div id="qr-form-url">
+        <div class="qr-sec-title">網址</div>
+        <textarea id="qri-url" class="inp" style="width:100%;box-sizing:border-box;resize:vertical;min-height:60px;font-size:12px" placeholder="https://example.com" oninput="qrGenerate()">https://kyoape-ux.github.io/kuangtien-poster-generator/</textarea>
+      </div>
+      <div id="qr-form-text" style="display:none">
+        <div class="qr-sec-title">文字內容</div>
+        <textarea id="qri-text" class="inp" style="width:100%;box-sizing:border-box;resize:vertical;min-height:80px;font-size:12px" placeholder="在此輸入文字內容" oninput="qrGenerate()"></textarea>
+      </div>
+      <div id="qr-form-email" style="display:none">
+        <div class="qr-sec-title">電子郵件</div>
+        <input id="qri-email" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" type="email" placeholder="example@email.com" oninput="qrGenerate()">
+        <div style="font-size:10px;color:var(--g400);margin:4px 0 3px">主旨（選填）</div>
+        <input id="qri-email-sub" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" placeholder="主旨" oninput="qrGenerate()">
+      </div>
+      <div id="qr-form-phone" style="display:none">
+        <div class="qr-sec-title">電話號碼</div>
+        <input id="qri-phone" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" type="tel" placeholder="0912-345-678" oninput="qrGenerate()">
+      </div>
+      <div id="qr-form-sms" style="display:none">
+        <div class="qr-sec-title">SMS 號碼</div>
+        <input id="qri-sms-phone" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" placeholder="0912-345-678" oninput="qrGenerate()">
+        <div style="font-size:10px;color:var(--g400);margin:4px 0 3px">簡訊內容（選填）</div>
+        <textarea id="qri-sms-msg" class="inp" style="width:100%;box-sizing:border-box;resize:vertical;min-height:50px;font-size:12px" oninput="qrGenerate()"></textarea>
+      </div>
+      <div id="qr-form-wifi" style="display:none">
+        <div class="qr-sec-title">Wi-Fi 設定</div>
+        <input id="qri-wifi-ssid" class="inp" style="width:100%;box-sizing:border-box;font-size:12px" placeholder="網路名稱 (SSID)" oninput="qrGenerate()">
+        <input id="qri-wifi-pass" class="inp" style="width:100%;box-sizing:border-box;font-size:12px;margin-top:4px" placeholder="密碼" oninput="qrGenerate()">
+        <select id="qri-wifi-enc" class="inp" style="width:100%;box-sizing:border-box;font-size:12px;margin-top:4px" onchange="qrGenerate()">
+          <option value="WPA">WPA/WPA2</option>
+          <option value="WEP">WEP</option>
+          <option value="nopass">無密碼</option>
+        </select>
+      </div>
+
+      <!-- QR 碼設定 -->
+      <div class="qr-sec-title" style="margin-top:14px">QR 碼設定</div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">尺寸</span>
+        <input type="range" id="qr-size" min="100" max="800" value="400" step="10" oninput="document.getElementById('qr-size-val').textContent=this.value+'px';qrGenerate()" style="flex:1">
+        <span id="qr-size-val" style="font-size:11px;color:var(--g500);min-width:38px">400px</span>
+      </div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">前景色</span>
+        <input type="color" id="qr-color" value="#000000" oninput="qrGenerate()" style="width:32px;height:24px;padding:0;border:1px solid var(--g200);border-radius:4px;cursor:pointer">
+        <input type="text" id="qr-color-hex" value="#000000" class="hex-inp" style="width:68px" oninput="syncQrColor('fg',this.value)">
+      </div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">背景色</span>
+        <input type="color" id="qr-bg" value="#ffffff" oninput="qrGenerate()" style="width:32px;height:24px;padding:0;border:1px solid var(--g200);border-radius:4px;cursor:pointer">
+        <input type="text" id="qr-bg-hex" value="#ffffff" class="hex-inp" style="width:68px" oninput="syncQrColor('bg',this.value)">
+      </div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">透明背景</span>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px">
+          <input type="checkbox" id="qr-transparent" onchange="qrGenerate()">
+          <span id="qr-transparent-lbl">關</span>
+        </label>
+      </div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">容錯率</span>
+        <select id="qr-ecl" class="inp" style="flex:1;font-size:11px" onchange="qrGenerate()">
+          <option value="L">L — 低 7%</option>
+          <option value="M">M — 中 15%</option>
+          <option value="Q">Q — 高 25%</option>
+          <option value="H" selected>H — 超高 30%</option>
+        </select>
+      </div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">邊框</span>
+        <select id="qr-margin" class="inp" style="flex:1;font-size:11px" onchange="qrGenerate()">
+          <option value="4" selected>有（標準）</option>
+          <option value="1">小</option>
+          <option value="0">無</option>
+        </select>
+      </div>
+
+      <!-- 角落樣式 -->
+      <div class="qr-sec-title" style="margin-top:10px">角落樣式</div>
+      <div style="font-size:10px;color:var(--g400);margin-bottom:4px">外框形狀</div>
+      <div class="qr-corner-grid">
+        <button class="qr-corner-btn on" id="qc-outer-square" onclick="qrSetCornerOuter('square')">⬛ 方形</button>
+        <button class="qr-corner-btn" id="qc-outer-round" onclick="qrSetCornerOuter('round')">🔵 圓形</button>
+      </div>
+      <div style="font-size:10px;color:var(--g400);margin:6px 0 4px">內框形狀</div>
+      <div class="qr-corner-grid">
+        <button class="qr-corner-btn on" id="qc-inner-square" onclick="qrSetCornerInner('square')">▪ 方形</button>
+        <button class="qr-corner-btn" id="qc-inner-round" onclick="qrSetCornerInner('round')">• 圓形</button>
+      </div>
+      <div class="inp-row" style="margin:8px 0 6px">
+        <span class="inp-label">角落色</span>
+        <input type="color" id="qr-corner-color" value="#000000" oninput="qrGenerate()" style="width:32px;height:24px;padding:0;border:1px solid var(--g200);border-radius:4px;cursor:pointer">
+      </div>
+      <div class="qr-sec-title">點陣樣式</div>
+      <div class="qr-corner-grid" style="margin-bottom:16px">
+        <button class="qr-corner-btn on" id="qd-square" onclick="qrSetDotStyle('square')">▪ 方形</button>
+        <button class="qr-corner-btn" id="qd-round" onclick="qrSetDotStyle('round')">• 圓形</button>
+      </div>
+
+      <!-- 下載 -->
+      <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--g100)">
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button class="btn btn-indigo btn-sm" style="flex:1" onclick="qrDownload('png')">⬇ 下載 PNG</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="qrDownload('svg')">⬇ 下載 SVG</button>
+        </div>
+        <button class="btn btn-teal btn-full btn-sm" onclick="qrAddToPoster()">➕ 匯入到海報編輯</button>
+      </div>
+    </div>
+
+    <!-- 右欄：預覽（置中） -->
+    <div id="qr-center" style="flex:1;display:flex;align-items:center;justify-content:center;background:#f0f2f5;overflow:auto;padding:24px">
+      <div id="qr-preview-box" style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--g500);letter-spacing:.5px">QR 碼預覽</div>
+        <canvas id="qr-canvas" width="400" height="400" style="border-radius:8px;display:block"></canvas>
+        <div id="qr-info" style="font-size:11px;color:var(--g400);text-align:center"></div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /pg-qr -->
 
 </div><!-- /ca -->
 </div><!-- /main -->
@@ -1720,28 +1724,34 @@ function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='
 function addImg(inp){
   const file = inp.files[0];
   if(!file) return;
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = ()=>{
-    pushHistory();
-    const id = mkId();
-    const ar = img.naturalHeight / img.naturalWidth;
-    const dw = clamp(300, 100, S.W*0.6);
-    const obj = {
-      id, type:'img',
-      x: 40, y: 40,
-      w: dw, h: dw*ar,
-      rot:0, opacity:1,
-      imgEl: img,
-      aspectRatio: ar
+  // 用 FileReader 保留原始 data URL（保留 PNG 去背透明度，不走 canvas 轉換）
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const img = new Image();
+    img.onload = ()=>{
+      img._srcDataUrl = dataUrl; // 暫存原始 data URL，避免 canvas 轉換破壞透明度
+      pushHistory();
+      const id = mkId();
+      const ar = img.naturalHeight / img.naturalWidth;
+      const dw = clamp(300, 100, S.W*0.6);
+      const obj = {
+        id, type:'img',
+        x: 40, y: 40,
+        w: dw, h: dw*ar,
+        rot:0, opacity:1,
+        imgEl: img,
+        aspectRatio: ar
+      };
+      S.objs.push(obj);
+      mkEl(id);
+      selObj(id);
+      updLayerList();
+      snack('圖片已加入');
     };
-    S.objs.push(obj);
-    mkEl(id);
-    selObj(id);
-    updLayerList();
-    snack('圖片已加入');
+    img.src = dataUrl;
   };
-  img.src = url;
+  reader.readAsDataURL(file);
   inp.value = '';
 }
 
@@ -3270,11 +3280,14 @@ function deleteCustomTemplate(id){
 }
 
 function imgElToDataUrl(imgEl){
+  // 優先使用上傳時保存的原始 data URL（完整保留 PNG 透明度）
+  if(imgEl._srcDataUrl) return imgEl._srcDataUrl;
+  // 回退：canvas 轉換（PNG 格式，保留透明度）
   const c = document.createElement('canvas');
   c.width = imgEl.naturalWidth||imgEl.width;
   c.height = imgEl.naturalHeight||imgEl.height;
   c.getContext('2d').drawImage(imgEl,0,0);
-  return c.toDataURL('image/png'); // PNG 保留透明度（去背圖不變黑）
+  return c.toDataURL('image/png');
 }
 
 function genCurrentThumbDataUrl(){
@@ -3528,6 +3541,7 @@ function applyTemplate(id){
         imgPromises.push(new Promise(res=>{
           const img=new Image();
           img.onload=()=>{
+            img._srcDataUrl=imgDataUrl; // 保留 data URL，下次儲存不走 canvas
             obj.imgEl=img;
             obj.aspectRatio=img.naturalHeight/img.naturalWidth;
             mkEl(objId); res();
@@ -3623,7 +3637,12 @@ async function restoreAutoSave(data){
       if(o.imgDataUrl){
         promises.push(new Promise(res=>{
           const img=new Image();
-          img.onload=()=>{obj.imgEl=img;obj.aspectRatio=img.naturalHeight/img.naturalWidth;mkEl(id);res();};
+          img.onload=()=>{
+            img._srcDataUrl=o.imgDataUrl; // 保留 data URL，下次儲存不走 canvas
+            obj.imgEl=img;
+            obj.aspectRatio=img.naturalHeight/img.naturalWidth;
+            mkEl(id); res();
+          };
           img.src=o.imgDataUrl;
         }));
       }
