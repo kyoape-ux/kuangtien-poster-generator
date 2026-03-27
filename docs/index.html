@@ -1863,24 +1863,65 @@ function mkEl(id){
   if(obj.type==='txt'){
     const ti = document.createElement('div');
     ti.className = 'tinner';
-    ti.contentEditable = 'false';  // 預設不可編輯，雙擊才進入編輯
-    ti.textContent = obj.text;
-    ti.addEventListener('input', ()=>{ obj.text = ti.innerText; });
-    ti.addEventListener('blur', ()=>{
-      obj.text = ti.innerText;
-      ti.contentEditable = 'false';
-      pushHistory();
+    ti.contentEditable = 'false';
+    ti.innerText = obj.text;  // innerText 正確渲染 \n 換行
+
+    // 同步文字，編輯中同時自動撐高
+    ti.addEventListener('input', ()=>{
+      obj.text = ti.innerText.replace(/\n$/, '');
+      if(ti.contentEditable === 'true'){
+        const z = S.zoom;
+        const parentEl = document.getElementById('o'+obj.id);
+        if(parentEl){
+          obj.h = Math.max(obj.size, Math.round(parentEl.scrollHeight / z));
+        }
+        renderBg();
+      }
     });
-    // 單擊：只選取，不攔截（讓 el mousedown 處理拖曳）
+
+    // 失焦：同步最終高度、還原樣式
+    ti.addEventListener('blur', ()=>{
+      obj.text = ti.innerText.replace(/\n$/, '');
+      ti.contentEditable = 'false';
+      const parentEl = document.getElementById('o'+obj.id);
+      if(parentEl){
+        obj.h = Math.max(obj.size, Math.round(parentEl.scrollHeight / S.zoom));
+        applyStyle(parentEl, obj);
+      }
+      pushHistory();
+      renderBg();
+    });
+
+    // Enter 鍵：插入換行（不產生多餘 <div>），Escape 結束編輯
+    ti.addEventListener('keydown', e=>{
+      if(ti.contentEditable !== 'true') return;
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        document.execCommand('insertLineBreak');
+      }
+      if(e.key === 'Escape') ti.blur();
+    });
+
+    // 單擊：編輯中攔截（不觸發拖曳）
     ti.addEventListener('mousedown', e=>{
       if(ti.contentEditable === 'true') e.stopPropagation();
     });
-    // 雙擊：進入編輯模式
+
+    // 雙擊：進入編輯，切換為自動高度
     ti.addEventListener('dblclick', e=>{
       e.stopPropagation();
+      if(ti.contentEditable === 'true') return;
       ti.contentEditable = 'true';
+      // 切換容器為自動高度，讓文字自由撐開
+      const parentEl = document.getElementById('o'+obj.id);
+      if(parentEl){
+        parentEl.style.height = 'auto';
+        parentEl.style.overflow = 'visible';
+      }
+      ti.style.position = 'absolute';
+      ti.style.top = '0'; ti.style.left = '0'; ti.style.right = '0'; ti.style.bottom = 'auto';
+      ti.style.height = 'auto'; ti.style.overflow = 'visible';
       ti.focus();
-      // 移到末尾
       const range = document.createRange();
       range.selectNodeContents(ti);
       range.collapse(false);
@@ -1888,6 +1929,7 @@ function mkEl(id){
       sel.removeAllRanges();
       sel.addRange(range);
     });
+
     // 提示標籤
     const hint = document.createElement('div');
     hint.className = 'tinner-hint';
@@ -1955,16 +1997,29 @@ function applyStyle(el, obj){
     if(ti){
       const ff = obj.fontFamily||'Noto Sans TC';
       const ffStack = ff==='Noto Serif TC' ? `'Noto Serif TC',serif` : `'Noto Sans TC',sans-serif`;
-      ti.style.cssText = `
-        position:absolute;inset:0;overflow:hidden;
-        white-space:pre-wrap;word-break:break-word;
-        cursor:default;line-height:1.4;
-        font-size:${obj.size*z}px;
-        color:${obj.color};
-        font-weight:${obj.weight};
-        text-align:${obj.align};
-        font-family:${ffStack};
-      `;
+      // 編輯中不覆蓋自動高度佈局
+      if(ti.contentEditable !== 'true'){
+        ti.style.cssText = `
+          position:absolute;inset:0;overflow:hidden;
+          white-space:pre-wrap;word-break:break-word;
+          cursor:default;line-height:1.4;
+          font-size:${obj.size*z}px;
+          color:${obj.color};
+          font-weight:${obj.weight};
+          text-align:${obj.align};
+          font-family:${ffStack};
+        `;
+      } else {
+        // 編輯中只更新字型相關屬性，不動佈局
+        ti.style.fontSize = `${obj.size*z}px`;
+        ti.style.color = obj.color;
+        ti.style.fontWeight = obj.weight;
+        ti.style.textAlign = obj.align;
+        ti.style.fontFamily = ffStack;
+        ti.style.whiteSpace = 'pre-wrap';
+        ti.style.wordBreak = 'break-word';
+        ti.style.lineHeight = '1.4';
+      }
     }
   } else if(obj.type==='table'){
     renderTableInEl(el, obj);
