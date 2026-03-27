@@ -1073,13 +1073,6 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <input type="text" id="qr-bg-hex" value="#ffffff" class="hex-inp" style="width:68px" oninput="syncQrColor('bg',this.value)">
       </div>
       <div class="inp-row" style="margin-bottom:6px">
-        <span class="inp-label">透明背景</span>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px">
-          <input type="checkbox" id="qr-transparent" onchange="qrGenerate()">
-          <span id="qr-transparent-lbl">關</span>
-        </label>
-      </div>
-      <div class="inp-row" style="margin-bottom:6px">
         <span class="inp-label">容錯率</span>
         <select id="qr-ecl" class="inp" style="flex:1;font-size:11px" onchange="qrGenerate()">
           <option value="L">L — 低 7%</option>
@@ -1088,15 +1081,28 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
           <option value="H" selected>H — 超高 30%</option>
         </select>
       </div>
-      <div class="inp-row" style="margin-bottom:6px">
-        <span class="inp-label">邊框</span>
-        <select id="qr-margin" class="inp" style="flex:1;font-size:11px" onchange="qrGenerate()">
-          <option value="4" selected>有（標準）</option>
-          <option value="1">小</option>
-          <option value="0">無</option>
-        </select>
+      <div class="inp-row" style="margin-bottom:8px">
+        <span class="inp-label">邊框粗細</span>
+        <input type="range" id="qr-margin" min="0" max="20" value="4" step="1"
+          oninput="document.getElementById('qr-margin-val').textContent=this.value;qrGenerate()" style="flex:1">
+        <span id="qr-margin-val" style="font-size:11px;color:var(--g500);min-width:22px;text-align:right">4</span>
       </div>
 
+      <!-- LOGO 設定 -->
+      <div class="qr-sec-title" style="margin-top:10px">中央 LOGO</div>
+      <div style="display:flex;gap:5px;margin-bottom:6px">
+        <button class="btn btn-teal btn-sm" style="flex:1;font-size:11px" onclick="document.getElementById('qr-logo-inp').click()">📂 上傳 LOGO</button>
+        <button class="btn btn-blue btn-sm" style="flex:1;font-size:11px" onclick="qrUsePresetLogo()">光 預設光田</button>
+        <button class="btn btn-ghost btn-sm" style="padding:5px 8px" onclick="qrClearLogo()" title="移除LOGO">✕</button>
+      </div>
+      <input type="file" id="qr-logo-inp" accept="image/*" style="display:none" onchange="qrUploadLogo(this)">
+      <div id="qr-logo-status" style="font-size:11px;color:var(--g400);margin-bottom:4px">未選擇 LOGO</div>
+      <div class="inp-row" style="margin-bottom:6px">
+        <span class="inp-label">LOGO 大小</span>
+        <input type="range" id="qr-logo-size" min="10" max="40" value="25" step="1"
+          oninput="document.getElementById('qr-logo-size-val').textContent=this.value+'%'" style="flex:1">
+        <span id="qr-logo-size-val" style="font-size:11px;color:var(--g500);min-width:32px;text-align:right">25%</span>
+      </div>
 
       <!-- 產生與下載 -->
       <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--g100);display:flex;flex-direction:column;gap:6px">
@@ -1109,11 +1115,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     </div>
 
     <!-- 右欄：預覽（置中） -->
-    <div id="qr-center" style="flex:1;display:flex;align-items:center;justify-content:center;background:#f0f2f5;overflow:auto;padding:24px">
-      <div id="qr-preview-box" style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;gap:14px">
+    <div id="qr-center" style="flex:1;display:flex;align-items:center;justify-content:center;background:#e8eaed;overflow:auto;padding:24px">
+      <div id="qr-preview-box" style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.14);display:flex;flex-direction:column;align-items:center;gap:14px">
         <div style="font-size:12px;font-weight:600;color:var(--g500);letter-spacing:.5px">QR 碼預覽</div>
-        <div id="qr-preview-wrap" style="position:relative;min-width:300px;min-height:300px;display:flex;align-items:center;justify-content:center">
-          <img id="qr-preview-img" src="" alt="" style="border-radius:8px;display:none;max-width:500px;max-height:500px">
+        <div id="qr-preview-wrap" style="position:relative;min-width:300px;min-height:300px;display:flex;align-items:center;justify-content:center;background-image:linear-gradient(45deg,#ddd 25%,transparent 25%),linear-gradient(-45deg,#ddd 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ddd 75%),linear-gradient(-45deg,transparent 75%,#ddd 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;border-radius:10px">
+          <img id="qr-preview-img" src="" alt="" style="border-radius:8px;display:none;max-width:500px;max-height:500px;position:relative;z-index:1">
           <div id="qr-placeholder" style="width:300px;height:300px;border:2px dashed var(--g200);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--g400);font-size:13px;gap:10px">
             <div style="font-size:48px">⬛</div>
             <div>點擊「產生 QR 碼預覽」</div>
@@ -2589,8 +2595,9 @@ function syncQrColor(which, val){
 
 
 // ── QR Code：使用 api.qrserver.com REST API ──
-let _qrLastUrl = null;
-let _qrTimer = null;
+let _qrTimer   = null;
+let _qrLogoImg = null;   // 目前套用的 LOGO Image 物件
+let _qrComposite = null; // 合成後的 data URL（供下載用）
 
 function qrGenerate(){
   clearTimeout(_qrTimer);
@@ -2600,88 +2607,135 @@ function qrGenerate(){
 function _qrBuildUrl(fmt){
   const content = qrGetContent();
   if(!content) return null;
-  const size    = parseInt(document.getElementById('qr-size').value)||400;
-  const fg      = (document.getElementById('qr-color').value||'#000000').replace('#','');
-  const bg      = (document.getElementById('qr-bg').value||'#ffffff').replace('#','');
-  const transp  = document.getElementById('qr-transparent').checked;
-  const ecl     = document.getElementById('qr-ecl').value||'H';
-  const margin  = parseInt(document.getElementById('qr-margin').value)||4;
-  // api.qrserver.com 參數說明：
-  //   size=WxH, data=URL encoded content, color=RRGGBB, bgcolor=RRGGBB,
-  //   ecc=L/M/Q/H, margin=N(px), format=png/svg
-  const base = 'https://api.qrserver.com/v1/create-qr-code/';
+  const size   = parseInt(document.getElementById('qr-size').value)||400;
+  const fg     = (document.getElementById('qr-color').value||'#000000').replace('#','');
+  const bg     = (document.getElementById('qr-bg').value||'#ffffff').replace('#','');
+  const ecl    = document.getElementById('qr-ecl').value||'H';
+  const margin = parseInt(document.getElementById('qr-margin').value)||4;
   const params = new URLSearchParams({
-    size:    `${size}x${size}`,
-    data:    content,
-    color:   fg,
-    bgcolor: transp ? 'ffffff00' : bg,
-    ecc:     ecl,
-    margin:  margin,
-    format:  fmt||'png'
+    size:   `${size}x${size}`,
+    data:   content,
+    color:  fg,
+    bgcolor:bg,
+    ecc:    ecl,
+    margin: margin,
+    format: fmt||'png'
   });
-  return `${base}?${params.toString()}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`;
 }
 
-function _qrDraw(){
+async function _qrDraw(){
   const info    = document.getElementById('qr-info');
-  const img     = document.getElementById('qr-preview-img');
+  const imgEl   = document.getElementById('qr-preview-img');
   const holder  = document.getElementById('qr-placeholder');
   const loading = document.getElementById('qr-loading');
-
   const content = qrGetContent();
-  if(!content){
-    if(info) info.textContent = '請輸入內容以產生 QR 碼';
-    return;
-  }
-
-  const size = parseInt(document.getElementById('qr-size').value)||400;
-  // Update hex display
   const fg = document.getElementById('qr-color').value||'#000000';
   const bg = document.getElementById('qr-bg').value||'#ffffff';
   document.getElementById('qr-color-hex').value = fg;
-  document.getElementById('qr-bg-hex').value = bg;
-  const transp = document.getElementById('qr-transparent').checked;
-  document.getElementById('qr-transparent-lbl').textContent = transp?'開':'關';
-
-  const url = _qrBuildUrl('png');
-  _qrLastUrl = url;
-
-  // Show loading
-  if(loading){ loading.style.display='flex'; }
-  if(info) info.textContent = '產生中…';
-
-  img.onload = ()=>{
-    if(holder) holder.style.display='none';
-    img.style.display='block';
+  document.getElementById('qr-bg-hex').value    = bg;
+  if(!content){ if(info) info.textContent='請輸入內容以產生 QR 碼'; return; }
+  const size = parseInt(document.getElementById('qr-size').value)||400;
+  const url  = _qrBuildUrl('png');
+  if(!url) return;
+  if(loading) loading.style.display='flex';
+  if(info)    info.textContent='產生中…';
+  try{
+    // Fetch as blob 避免 canvas CORS taint
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('API error');
+    const blob    = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const qrImg   = await new Promise((res,rej)=>{
+      const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=blobUrl;
+    });
+    URL.revokeObjectURL(blobUrl);
+    // 繪製 QR 到 canvas
+    const cvs = document.createElement('canvas');
+    cvs.width = size; cvs.height = size;
+    const ctx = cvs.getContext('2d');
+    ctx.drawImage(qrImg, 0, 0, size, size);
+    // 疊加 LOGO（若已設定）
+    if(_qrLogoImg){
+      const ratio    = parseInt(document.getElementById('qr-logo-size').value||'25')/100;
+      const logoSize = Math.round(size * ratio);
+      const ar       = _qrLogoImg.naturalHeight/_qrLogoImg.naturalWidth;
+      const lw       = logoSize;
+      const lh       = Math.round(logoSize * ar);
+      const lx       = Math.round((size-lw)/2);
+      const ly       = Math.round((size-lh)/2);
+      const pad      = Math.round(logoSize * 0.14);
+      // 白色圓角底板
+      ctx.save();
+      ctx.fillStyle = bg;
+      const r = Math.round(pad*0.8);
+      ctx.beginPath();
+      ctx.roundRect(lx-pad, ly-pad, lw+pad*2, lh+pad*2, r);
+      ctx.fill();
+      ctx.restore();
+      ctx.drawImage(_qrLogoImg, lx, ly, lw, lh);
+    }
+    _qrComposite = cvs.toDataURL('image/png');
+    if(holder)  holder.style.display='none';
+    imgEl.style.display='block';
+    imgEl.src = _qrComposite;
     if(loading) loading.style.display='none';
-    if(info) info.textContent = `${size}×${size}px｜${content.length} 字元`;
-  };
-  img.onerror = ()=>{
+    if(info)    info.textContent=`${size}×${size}px｜${content.length} 字元${_qrLogoImg?' ＋LOGO':''}`;
+  } catch(e){
     if(loading) loading.style.display='none';
-    if(info) info.textContent = '⚠ 產生失敗，請確認網路連線';
+    if(info)    info.textContent='⚠ 產生失敗，請確認網路連線';
+  }
+}
+
+// ── LOGO 管理 ──
+function qrUploadLogo(inp){
+  const file=inp.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{ _qrLogoImg=img; _qrLogoStatus(file.name); qrGenerate(); };
+    img.src=e.target.result;
   };
-  img.src = url;
+  reader.readAsDataURL(file);
+  inp.value='';
+}
+function qrUsePresetLogo(){
+  snack('載入光田LOGO…');
+  fetch('./logos/logo-solo.png')
+    .then(r=>{ if(!r.ok) throw new Error(); return r.blob(); })
+    .then(blob=>{
+      const bu=URL.createObjectURL(blob);
+      const img=new Image();
+      img.onload=()=>{ _qrLogoImg=img; URL.revokeObjectURL(bu); _qrLogoStatus('光田醫院單獨LOGO'); qrGenerate(); snack('已套用光田預設LOGO'); };
+      img.src=bu;
+    })
+    .catch(()=>snack('⚠ 無法載入預設LOGO，請手動上傳'));
+}
+function qrClearLogo(){ _qrLogoImg=null; _qrLogoStatus(null); qrGenerate(); }
+function _qrLogoStatus(name){
+  const el=document.getElementById('qr-logo-status');
+  if(el) el.textContent=name?`✓ ${name}`:'未選擇 LOGO';
 }
 
 async function qrDownload(fmt){
-  if(!_qrLastUrl){ snack('請先按「產生 QR 碼預覽」'); return; }
-  const url = _qrBuildUrl(fmt);
+  if(fmt==='png'){
+    if(!_qrComposite){ snack('請先按「產生 QR 碼預覽」'); return; }
+    const a=document.createElement('a'); a.href=_qrComposite; a.download='qrcode.png'; a.click();
+    snack('QR 碼 PNG 已下載'); return;
+  }
+  // SVG 直接向 API 取（不含 LOGO）
+  const url=_qrBuildUrl('svg');
   if(!url){ snack('請先輸入內容'); return; }
   snack('下載中…');
   try{
-    const resp = await fetch(url);
-    if(!resp.ok) throw new Error('fetch failed');
-    const blob = await resp.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = `qrcode.${fmt}`;
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(blobUrl), 2000);
-    snack(`QR 碼 ${fmt.toUpperCase()} 已下載`);
-  } catch(e){
-    snack('下載失敗，請確認網路連線');
-  }
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error();
+    const blob=await resp.blob();
+    const bu=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=bu; a.download='qrcode.svg'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(bu),2000);
+    snack('QR 碼 SVG 已下載');
+  } catch(e){ snack('下載失敗，請確認網路連線'); }
 }
 
 
