@@ -668,12 +668,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <div class="sc" id="sc-a4h" onclick="selSz(this,'A4 橫式',1123,794)">A4 橫式<span>297×210mm</span></div>
       </div>
       <div class="row" style="margin-bottom:6px">
-        <div class="sc" id="sc-a3v" onclick="selSz(this,'A3 直式',1123,1587)">A3 直式<span>1123×1587px</span></div>
-        <div class="sc" id="sc-a3h" onclick="selSz(this,'A3 橫式',1587,1123)">A3 橫式<span>1587×1123px</span></div>
+        <div class="sc" id="sc-a3v" onclick="selSz(this,'A3 直式',1123,1587)">A3 直式<span>297×420mm</span></div>
+        <div class="sc" id="sc-a3h" onclick="selSz(this,'A3 橫式',1587,1123)">A3 橫式<span>420×297mm</span></div>
       </div>
       <div class="row" style="margin-bottom:6px">
-        <div class="sc" id="sc-a2v" onclick="selSz(this,'A2 直式',1587,2245)">A2 直式<span>1587×2245px</span></div>
-        <div class="sc" id="sc-a2h" onclick="selSz(this,'A2 橫式',2245,1587)">A2 橫式<span>2245×1587px</span></div>
+        <div class="sc" id="sc-a2v" onclick="selSz(this,'A2 直式',1587,2245)">A2 直式<span>420×594mm</span></div>
+        <div class="sc" id="sc-a2h" onclick="selSz(this,'A2 橫式',2245,1587)">A2 橫式<span>594×420mm</span></div>
       </div>
       <div class="row" style="margin-bottom:6px">
         <div class="sc" id="sc-sq" onclick="selSz(this,'正方形',2000,2000)">正方形封面<span>2000×2000px</span></div>
@@ -1610,7 +1610,7 @@ function renderBg(){
     ctx.drawImage(S.bgImgEl, S.bgOffsetX*S.zoom, S.bgOffsetY*S.zoom, S.bgImgEl.naturalWidth*S.bgScale*S.zoom, S.bgImgEl.naturalHeight*S.bgScale*S.zoom);
   }
   scaleObjs();
-  document.getElementById('sz-lbl').textContent = S.W+' × '+S.H+' px';
+  document.getElementById('sz-lbl').textContent = getSzLabel(S.W, S.H, S.name);
 }
 
 function setBgC(color){
@@ -1675,6 +1675,17 @@ function clearBgImg(){
 // ═══════════════════════════════════════════════
 //  SIZE PRESETS
 // ═══════════════════════════════════════════════
+// A 系列顯示 mm，其餘顯示 px
+const A_SIZES_MM = {
+  'A4 直式':'210×297mm','A4 橫式':'297×210mm',
+  'A3 直式':'297×420mm','A3 橫式':'420×297mm',
+  'A2 直式':'420×594mm','A2 橫式':'594×420mm'
+};
+function getSzLabel(w, h, name){
+  if(A_SIZES_MM[name]) return A_SIZES_MM[name];
+  return w+' × '+h+' px';
+}
+
 function selSz(el, name, w, h){
   document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
   el.classList.add('on');
@@ -1692,6 +1703,7 @@ function applyCustom(){
   S.W = w; S.H = h; S.name = w+'x'+h;
   renderBg();
   snack(`畫布已設為 ${w}×${h} px`);
+
 }
 
 // ═══════════════════════════════════════════════
