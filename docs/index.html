@@ -31,17 +31,27 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ── NAV ── */
 #nav{
-  height:44px;background:var(--blue-d);display:flex;align-items:center;
+  height:44px;background:#1F2875;display:flex;align-items:center;
   padding:0 16px;gap:4px;flex-shrink:0;user-select:none;
 }
 #nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
 .ntab{
-  padding:5px 14px;border:1px solid rgba(255,255,255,.22);
-  background:#14286E;color:rgba(255,255,255,.9);
+  padding:5px 14px;
+  border:1px solid rgba(255,255,255,.28);
+  background:linear-gradient(175deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 52%),#14286E;
+  color:rgba(255,255,255,.95);
   border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 5px rgba(0,0,0,.35);
+  text-shadow:0 1px 2px rgba(0,0,0,.28);
 }
-.ntab:hover{background:#1E368A;border-color:rgba(255,255,255,.38);color:#fff}
-.ntab.on{background:#fff;color:#14286E;border-color:transparent;font-weight:700;}
+.ntab:hover{
+  background:linear-gradient(175deg,rgba(255,255,255,.3) 0%,rgba(255,255,255,.05) 52%),#1E368A;
+  border-color:rgba(255,255,255,.42);
+}
+.ntab.on{
+  background:#fff;color:#14286E;border-color:rgba(20,40,110,.12);
+  font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12);text-shadow:none;
+}
 #nav .spacer{flex:1}
 #nav .ver{color:rgba(255,255,255,.45);font-size:11px}
 
@@ -186,7 +196,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 .btn-ghost:hover{background:#EAE4DF;border-color:#AA7D5F;color:#4A3828;}
 
 /* ── 全寬主要按鈕（實色填充，更有份量感）── */
-.btn-full{width:100%;border-radius:14px;padding:9px 16px;font-size:12px;}
+.btn-full{width:100%;border-radius:14px;padding:6px 16px;font-size:12px;}
 .btn-full.btn-green{background:#6EC300;color:#fff;border-color:#58A000;}
 .btn-full.btn-green:hover{background:#58A000;}
 .btn-full.btn-teal{background:#00AAC8;color:#fff;border-color:#0088A0;}
@@ -4006,7 +4016,6 @@ function switchTab(tab, btn){
   if(tab!=='qr'&&tab!=='res') document.getElementById('pg-'+tab).classList.add('on');
 
   const dlBtn=document.getElementById('dl-btn');
-  const wmpBtn=document.getElementById('wm-preview-btn');
   const dlBar=document.getElementById('dlbar');
   const tplPanel=document.getElementById('tpl-panel');
   const catop=document.querySelector('.catop');
@@ -4029,8 +4038,6 @@ function switchTab(tab, btn){
   tplPanel.style.display         = (isQr||isRes) ? 'none' : '';
 
   if(tab==='poster'){
-    dlBtn.textContent='⬇ 下載海報 PNG';
-    wmpBtn.style.display='none';
     dlBar.style.display='';
     if(dlPdfBtn) dlPdfBtn.style.display='';
     tplPanel.style.display='';
@@ -4047,7 +4054,6 @@ function switchTab(tab, btn){
     if(pagesPanel) pagesPanel.style.display='none';
   } else if(tab==='ie'){
     dlBar.style.display='none';
-    wmpBtn.style.display='none';
     tplPanel.style.display='none';
     catop.style.display='none';
     cscroll.style.display='none';
@@ -4056,7 +4062,6 @@ function switchTab(tab, btn){
     document.getElementById('pp').style.display='none';
   } else if(tab==='qr'){
     dlBar.style.display='none';
-    wmpBtn.style.display='none';
     catop.style.display='none';
     cscroll.style.display='none';
     ieArea.style.display='none';
@@ -4064,7 +4069,6 @@ function switchTab(tab, btn){
     setTimeout(qrGenerate, 150);
   } else if(tab==='res'){
     dlBar.style.display='none';
-    wmpBtn.style.display='none';
     catop.style.display='none';
     cscroll.style.display='none';
     ieArea.style.display='none';
