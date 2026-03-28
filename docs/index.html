@@ -695,7 +695,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔">📂 開啟專案</button>
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/28 23:10</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/28 23:25</span>
 </div>
 
 <div id="main">
@@ -794,7 +794,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
           oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value)){document.getElementById('bgColorInp').value=this.value;setBgC(this.value)}">
         <div style="flex:1"></div>
         <button class="btn btn-teal btn-sm" onclick="document.getElementById('bgImgInp').click()">🖼 上傳底圖</button>
-        <input type="file" id="bgImgInp" accept="image/*" style="display:none" onchange="addBgImg(this)">
+        <input type="file" id="bgImgInp" accept="image/*,.svg" style="display:none" onchange="addBgImg(this)">
       </div>
       <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">✕ 清除底圖</button>
       <div id="bg-img-controls" style="display:none;margin-top:8px;border-top:1px solid var(--g200);padding-top:8px">
@@ -836,7 +836,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('triangle')">▲ 三角</button>
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('dashrect')">⬜ 虛線框</button>
       </div>
-      <input type="file" id="imgInp" accept="image/*" style="display:none" onchange="addImg(this)">
+      <input type="file" id="imgInp" accept="image/*,.svg" style="display:none" onchange="addImg(this)">
     </div>
 
     <!-- 圖層 -->
@@ -1733,7 +1733,10 @@ function addImg(inp){
       img._srcDataUrl = dataUrl; // 暫存原始 data URL，避免 canvas 轉換破壞透明度
       pushHistory();
       const id = mkId();
-      const ar = img.naturalHeight / img.naturalWidth;
+      // SVG 可能沒有 naturalWidth/Height（只有 viewBox），回退到預設尺寸
+      const nw = img.naturalWidth || 800;
+      const nh = img.naturalHeight || 600;
+      const ar = nh / nw;
       const dw = clamp(300, 100, S.W*0.6);
       const obj = {
         id, type:'img',
@@ -3640,12 +3643,14 @@ function importCustomTemplates(inp){
 }
 
 function imgElToDataUrl(imgEl){
-  // 優先使用上傳時保存的原始 data URL（完整保留 PNG 透明度）
+  // 優先使用上傳時保存的原始 data URL（完整保留 PNG/SVG 透明度）
   if(imgEl._srcDataUrl) return imgEl._srcDataUrl;
+  // SVG data URL 可直接使用（不需 canvas 轉換）
+  if(imgEl.src && imgEl.src.startsWith('data:image/svg')) return imgEl.src;
   // 回退：canvas 轉換（PNG 格式，保留透明度）
   const c = document.createElement('canvas');
-  c.width = imgEl.naturalWidth||imgEl.width;
-  c.height = imgEl.naturalHeight||imgEl.height;
+  c.width = imgEl.naturalWidth||imgEl.width||800;
+  c.height = imgEl.naturalHeight||imgEl.height||600;
   c.getContext('2d').drawImage(imgEl,0,0);
   return c.toDataURL('image/png');
 }
