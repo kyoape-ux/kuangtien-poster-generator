@@ -1144,6 +1144,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <span style="font-size:11px;color:var(--g400)" id="sz-lbl">794 × 1123 px</span>
       <div style="flex:1"></div>
       <button class="btn btn-ghost btn-sm" onclick="desel(true)">取消選取</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearCanvas()" title="清除畫布所有物件（保留底圖）" style="color:var(--red)">🗑 清除畫布</button>
     </div>
     <div id="cscroll" onclick="handleBgClick(event)">
       <div id="pw">
@@ -1969,6 +1970,19 @@ function addBgImg(inp){
   inp.value = '';
 }
 
+function clearCanvas(){
+  if(!S.objs.length){ snack('畫布已經是空的'); return; }
+  if(!confirm('確定要清除畫布上所有物件嗎？\n（底圖不受影響）')) return;
+  pushHistory();
+  S.objs.forEach(o=>{ const el=document.getElementById('o'+o.id); if(el) el.remove(); });
+  S.objs=[];
+  S.selId=null;
+  document.getElementById('pp').style.display='none';
+  updLayerList();
+  renderBg();
+  snack('✅ 畫布已清除');
+}
+
 function clearBgImg(){
   S.bgImgEl = null;
   S.bgScale = 1; S.bgOffsetX = 0; S.bgOffsetY = 0; S.bgLocked = false;
@@ -2077,14 +2091,51 @@ function addSvgObj(inp){
   const reader = new FileReader();
   reader.onload = e => {
     const svgText = e.target.result;
-    // 從 SVG 原始文字讀取 viewBox / width / height 取得尺寸
+    // 取得 viewBox / width / height
     let nw = 0, nh = 0;
     const wm = svgText.match(/width="([0-9.]+)"/);
     const hm = svgText.match(/height="([0-9.]+)"/);
-    const vb = svgText.match(/viewBox="[0-9. ]+ ([0-9.]+) ([0-9.]+)"/);
+    const vb = svgText.match(/viewBox="[0-9.]+ [0-9.]+ ([0-9.]+) ([0-9.]+)"/);
     if(wm && hm){ nw=parseFloat(wm[1]); nh=parseFloat(hm[1]); }
     else if(vb){ nw=parseFloat(vb[1]); nh=parseFloat(vb[2]); }
     if(!nw || !nh){ nw=800; nh=600; }
+
+    // ── 嘗試提取路徑資料（自動轉為可換色向量形狀）──
+    const pathMatches = [];
+    const pathRe = /\sd="([^"]+)"/g;
+    let pm;
+    while((pm = pathRe.exec(svgText)) !== null) pathMatches.push(pm[1]);
+
+    if(pathMatches.length >= 1 && pathMatches.length <= 8){
+      // 合併所有路徑，確保每條都封閉
+      const combined = pathMatches.map(d=>{
+        const t=d.trim();
+        return (t.slice(-1).toLowerCase()==='z') ? t : t+'Z';
+      }).join(' ');
+      pushHistory();
+      const id = mkId();
+      const ar = nh / nw;
+      const dw = clamp(Math.round(S.W * 0.35), 80, S.W);
+      const obj = {
+        id, type:'shape', shapeType:'custompath',
+        pathData: combined, pathViewW: nw, pathViewH: nh,
+        x: Math.round((S.W-dw)/2),
+        y: Math.round((S.H-dw*ar)/2),
+        w: dw, h: Math.round(dw*ar),
+        rot:0, opacity:1,
+        fillColor:'#4A90D9',
+        strokeColor:'transparent',
+        strokeWidth:0, strokeDash:'solid'
+      };
+      S.objs.push(obj);
+      mkEl(id);
+      selObj(id);
+      updLayerList();
+      snack('✅ SVG 已轉為向量形狀，可在右側屬性面板換色');
+      inp.value=''; return;
+    }
+
+    // ── 複雜 SVG（路徑過多或無路徑）→ 以圖片模式匯入 ──
     const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
     const img = new Image();
     img.onload = ()=>{
@@ -2099,14 +2150,13 @@ function addSvgObj(inp){
         y: Math.round((S.H - dw * ar) / 2),
         w: dw, h: Math.round(dw * ar),
         rot:0, opacity:1,
-        imgEl: img, aspectRatio: ar,
-        isSvg: true
+        imgEl: img, aspectRatio: ar, isSvg: true
       };
       S.objs.push(obj);
       mkEl(id);
       selObj(id);
       updLayerList();
-      snack('SVG 已匯入：' + file.name + '（縮放不失真）');
+      snack('SVG 以圖片模式匯入（複雜向量，縮放不失真）');
     };
     img.onerror = ()=>snack('SVG 載入失敗，請確認檔案格式正確');
     img.src = dataUrl;
@@ -2737,7 +2787,7 @@ function renderTxtPP(obj){
 }
 
 function renderShapePP(obj){
-  const shapes=[['rect','矩形'],['ellipse','橢圓'],['line','直線'],['triangle','三角'],['superellipse','超橢圓']];
+  const shapes=[['rect','矩形'],['ellipse','橢圓'],['line','直線'],['triangle','三角'],['superellipse','超橢圓'],['custompath','SVG路徑']];
   const dashes=[['solid','實線'],['8,4','虛線'],['2,4','點線']];
   const fc=obj.fillColor||'transparent';
   const fc_color=fc==='transparent'?'#ffffff':fc;
@@ -4981,6 +5031,20 @@ function _renderShapeSvg(el, obj){
     if(dashArr!=='none') p.setAttribute('stroke-dasharray',dashArr);
     svg.appendChild(p);
     return;
+  } else if(obj.shapeType==='custompath'){
+    // 從 SVG 匯入的自訂路徑向量形狀（可換色）
+    const pd = obj.pathData || '';
+    const pvw = obj.pathViewW || 100;
+    const pvh = obj.pathViewH || 100;
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', pd);
+    p.setAttribute('transform', `scale(${w/pvw},${h/pvh})`);
+    p.setAttribute('fill', fill);
+    p.setAttribute('stroke', stroke);
+    p.setAttribute('stroke-width', sw > 0 ? sw * Math.max(pvw,pvh)/Math.max(w,h) : 0);
+    if(dashArr!=='none') p.setAttribute('stroke-dasharray', dashArr);
+    svg.appendChild(p);
+    return;
   } else {
     shape=document.createElementNS('http://www.w3.org/2000/svg','rect');
     const off=sw/2;
@@ -6257,6 +6321,13 @@ function exportSVG() {
         sh.setAttribute('d',SE_PATH);
         const seXfm = `${xfm?xfm+' ':''}translate(${obj.x},${obj.y}) scale(${obj.w/831.36},${obj.h/831.36})`;
         g.setAttribute('transform', seXfm);
+      } else if(obj.shapeType==='custompath'){
+        // SVG 匯入的自訂路徑
+        sh = document.createElementNS(ns,'path');
+        sh.setAttribute('d', obj.pathData||'');
+        const pvw=obj.pathViewW||100, pvh=obj.pathViewH||100;
+        const cpXfm = `${xfm?xfm+' ':''}translate(${obj.x},${obj.y}) scale(${obj.w/pvw},${obj.h/pvh})`;
+        g.setAttribute('transform', cpXfm);
       }
       if(sh){
         sh.setAttribute('fill', fill);
