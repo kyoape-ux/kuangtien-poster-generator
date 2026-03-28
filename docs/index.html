@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田綜合醫院｜美編小助手</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@400;500;700;900&family=BIZ+UDPGothic:wght@400;700&family=Yusei+Magic&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -823,13 +823,13 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         </div>
         <div class="inp-row" style="margin-bottom:6px">
           <span class="inp-label">X 偏移</span>
-          <input class="inp" type="number" id="bg-offset-x" value="0" style="width:60px" oninput="S.bgOffsetX=+this.value;renderBg()">
-          <span class="inp-unit">px</span>
+          <input type="range" id="bg-offset-x-sl" min="-1000" max="1000" value="0" style="flex:1" oninput="S.bgOffsetX=+this.value;document.getElementById('bg-offset-x').value=this.value;renderBg()">
+          <input class="inp" type="number" id="bg-offset-x" value="0" style="width:52px" oninput="S.bgOffsetX=+this.value;document.getElementById('bg-offset-x-sl').value=this.value;renderBg()">
         </div>
         <div class="inp-row" style="margin-bottom:6px">
           <span class="inp-label">Y 偏移</span>
-          <input class="inp" type="number" id="bg-offset-y" value="0" style="width:60px" oninput="S.bgOffsetY=+this.value;renderBg()">
-          <span class="inp-unit">px</span>
+          <input type="range" id="bg-offset-y-sl" min="-1000" max="1000" value="0" style="flex:1" oninput="S.bgOffsetY=+this.value;document.getElementById('bg-offset-y').value=this.value;renderBg()">
+          <input class="inp" type="number" id="bg-offset-y" value="0" style="width:52px" oninput="S.bgOffsetY=+this.value;document.getElementById('bg-offset-y-sl').value=this.value;renderBg()">
         </div>
         <div class="row" style="margin-bottom:6px">
           <button class="btn btn-indigo btn-full btn-sm" onclick="bgFitCanvas()">適應畫布</button>
@@ -906,8 +906,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       </select>
       <div style="font-size:9px;color:var(--g400);margin-top:5px">依光田品牌規範 Brand Guide v1 Dec.2023</div>
     </div>
-    <div class="sec-title">圖層</div>
-    <div class="sec">
+    <div class="sec-title" style="cursor:pointer;user-select:none" onclick="toggleLayerPanel()">
+      圖層
+      <span id="layer-toggle-icon" style="margin-left:auto;font-size:10px;color:var(--g400)">▼</span>
+    </div>
+    <div class="sec" id="layer-panel">
       <div id="layer-list"><div style="font-size:11px;color:var(--g400);padding:4px 0">尚無物件</div></div>
     </div>
   </div>
@@ -1096,7 +1099,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <button class="btn btn-amber btn-full btn-sm" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:5px">
       ⬇ 匯出 PDF（全部頁面）
     </button>
-    <button class="btn btn-ghost btn-sm" onclick="exportSVG()" style="margin-top:6px" title="匯出向量形狀為SVG">&#x2197; 匯出 SVG</button>
+    <button class="btn btn-teal btn-full" onclick="exportSVG()" style="margin-top:6px">⬡ 匯出 SVG 向量檔</button>
     <div id="wm-preview-btn" style="display:none;margin-top:6px">
       <button class="btn btn-teal btn-full" onclick="previewAll()">👁 預覽後下載</button>
     </div>
@@ -1481,6 +1484,13 @@ function toggleCiPanel(){
   panel.style.display = isOpen ? 'none' : '';
   if(icon) icon.textContent = isOpen ? '▼' : '▲';
 }
+function toggleLayerPanel(){
+  const p=document.getElementById('layer-panel');
+  const ic=document.getElementById('layer-toggle-icon');
+  const hide=p.style.display!=='none';
+  p.style.display=hide?'none':'';
+  ic.textContent=hide?'▶':'▼';
+}
 function setCiBgColor(hex){
   document.getElementById('bgColorInp').value=hex;
   document.getElementById('bgColorHex').value=hex;
@@ -1527,6 +1537,10 @@ function applyDeptColor(dept){
 const FONTS = [
   { label:'黑體 Noto Sans', value:'Noto Sans TC' },
   { label:'宋體 Noto Serif', value:'Noto Serif TC' },
+  { label:'圓黑體 Zen Maru', value:'Zen Maru Gothic' },
+  { label:'綜藝黑 Dela Gothic', value:'Dela Gothic One' },
+  { label:'商務黑 BIZ UDP', value:'BIZ UDPGothic' },
+  { label:'手寫 Yusei Magic', value:'Yusei Magic' },
 ];
 
 // ── 類別定義（維護說明：新增類別請在此 array 加入 {id, name}，
@@ -1808,8 +1822,12 @@ function showBgImgControls(){
     if(lbl) lbl.textContent=Math.round(S.bgScale*100)+'%';
     const ox = document.getElementById('bg-offset-x');
     if(ox){ ox.value=S.bgOffsetX; ox.disabled=S.bgLocked; }
+    const oxsl = document.getElementById('bg-offset-x-sl');
+    if(oxsl){ oxsl.value=S.bgOffsetX; oxsl.disabled=S.bgLocked; }
     const oy = document.getElementById('bg-offset-y');
     if(oy){ oy.value=S.bgOffsetY; oy.disabled=S.bgLocked; }
+    const oysl = document.getElementById('bg-offset-y-sl');
+    if(oysl){ oysl.value=S.bgOffsetY; oysl.disabled=S.bgLocked; }
   } else {
     ctrl.style.display='none';
   }
@@ -1889,6 +1907,7 @@ function applyCustom(){
 function getObj(id){ return S.objs.find(o=>o.id===id); }
 
 function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='left', fontFamily='Noto Sans TC'){
+  h = Math.max(h||0, Math.ceil(size * 1.4));
   pushHistory();
   const id = mkId();
   const obj = {
@@ -2009,7 +2028,7 @@ function mkEl(id){
 
     // 同步文字，編輯中以 ti.offsetHeight 撐高（ti 為 relative，直接量）
     ti.addEventListener('input', ()=>{
-      obj.text = ti.innerText.replace(/\u200B/g, '').replace(/\n$/, '');
+      obj.text = ti.innerText.replace(/\u200B/g, '').replace(/\n+$/, '');
       if(ti.contentEditable === 'true'){
         obj.h = Math.max(obj.size, Math.round(ti.offsetHeight / S.zoom));
         renderBg();
@@ -2018,7 +2037,7 @@ function mkEl(id){
 
     // 失焦：同步最終高度、還原樣式
     ti.addEventListener('blur', ()=>{
-      obj.text = ti.innerText.replace(/\u200B/g, '').replace(/\n$/, '');
+      obj.text = ti.innerText.replace(/\u200B/g, '').replace(/\n+$/, '');
       ti.contentEditable = 'false';
       const parentEl = document.getElementById('o'+obj.id);
       if(parentEl){
@@ -2067,6 +2086,10 @@ function mkEl(id){
       ti.contentEditable = 'true';
       const parentEl = document.getElementById('o'+obj.id);
       if(parentEl){ parentEl.style.height = 'auto'; parentEl.style.overflow = 'visible'; }
+      const _ff2 = obj.fontFamily||'Noto Sans TC';
+      const _ffs2 = _ff2==='Noto Serif TC'?`'Noto Serif TC',serif`:_ff2==='Dela Gothic One'?`'Dela Gothic One',sans-serif`:_ff2==='Zen Maru Gothic'?`'Zen Maru Gothic',sans-serif`:_ff2==='BIZ UDPGothic'?`'BIZ UDPGothic',sans-serif`:_ff2==='Yusei Magic'?`'Yusei Magic',cursive`:`'Noto Sans TC',sans-serif`;
+      const _ts2=(obj.textShadow&&obj.textShadow.on)?`text-shadow:${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'};`:'';
+      const _tsk2=(obj.strokeWidth)?`-webkit-text-stroke:${obj.strokeWidth*S.zoom}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;`:'';
       ti.style.cssText = `
         position:relative; width:100%; height:auto; overflow:visible;
         min-height:${obj.h * S.zoom}px;
@@ -2075,7 +2098,9 @@ function mkEl(id){
         font-size:${obj.size * S.zoom}px;
         color:${obj.color}; font-weight:${obj.weight};
         text-align:${obj.align};
-        font-family:${obj.fontFamily==='Noto Serif TC'?"'Noto Serif TC',serif":"'Noto Sans TC',sans-serif"};
+        font-family:${_ffs2};
+        font-style:${obj.fontStyle||'normal'};
+        ${_ts2}${_tsk2}
       `;
       ti.focus();
       const range = document.createRange();
@@ -2147,6 +2172,9 @@ function txtToHtml(text){
 
 function applyStyle(el, obj){
   const z = S.zoom;
+  const shadowCss = (obj.shadow&&obj.shadow.on)
+    ? `filter:drop-shadow(${obj.shadow.x||4}px ${obj.shadow.y||4}px ${obj.shadow.blur||8}px ${obj.shadow.color||'rgba(0,0,0,0.4)'});`
+    : '';
   el.style.cssText = `
     left:${obj.x*z}px;
     top:${obj.y*z}px;
@@ -2158,14 +2186,26 @@ function applyStyle(el, obj){
     cursor:move;
     user-select:none;
     box-sizing:border-box;
+    ${shadowCss}
   `;
   if(obj.type==='txt'){
     const ti = el.querySelector('.tinner');
     if(ti){
       const ff = obj.fontFamily||'Noto Sans TC';
-      const ffStack = ff==='Noto Serif TC' ? `'Noto Serif TC',serif` : `'Noto Sans TC',sans-serif`;
+      const ffStack = ff==='Noto Serif TC' ? `'Noto Serif TC',serif`
+        : ff==='Dela Gothic One' ? `'Dela Gothic One',sans-serif`
+        : ff==='Zen Maru Gothic' ? `'Zen Maru Gothic',sans-serif`
+        : ff==='BIZ UDPGothic' ? `'BIZ UDPGothic',sans-serif`
+        : ff==='Yusei Magic' ? `'Yusei Magic',cursive`
+        : `'Noto Sans TC',sans-serif`;
       if(ti.contentEditable !== 'true'){
         // 非編輯：還原 absolute 佈局，同步 innerHTML
+        const tShadow = (obj.textShadow&&obj.textShadow.on)
+          ? `text-shadow:${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'};`
+          : '';
+        const tStroke = (obj.strokeWidth)
+          ? `-webkit-text-stroke:${obj.strokeWidth*z}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;`
+          : '';
         ti.style.cssText = `
           position:absolute;inset:0;overflow:hidden;
           white-space:pre-wrap;word-break:break-word;
@@ -2175,6 +2215,8 @@ function applyStyle(el, obj){
           font-weight:${obj.weight};
           text-align:${obj.align};
           font-family:${ffStack};
+          font-style:${obj.fontStyle||'normal'};
+          ${tShadow}${tStroke}
         `;
         const expected = txtToHtml(obj.text);
         if(ti.innerHTML !== expected) ti.innerHTML = expected;
@@ -2191,6 +2233,8 @@ function applyStyle(el, obj){
     }
     _renderShapeSvg(el, obj);
   }
+  // Apply clip shape for images
+  if(obj.type==='img' && obj.clipShape) _applyClipShape(el, obj);
 }
 
 function scaleObjs(){
@@ -2349,6 +2393,7 @@ function reorderObjDom(){
   });
 }
 
+let _layerDragIdx = null;
 function updLayerList(){
   const ll = document.getElementById('layer-list');
   if(!S.objs.length){
@@ -2356,7 +2401,6 @@ function updLayerList(){
     return;
   }
   ll.innerHTML = '';
-  let dragDisplayIdx = null;
   const reversed = [...S.objs].reverse();
   reversed.forEach((obj, displayIdx)=>{
     const item = document.createElement('div');
@@ -2366,7 +2410,7 @@ function updLayerList(){
     item.onclick = ()=>selObj(obj.id);
 
     item.addEventListener('dragstart', ()=>{
-      dragDisplayIdx = displayIdx;
+      _layerDragIdx = displayIdx;
       item.style.opacity = '0.4';
     });
     item.addEventListener('dragend', ()=>{ item.style.opacity='1'; });
@@ -2378,13 +2422,13 @@ function updLayerList(){
     item.addEventListener('drop', e=>{
       e.preventDefault();
       item.classList.remove('drag-over');
-      if(dragDisplayIdx===null||dragDisplayIdx===displayIdx){ dragDisplayIdx=null; return; }
+      if(_layerDragIdx===null||_layerDragIdx===displayIdx){ _layerDragIdx=null; return; }
       const n = S.objs.length;
-      const realSrc = n - 1 - dragDisplayIdx;
+      const realSrc = n - 1 - _layerDragIdx;
       const realDst = n - 1 - displayIdx;
       const moved = S.objs.splice(realSrc, 1)[0];
       S.objs.splice(realDst, 0, moved);
-      dragDisplayIdx = null;
+      _layerDragIdx = null;
       reorderObjDom();
       updLayerList();
       pushHistory();
@@ -2463,6 +2507,21 @@ function renderPPHTML(obj){
     <input type="range" id="pp-op" min="0" max="100" value="${Math.round(obj.opacity*100)}" style="flex:1">
     <span id="pp-op-lbl" style="font-size:11px;color:var(--g500);min-width:34px">${Math.round(obj.opacity*100)}%</span>
   </div>
+  <div class="pp-sep"></div>
+  <div class="pp-section-label">陰影效果</div>
+  <div class="pp-row">
+    <label style="font-size:11px;display:flex;align-items:center;gap:4px;flex:1">
+      <input type="checkbox" id="pp-shadow-on" ${(obj.shadow&&obj.shadow.on)?'checked':''}> 啟用陰影
+    </label>
+    <input type="color" id="pp-shadow-color" value="${(obj.shadow&&obj.shadow.color)||'#000000'}">
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">X/Y</span>
+    <input type="number" id="pp-shadow-x" value="${(obj.shadow&&obj.shadow.x)||4}" style="width:44px">
+    <input type="number" id="pp-shadow-y" value="${(obj.shadow&&obj.shadow.y)||4}" style="width:44px">
+    <span class="pp-label" style="margin-left:4px">模糊</span>
+    <input type="number" id="pp-shadow-blur" value="${(obj.shadow&&obj.shadow.blur)||8}" style="width:44px">
+  </div>
   ${isT?renderTxtPP(obj):''}
   ${isSh?renderShapePP(obj):''}
   ${!isT&&!isSh?`
@@ -2473,6 +2532,16 @@ function renderPPHTML(obj){
   </div>
   <div class="pp-row">
     <button class="btn btn-teal btn-full btn-sm" onclick="removeBackground(${obj.id})">✂ 一鍵去背</button>
+  </div>
+  <div class="pp-sep"></div>
+  <div class="pp-section-label">裁切形狀</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">
+    <button class="btn btn-sm ${!obj.clipShape||obj.clipShape==='none'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'none')">原形</button>
+    <button class="btn btn-sm ${obj.clipShape==='circle'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'circle')">⬤ 圓形</button>
+    <button class="btn btn-sm ${obj.clipShape==='rounded'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'rounded')">▣ 圓角</button>
+    <button class="btn btn-sm ${obj.clipShape==='diamond'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'diamond')">◆ 菱形</button>
+    <button class="btn btn-sm ${obj.clipShape==='hexagon'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'hexagon')">⬡ 六角</button>
+    <button class="btn btn-sm ${obj.clipShape==='star'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'star')">★ 星形</button>
   </div>`:''}
   <div class="pp-sep"></div>
   <div class="pp-section-label">對齊畫布</div>
@@ -2523,6 +2592,37 @@ function renderTxtPP(obj){
     <div style="display:flex;gap:4px">
       ${['left','center','right'].map(a=>`<button class="btn btn-sm ${obj.align===a?'btn-blue':'btn-ghost'}" id="pp-align-${a}" onclick="upP(${obj.id},'align','${a}')">${a==='left'?'⬛▪▪':a==='center'?'▪⬛▪':'▪▪⬛'}</button>`).join('')}
     </div>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">樣式</span>
+    <button class="btn btn-sm ${(obj.fontStyle||'normal')==='italic'?'btn-blue':'btn-ghost'}" onclick="toggleItalic(${obj.id})" title="斜體">I</button>
+  </div>
+  <div class="pp-sep"></div>
+  <div class="pp-section-label">文字外框筆畫</div>
+  <div class="pp-row">
+    <span class="pp-label">外框色</span>
+    <input type="color" id="pp-stroke-color" value="${obj.strokeColor||'#000000'}">
+    <input type="text" id="pp-stroke-color-hex" class="hex-inp" value="${obj.strokeColor||'#000000'}" maxlength="7" style="width:60px">
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">外框寬</span>
+    <input type="range" id="pp-stroke-w" min="0" max="30" value="${obj.strokeWidth||0}" style="flex:1">
+    <span id="pp-stroke-w-lbl" style="font-size:11px;color:var(--g500);min-width:34px;text-align:right">${obj.strokeWidth||0}px</span>
+  </div>
+  <div class="pp-sep"></div>
+  <div class="pp-section-label">文字陰影</div>
+  <div class="pp-row">
+    <label style="font-size:11px;display:flex;align-items:center;gap:4px;flex:1">
+      <input type="checkbox" id="pp-tshadow-on" ${(obj.textShadow&&obj.textShadow.on)?'checked':''}> 啟用陰影
+    </label>
+    <input type="color" id="pp-tshadow-color" value="${(obj.textShadow&&obj.textShadow.color)||'#000000'}">
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">X/Y</span>
+    <input type="number" id="pp-tshadow-x" value="${(obj.textShadow&&obj.textShadow.x)||2}" style="width:44px">
+    <input type="number" id="pp-tshadow-y" value="${(obj.textShadow&&obj.textShadow.y)||2}" style="width:44px">
+    <span class="pp-label" style="margin-left:4px">模糊</span>
+    <input type="number" id="pp-tshadow-blur" value="${(obj.textShadow&&obj.textShadow.blur)||4}" style="width:44px">
   </div>`;
 }
 
@@ -2566,6 +2666,50 @@ function renderShapePP(obj){
       ${dashes.map(([v,l])=>`<option value="${v}"${(obj.strokeDash||'solid')===v?' selected':''}>${l}</option>`).join('')}
     </select>
   </div>`;
+}
+
+function toggleItalic(id){
+  const obj = getObj(id);
+  if(!obj) return;
+  obj.fontStyle = (obj.fontStyle==='italic') ? 'normal' : 'italic';
+  const el = document.getElementById('o'+id);
+  if(el) applyStyle(el, obj);
+  showPP(id);
+  pushHistory();
+}
+
+function setClipShape(id, shape){
+  const obj = getObj(id);
+  if(!obj) return;
+  obj.clipShape = shape;
+  const el = document.getElementById('o'+id);
+  if(el) _applyClipShape(el, obj);
+  showPP(id);
+  pushHistory();
+}
+
+function _applyClipShape(el, obj){
+  const imgEl = el.querySelector('img');
+  const target = imgEl || el;
+  if(!obj.clipShape || obj.clipShape === 'none'){
+    target.style.clipPath = '';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'circle'){
+    target.style.clipPath = 'circle(50% at 50% 50%)';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'rounded'){
+    target.style.clipPath = '';
+    target.style.borderRadius = '16px';
+  } else if(obj.clipShape === 'diamond'){
+    target.style.clipPath = 'polygon(50% 0%,100% 50%,50% 100%,0% 50%)';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'hexagon'){
+    target.style.clipPath = 'polygon(25% 0%,75% 0%,100% 50%,75% 100%,25% 100%,0% 50%)';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'star'){
+    target.style.clipPath = 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
+    target.style.borderRadius = '';
+  }
 }
 
 function bindPPEvents(obj){
@@ -2619,6 +2763,85 @@ function bindPPEvents(obj){
     if(szEl&&szLbl) szEl.addEventListener('input',()=>{ szLbl.textContent=szEl.value+' px'; });
     bind('pp-weight','weight');
   }
+  // Italic toggle is handled by toggleItalic() directly
+
+  // Text stroke
+  const ppStrokeW = document.getElementById('pp-stroke-w');
+  if(ppStrokeW){
+    ppStrokeW.oninput = ()=>{
+      obj.strokeWidth = +ppStrokeW.value;
+      document.getElementById('pp-stroke-w-lbl').textContent = ppStrokeW.value+'px';
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  const ppStrokeColor = document.getElementById('pp-stroke-color');
+  if(ppStrokeColor){
+    ppStrokeColor.oninput = ()=>{
+      obj.strokeColor = ppStrokeColor.value;
+      const hex=document.getElementById('pp-stroke-color-hex'); if(hex)hex.value=ppStrokeColor.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  const ppStrokeHex = document.getElementById('pp-stroke-color-hex');
+  if(ppStrokeHex){
+    ppStrokeHex.oninput = ()=>{
+      if(/^#[0-9a-fA-F]{6}$/.test(ppStrokeHex.value)){
+        obj.strokeColor=ppStrokeHex.value;
+        const cp=document.getElementById('pp-stroke-color'); if(cp)cp.value=ppStrokeHex.value;
+        const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+      }
+    };
+  }
+  // Text shadow
+  const ppTshOn = document.getElementById('pp-tshadow-on');
+  if(ppTshOn){
+    ppTshOn.onchange = ()=>{
+      if(!obj.textShadow) obj.textShadow={on:false,x:2,y:2,blur:4,color:'#000000'};
+      obj.textShadow.on = ppTshOn.checked;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  const ppTshColor = document.getElementById('pp-tshadow-color');
+  if(ppTshColor){
+    ppTshColor.oninput=()=>{
+      if(!obj.textShadow)obj.textShadow={on:true,x:2,y:2,blur:4,color:'#000000'};
+      obj.textShadow.color=ppTshColor.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  ['x','y','blur'].forEach(k=>{
+    const el2=document.getElementById('pp-tshadow-'+k);
+    if(el2) el2.oninput=()=>{
+      if(!obj.textShadow)obj.textShadow={on:true,x:2,y:2,blur:4,color:'#000000'};
+      obj.textShadow[k]=+el2.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  });
+  // Object shadow (all types)
+  const ppShOn = document.getElementById('pp-shadow-on');
+  if(ppShOn){
+    ppShOn.onchange=()=>{
+      if(!obj.shadow)obj.shadow={on:false,x:4,y:4,blur:8,color:'rgba(0,0,0,0.4)'};
+      obj.shadow.on=ppShOn.checked;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  const ppShColor = document.getElementById('pp-shadow-color');
+  if(ppShColor){
+    ppShColor.oninput=()=>{
+      if(!obj.shadow)obj.shadow={on:true,x:4,y:4,blur:8,color:'rgba(0,0,0,0.4)'};
+      obj.shadow.color=ppShColor.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  ['x','y','blur'].forEach(k=>{
+    const el2=document.getElementById('pp-shadow-'+k);
+    if(el2) el2.oninput=()=>{
+      if(!obj.shadow)obj.shadow={on:true,x:4,y:4,blur:8,color:'rgba(0,0,0,0.4)'};
+      obj.shadow[k]=+el2.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  });
 }
 
 function updatePPValues(obj){
@@ -5806,7 +6029,17 @@ function exportSVG() {
         t.setAttribute('font-weight', obj.weight || '400');
         t.setAttribute('fill', obj.color || '#000000');
         t.setAttribute('text-anchor', anchor);
-        if(obj.fontStyle === 'italic') t.setAttribute('font-style','italic');
+        t.setAttribute('font-style', obj.fontStyle||'normal');
+        // text shadow via SVG filter would be complex; use dominant-baseline trick
+        if(obj.textShadow&&obj.textShadow.on){
+          const fs=obj.textShadow;
+          t.setAttribute('filter',`drop-shadow(${fs.x||2}px ${fs.y||2}px ${fs.blur||4}px ${fs.color||'rgba(0,0,0,0.5)'})`);
+        }
+        if(obj.strokeWidth){
+          t.setAttribute('stroke',obj.strokeColor||'#000000');
+          t.setAttribute('stroke-width',obj.strokeWidth);
+          t.setAttribute('paint-order','stroke fill');
+        }
         t.textContent = line || '';
         g.appendChild(t);
       });
