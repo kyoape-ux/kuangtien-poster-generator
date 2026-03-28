@@ -31,19 +31,16 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ── NAV ── */
 #nav{
-  height:46px;background:#fff;display:flex;align-items:center;
-  padding:0 16px;gap:3px;flex-shrink:0;user-select:none;
-  border-bottom:1px solid var(--g200);
-  box-shadow:0 1px 4px rgba(0,0,0,.06);
+  height:44px;background:var(--blue-d);display:flex;align-items:center;
+  padding:0 16px;gap:4px;flex-shrink:0;user-select:none;
 }
-#nav .logo{color:var(--g800);font-weight:700;font-size:13px;margin-right:14px;white-space:nowrap;letter-spacing:.3px}
+#nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
 .ntab{
-  padding:5px 13px;border:1px solid transparent;background:transparent;color:var(--g500);
+  padding:5px 14px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.65);
   border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;
-  letter-spacing:.1px;
 }
-.ntab:hover{background:var(--g100);color:var(--g700);border-color:var(--g200)}
-.ntab.on{color:var(--g800);background:var(--g100);border-color:var(--g300);font-weight:600}
+.ntab:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)}
+.ntab.on{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)}
 #nav .spacer{flex:1}
 #nav .ver{color:rgba(255,255,255,.45);font-size:11px}
 
@@ -83,7 +80,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
   background:#fff;color:var(--g500);font-size:10px;font-weight:600;
   cursor:pointer;text-align:center;transition:all .15s;
 }
-.lptab.on{background:#E4ECF5;color:var(--blue);border-color:#B8CCE4;font-weight:600}
+.lptab.on{background:#E3F0FD;color:#1A5FA8;border-color:#90C4F0;font-weight:700}
 .lptab:hover:not(.on){background:var(--g100)}
 /* asset grid inside left panel */
 #asset-panel-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 8px 4px;display:none}
@@ -144,43 +141,55 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
   background:var(--g50);cursor:pointer;text-align:center;font-size:11px;
   color:var(--g600);transition:all .15s;line-height:1.3;
 }
-.sc:hover{border-color:var(--blue);color:var(--blue);background:#EAF0F8}
-.sc.on{border-color:var(--blue);background:#E4ECF5;color:var(--blue);font-weight:600}
+.sc:hover{border-color:#90C4F0;color:#1A5FA8;background:#EAF3FD;}
+.sc.on{border-color:#90C4F0;background:#E3F0FD;color:#1A5FA8;font-weight:700;}
 .sc span{display:block;font-size:9px;color:var(--g400)}
 
 .btn{
-  display:flex;align-items:center;justify-content:center;gap:5px;
-  padding:7px 13px;border:none;border-radius:10px;cursor:pointer;
-  font-size:12px;font-weight:600;transition:all .15s;white-space:nowrap;letter-spacing:.15px;
-  box-shadow:0 1px 3px rgba(0,0,0,.08);
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:6px 14px;border-radius:20px;cursor:pointer;border:1px solid transparent;
+  font-size:11px;font-weight:700;transition:all .15s;white-space:nowrap;letter-spacing:.1px;
 }
-/* Blue — primary/create */
-.btn-blue{background:#4E78A8;color:#fff;}
-.btn-blue:hover{background:#618CB8;}
-/* Green — download/export */
-.btn-green{background:#3D9660;color:#fff;}
-.btn-green:hover{background:#50A873;}
-/* Teal — image/visual tools */
-.btn-teal{background:#3AA5A0;color:#fff;}
-.btn-teal:hover{background:#4BB8B3;}
-/* Purple — image edit */
-.btn-purple{background:#7A6AB8;color:#fff;}
-.btn-purple:hover{background:#8E7ECC;}
-/* Amber — edit/transform */
-.btn-amber{background:#B88A3A;color:#fff;}
-.btn-amber:hover{background:#C9A050;}
-/* Indigo — heading/title */
-.btn-indigo{background:#5558A8;color:#fff;}
-.btn-indigo:hover{background:#6A6DBC;}
-/* Red — destructive */
-.btn-red{background:#B85858;color:#fff;}
-.btn-red:hover{background:#C96B6B;}
-/* Ghost — neutral secondary */
-.btn-ghost{background:#fff;color:var(--g600);border:1px solid var(--g200);box-shadow:0 1px 2px rgba(0,0,0,.05);}
-.btn-ghost:hover{background:var(--g50);border-color:var(--g300);color:var(--g700);}
+/* Blue — 藍色膠囊（如「支援單」） */
+.btn-blue{background:#E3F0FD;color:#1A5FA8;border-color:#90C4F0;}
+.btn-blue:hover{background:#D0E6FC;border-color:#6AAEE8;}
+/* Green — 綠色膠囊（如「●自主」） */
+.btn-green{background:#E8F5E9;color:#2D7D32;border-color:#A5D6A7;}
+.btn-green:hover{background:#D8EDD9;border-color:#81C784;}
+/* Teal — 薄荷膠囊（如「+子任務」） */
+.btn-teal{background:#E0F5F4;color:#00796B;border-color:#80CBC4;}
+.btn-teal:hover{background:#CCEDEB;border-color:#4DB6AC;}
+/* Purple — 紫色膠囊 */
+.btn-purple{background:#EDE7F6;color:#6A1B9A;border-color:#CE93D8;}
+.btn-purple:hover{background:#E1D5F0;border-color:#BA68C8;}
+/* Amber — 琥珀膠囊 */
+.btn-amber{background:#FFF3E0;color:#C66900;border-color:#FFCC80;}
+.btn-amber:hover{background:#FFE9C4;border-color:#FFB74D;}
+/* Indigo — 靛藍膠囊 */
+.btn-indigo{background:#EDE9F8;color:#4527A0;border-color:#B39DDB;}
+.btn-indigo:hover{background:#E0D9F2;border-color:#9575CD;}
+/* Red — 紅色膠囊（刪除/警告） */
+.btn-red{background:#FFF0F0;color:#B71C1C;border-color:#FFCDD2;}
+.btn-red:hover{background:#FFE2E2;border-color:#EF9A9A;}
+/* Ghost — 灰色膠囊（如類別標籤） */
+.btn-ghost{background:#F1F3F7;color:#6B7280;border-color:#E2E4EC;}
+.btn-ghost:hover{background:#E8EAF0;border-color:#CBD0DC;color:#4B5563;}
 
-.btn-full{width:100%}
-.btn-sm{padding:5px 10px;font-size:11px;border-radius:8px;box-shadow:none}
+.btn-full{width:100%;border-radius:12px;}
+.btn-sm{padding:4px 11px;font-size:10px;}
+/* 全寬主要按鈕：加深色填充，更有份量 */
+.btn-full.btn-green{background:#3D9660;color:#fff;border-color:#2E7D52;}
+.btn-full.btn-green:hover{background:#2E7D52;}
+.btn-full.btn-teal{background:#3AA5A0;color:#fff;border-color:#2C8880;}
+.btn-full.btn-teal:hover{background:#2C8880;}
+.btn-full.btn-blue{background:#4E78A8;color:#fff;border-color:#3A608C;}
+.btn-full.btn-blue:hover{background:#3A608C;}
+.btn-full.btn-amber{background:#B88A3A;color:#fff;border-color:#9A7228;}
+.btn-full.btn-amber:hover{background:#9A7228;}
+.btn-full.btn-purple{background:#7A6AB8;color:#fff;border-color:#6858A6;}
+.btn-full.btn-purple:hover{background:#6858A6;}
+.btn-full.btn-red{background:#B85858;color:#fff;border-color:#9E4444;}
+.btn-full.btn-red:hover{background:#9E4444;}
 
 /* inputs */
 .inp{
@@ -486,17 +495,10 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 .zip-progress-bar{height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .15s}
 
-/* ── NAV TABS COLORED PILLS ── */
-#ntab-poster.on{background:#E4F0ED;color:#2C8880;border-color:#A8D4CF;}
-#ntab-poster:hover:not(.on){background:#EDF7F5;color:#3AA5A0;}
-#ntab-ie.on{background:#EDE9F5;color:#6858A6;border-color:#C5B8E8;}
-#ntab-ie:hover:not(.on){background:#F2EFF9;color:#7A6AB8;}
-#ntab-wm.on{background:#F5EFE0;color:#9A7228;border-color:#DEC88A;}
-#ntab-wm:hover:not(.on){background:#FAF4E6;color:#B88A3A;}
-#ntab-qr.on{background:#E9E9F4;color:#5558A8;border-color:#B0B2D8;}
-#ntab-qr:hover:not(.on){background:#EEEFF8;color:#5558A8;}
-#ntab-res.on{background:#E4F2EA;color:#2C7848;border-color:#A8D4BA;}
-#ntab-res:hover:not(.on){background:#EDF7F0;color:#3D9660;}
+/* ── NAV TABS (深藍底，啟用稍亮) ── */
+#ntab-poster.on,#ntab-ie.on,#ntab-wm.on,#ntab-qr.on,#ntab-res.on{
+  background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.35);font-weight:600;
+}
 
 /* ── 素材資源面板 ── */
 #pg-res{display:none;flex-direction:column;padding:12px;gap:8px;overflow-y:auto;}
@@ -720,8 +722,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 <!-- NAV -->
 <div id="nav">
   <div class="logo" style="display:flex;align-items:center;gap:8px;padding:0 4px">
-    <img src="./logos/logo-h-white.png" style="height:28px;object-fit:contain;flex-shrink:0;filter:brightness(0) saturate(100%) invert(35%) sepia(40%) saturate(500%) hue-rotate(180deg)" onerror="this.style.display='none'">
-    <span style="font-size:12px;font-weight:700;white-space:nowrap;letter-spacing:.3px;color:var(--g800)">美編小助手</span>
+    <img src="./logos/logo-h-white.png" style="height:28px;object-fit:contain;flex-shrink:0" onerror="this.style.display='none'">
+    <span style="font-size:12px;font-weight:600;white-space:nowrap;letter-spacing:.3px">美編小助手</span>
   </div>
   <button class="ntab on" onclick="switchTab('poster',this)" id="ntab-poster">🎨 海報編輯</button>
   <button class="ntab" onclick="switchTab('ie',this)" id="ntab-ie">🖼 圖片編輯</button>
