@@ -439,18 +439,18 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
 /* ── NAV TABS COLORED PILLS ── */
 .ntab{border:1px solid transparent}
-#ntab-poster{color:#6b7280;}
-#ntab-poster:hover{background:#f3f4f6;color:#00A99D;}
-#ntab-poster.on{background:#f0fdfa;color:#00A99D;border-color:#99e6e1;}
-#ntab-ie{color:#6b7280;}
-#ntab-ie:hover{background:#f3f4f6;color:#7C3AED;}
-#ntab-ie.on{background:#f5f3ff;color:#7C3AED;border-color:#c4b5fd;}
-#ntab-wm{color:#6b7280;}
-#ntab-wm:hover{background:#f3f4f6;color:#D97706;}
-#ntab-wm.on{background:#fffbeb;color:#D97706;border-color:#fcd34d;}
-#ntab-qr{color:#6b7280;}
-#ntab-qr:hover{background:#f3f4f6;color:#4338CA;}
-#ntab-qr.on{background:#eef2ff;color:#4338CA;border-color:#a5b4fc;}
+#ntab-poster{background:var(--teal-d);color:#fff;opacity:.75}
+#ntab-poster:hover{opacity:.9}
+#ntab-poster.on{background:var(--teal);color:#fff;opacity:1}
+#ntab-ie{background:var(--purple-d);color:#fff;opacity:.75}
+#ntab-ie:hover{opacity:.9}
+#ntab-ie.on{background:var(--purple);color:#fff;opacity:1}
+#ntab-wm{background:var(--amber-d);color:#fff;opacity:.75}
+#ntab-wm:hover{opacity:.9}
+#ntab-wm.on{background:var(--amber);color:#fff;opacity:1}
+#ntab-qr{background:var(--indigo);color:#fff;opacity:.75}
+#ntab-qr:hover{opacity:.9}
+#ntab-qr.on{background:var(--indigo-l);color:#fff;opacity:1}
 
 /* ── QR CODE 產生器 ── */
 #pg-qr{display:none;flex-direction:column;padding:0;}
@@ -2100,6 +2100,7 @@ function rmObj(id){
   S.objs = S.objs.filter(o=>o.id!==id);
   if(S.selId===id){ S.selId=null; document.getElementById('pp').style.display='none'; }
   updLayerList();
+  renderBg(); // 同步更新 Fabric.js canvas（形狀）及主 canvas
   snack('已刪除物件');
 }
 
@@ -2165,6 +2166,18 @@ function attachDrag(el, obj){
       if(obj.type==='img' && (dir==='se'||dir==='sw'||dir==='ne'||dir==='nw')){
         nh = nw * obj.aspectRatio;
         if(dir.includes('n')) ny = oy+oh-nh;
+      }
+      // shape: Shift 鍵鎖定長寬比
+      if(obj.type==='shape' && e.shiftKey && oar>0 && ow>0){
+        if(dir==='n'||dir==='s'){
+          nw=Math.max(20,nh/oar); nx=ox+(ow-nw)/2;
+          if(dir==='n') ny=oy+oh-nh;
+        } else {
+          nh=Math.max(20,nw*oar);
+          if(dir.includes('n')) ny=oy+oh-nh;
+          if(dir.includes('w')) nx=ox+ow-nw;
+        }
+        nw=Math.max(20,nw); nh=Math.max(20,nh);
       }
       // text: lock aspect ratio + scale font size
       if(obj.type==='txt' && osize>0 && ow>0 && oh>0){
