@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#003F7A"/>
+      <stop offset="100%" stop-color="#1A7DC4"/>
+    </linearGradient>
+    <linearGradient id="pen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA500"/>
+    </linearGradient>
+    <clipPath id="round">
+      <rect width="120" height="120" rx="22" ry="22"/>
+    </clipPath>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- 底色（深藍漸層） -->
+  <rect width="120" height="120" rx="22" ry="22" fill="url(#bg)"/>
+
+  <!-- 左側彩色設計色條（調色盤意象） -->
+  <rect x="10" y="14" width="8" height="92" rx="4" fill="#00A99D" opacity="0.9"/>
+  <rect x="10" y="14" width="8" height="18" rx="4" fill="#00BEB0"/>
+  <rect x="10" y="38" width="8" height="18" rx="4" fill="#7C3AED"/>
+  <rect x="10" y="62" width="8" height="18" rx="4" fill="#F59E0B"/>
+  <rect x="10" y="86" width="8" height="20" rx="4" fill="#EF4444"/>
+
+  <!-- 畫布框架（白色，帶陰影） -->
+  <rect x="26" y="16" width="70" height="62" rx="5" ry="5"
+        fill="white" opacity="0.95" filter="url(#shadow)"/>
+
+  <!-- 畫布內容（示意圖） -->
+  <!-- 天空色塊 -->
+  <rect x="26" y="16" width="70" height="24" rx="5" ry="5" fill="#BFDBFE"/>
+  <rect x="26" y="34" width="70" height="6" fill="#BFDBFE"/>
+  <!-- 地面色塊 -->
+  <rect x="26" y="40" width="70" height="38" rx="0" ry="0" fill="#FEF3C7"/>
+  <rect x="26" y="67" width="70" height="11" rx="0" fill="#FEF3C7"/>
+  <rect x="26" y="72" width="70" height="6" rx="0" ry="0" fill="#A7F3D0"/>
+  <!-- 底部 -->
+  <rect x="26" y="72" width="70" height="6" fill="#A7F3D0"/>
+  <!-- 建築/圖形示意 -->
+  <rect x="44" y="36" width="22" height="42" rx="2" fill="#93C5FD" opacity="0.8"/>
+  <rect x="50" y="44" width="10" height="10" rx="1" fill="#1D4ED8" opacity="0.6"/>
+  <!-- 小樹 -->
+  <rect x="70" y="55" width="4" height="23" rx="2" fill="#6B7280" opacity="0.5"/>
+  <ellipse cx="72" cy="52" rx="8" ry="9" fill="#16A34A" opacity="0.8"/>
+  <!-- 太陽 -->
+  <circle cx="82" cy="24" r="6" fill="#FCD34D"/>
+
+  <!-- 畫筆（右下角，帶筆身+筆尖） -->
+  <g transform="translate(78,76) rotate(-40)" filter="url(#shadow)">
+    <!-- 筆身 -->
+    <rect x="-4" y="-26" width="8" height="30" rx="2" fill="url(#pen)"/>
+    <!-- 筆夾金屬環 -->
+    <rect x="-4" y="-28" width="8" height="4" rx="1" fill="#B45309"/>
+    <!-- 橡皮擦 -->
+    <rect x="-4" y="-34" width="8" height="8" rx="2" fill="#FECACA"/>
+    <!-- 筆尖 -->
+    <polygon points="-4,4 4,4 0,14" fill="#E5E7EB"/>
+    <polygon points="-1,8 1,8 0,14" fill="#374151"/>
+  </g>
+
+  <!-- 底部：副檔名標籤 -->
+  <rect x="8" y="90" width="104" height="22" rx="6" fill="white" opacity="0.15"/>
+  <text x="60" y="105" text-anchor="middle"
+        font-family="'Noto Sans TC',Arial,sans-serif"
+        font-size="11" font-weight="700" letter-spacing="1"
+        fill="white" opacity="0.95">.ktposter</text>
+
+  <!-- KT 浮水印（右上角） -->
+  <text x="89" y="13" text-anchor="middle"
+        font-family="Arial,sans-serif" font-size="8" font-weight="900"
+        fill="white" opacity="0.25">KT</text>
+</svg>

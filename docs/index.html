@@ -665,9 +665,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <div class="spacer"></div>
   <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed">↩ 復原</button>
   <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed">↪ 重做</button>
-  <button class="ntab" onclick="saveProject()" title="儲存專案為 JSON">💾 儲存專案</button>
-  <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟專案 JSON">📂 開啟專案</button>
-  <input type="file" id="proj-load-inp" accept=".json" style="display:none" onchange="loadProject(this)">
+  <button class="ntab" onclick="saveProject()" title="儲存為 .ktposter 專案檔（可再次開啟繼續編輯）" style="display:flex;align-items:center;gap:5px">
+    <svg width="15" height="15" viewBox="0 0 120 120" style="flex-shrink:0"><defs><linearGradient id="bi" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#003F7A"/><stop offset="100%" stop-color="#1A7DC4"/></linearGradient></defs><rect width="120" height="120" rx="22" fill="url(#bi)"/><rect x="10" y="14" width="8" height="18" rx="4" fill="#00BEB0"/><rect x="10" y="38" width="8" height="18" rx="4" fill="#7C3AED"/><rect x="10" y="62" width="8" height="18" rx="4" fill="#F59E0B"/><rect x="10" y="86" width="8" height="20" rx="4" fill="#EF4444"/><rect x="26" y="16" width="70" height="62" rx="5" fill="white" opacity=".95"/><rect x="26" y="16" width="70" height="24" rx="5" fill="#BFDBFE"/><rect x="26" y="34" width="70" height="6" fill="#BFDBFE"/><rect x="26" y="40" width="70" height="38" fill="#FEF3C7"/><rect x="26" y="72" width="70" height="6" fill="#A7F3D0"/><rect x="44" y="36" width="22" height="42" rx="2" fill="#93C5FD" opacity=".8"/><circle cx="82" cy="24" r="6" fill="#FCD34D"/><g transform="translate(78,76) rotate(-40)"><rect x="-4" y="-26" width="8" height="30" rx="2" fill="#FFA500"/><rect x="-4" y="-34" width="8" height="8" rx="2" fill="#FECACA"/><polygon points="-4,4 4,4 0,14" fill="#E5E7EB"/></g><rect x="8" y="90" width="104" height="22" rx="6" fill="white" opacity=".15"/><text x="60" y="105" text-anchor="middle" font-family="Arial" font-size="11" font-weight="700" fill="white">.ktposter</text></svg>
+    儲存專案
+  </button>
+  <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔">📂 開啟專案</button>
+  <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <span class="ver" style="margin-left:6px">v3.0</span>
   <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/28 17:47</span>
 </div>
@@ -4241,10 +4244,10 @@ function saveProject(){
   const blob = new Blob([JSON.stringify(data)],{type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'poster-project-'+ymd+'.json';
+  a.href = url; a.download = '光田海報_'+ymd+'.ktposter';
   a.click();
   setTimeout(()=>URL.revokeObjectURL(url),5000);
-  snack('專案已儲存');
+  snack('已儲存 .ktposter 專案檔（可在任何電腦開啟繼續編輯）');
 }
 
 async function loadProject(inp){
