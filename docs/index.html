@@ -30,18 +30,18 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ── NAV ── */
 #nav{
-  height:44px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;
+  height:44px;background:var(--blue-d);display:flex;align-items:center;
   padding:0 16px;gap:4px;flex-shrink:0;user-select:none;
 }
-#nav .logo{color:#005BAC;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
+#nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
 .ntab{
-  padding:5px 14px;border:none;background:transparent;color:#6b7280;
+  padding:5px 14px;border:none;background:transparent;color:rgba(255,255,255,.65);
   border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;
 }
-.ntab:hover{background:#f3f4f6;color:#111}
-.ntab.on{background:#eff6ff;color:#005BAC}
+.ntab:hover{background:rgba(255,255,255,.1);color:#fff}
+.ntab.on{background:rgba(255,255,255,.18);color:#fff}
 #nav .spacer{flex:1}
-#nav .ver{color:#9ca3af;font-size:11px}
+#nav .ver{color:rgba(255,255,255,.45);font-size:11px}
 
 /* ── LAYOUT ── */
 #main{display:flex;height:calc(100vh - 44px);overflow:hidden}
@@ -669,7 +669,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟專案 JSON">📂 開啟專案</button>
   <input type="file" id="proj-load-inp" accept=".json" style="display:none" onchange="loadProject(this)">
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:#9ca3af;margin-left:6px">updated: 2026/03/28 17:47</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/28 17:47</span>
 </div>
 
 <div id="main">
