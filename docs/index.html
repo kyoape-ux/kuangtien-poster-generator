@@ -35,23 +35,38 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
   padding:0 16px;gap:4px;flex-shrink:0;user-select:none;
 }
 #nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
+/* ntab 基底（復原/重做/儲存等工具鈕） */
 .ntab{
   padding:5px 14px;
-  border:1px solid rgba(255,255,255,.28);
-  background:linear-gradient(175deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 52%),#14286E;
-  color:rgba(255,255,255,.95);
+  border:1px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.13);
+  color:rgba(255,255,255,.82);
   border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 5px rgba(0,0,0,.35);
-  text-shadow:0 1px 2px rgba(0,0,0,.28);
 }
-.ntab:hover{
-  background:linear-gradient(175deg,rgba(255,255,255,.3) 0%,rgba(255,255,255,.05) 52%),#1E368A;
-  border-color:rgba(255,255,255,.42);
-}
-.ntab.on{
-  background:#fff;color:#14286E;border-color:rgba(20,40,110,.12);
-  font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12);text-shadow:none;
-}
+.ntab:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.35);color:#fff}
+.ntab.on{font-weight:700;}
+
+/* ── 5 主功能 Tab：各自 CI 淡色膠囊 ── */
+/* 海報編輯 寧靜靛 */
+#ntab-poster{background:#E8EEFF;color:#14286E;border-color:#8898D8;}
+#ntab-poster:hover{background:#D5DFFF;border-color:#6678C0;}
+#ntab-poster.on{background:#14286E;color:#fff;border-color:#0A1856;box-shadow:0 1px 4px rgba(20,40,110,.4);}
+/* 圖片編輯 寬廣藍 */
+#ntab-ie{background:#DDEEFA;color:#005878;border-color:#6AC8E4;}
+#ntab-ie:hover{background:#C8E5F5;border-color:#44AACE;}
+#ntab-ie.on{background:#0092B0;color:#fff;border-color:#007090;box-shadow:0 1px 4px rgba(0,120,160,.4);}
+/* 批次浮水印 生命綠 */
+#ntab-wm{background:#E8F7CC;color:#3A6800;border-color:#90CC38;}
+#ntab-wm:hover{background:#D8F0B4;border-color:#70AA18;}
+#ntab-wm.on{background:#4E8800;color:#fff;border-color:#386600;box-shadow:0 1px 4px rgba(60,110,0,.4);}
+/* QR碼 陽光黃 */
+#ntab-qr{background:#FFF4CC;color:#7A5000;border-color:#F5C800;}
+#ntab-qr:hover{background:#FFEEB0;border-color:#D8A800;}
+#ntab-qr.on{background:#C09000;color:#fff;border-color:#A07000;box-shadow:0 1px 4px rgba(160,110,0,.4);}
+/* 素材資源 大地棕 */
+#ntab-res{background:#F4EDE8;color:#5A3018;border-color:#C09880;}
+#ntab-res:hover{background:#EDE0D5;border-color:#A07860;}
+#ntab-res.on{background:#7A5535;color:#fff;border-color:#5A3820;box-shadow:0 1px 4px rgba(90,55,30,.4);}
 #nav .spacer{flex:1}
 #nav .ver{color:rgba(255,255,255,.45);font-size:11px}
 
