@@ -695,7 +695,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔">📂 開啟專案</button>
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/28 22:50</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/28 23:10</span>
 </div>
 
 <div id="main">
@@ -5497,34 +5497,142 @@ function resizeFabCanvas() {
 }
 
 function exportSVG() {
-  if(typeof fabric === 'undefined') { alert('Fabric.js 未載入，SVG匯出不可用'); return; }
-  try {
-    const tempFab = new fabric.StaticCanvas(null, { width: S.W, height: S.H });
-    if(S.bgColor) tempFab.backgroundColor = S.bgColor;
-    S.objs.forEach(obj => {
-      if(obj.type !== 'shape') return;
-      const fill = (obj.fillColor === 'transparent' || !obj.fillColor) ? 'transparent' : obj.fillColor;
-      const stroke = obj.strokeColor || '#333';
+  const ns = 'http://www.w3.org/2000/svg';
+  const xl = 'http://www.w3.org/1999/xlink';
+  const root = document.createElementNS(ns, 'svg');
+  root.setAttribute('xmlns', ns);
+  root.setAttribute('xmlns:xlink', xl);
+  root.setAttribute('width', S.W);
+  root.setAttribute('height', S.H);
+  root.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`);
+  root.setAttribute('version', '1.1');
+
+  // 背景色
+  const bgRect = document.createElementNS(ns, 'rect');
+  bgRect.setAttribute('x','0'); bgRect.setAttribute('y','0');
+  bgRect.setAttribute('width', S.W); bgRect.setAttribute('height', S.H);
+  bgRect.setAttribute('fill', S.bgColor || '#ffffff');
+  root.appendChild(bgRect);
+
+  // 背景圖
+  if(S.bgImgEl){
+    const du = imgElToDataUrl(S.bgImgEl);
+    if(du){
+      const bgi = document.createElementNS(ns, 'image');
+      const bw = S.W * (S.bgScale||1), bh = S.H * (S.bgScale||1);
+      bgi.setAttribute('x', (S.W-bw)/2 + (S.bgOffsetX||0));
+      bgi.setAttribute('y', (S.H-bh)/2 + (S.bgOffsetY||0));
+      bgi.setAttribute('width', bw); bgi.setAttribute('height', bh);
+      bgi.setAttribute('preserveAspectRatio','xMidYMid slice');
+      bgi.setAttribute('href', du);
+      root.appendChild(bgi);
+    }
+  }
+
+  // 物件（由下往上）
+  S.objs.forEach(obj=>{
+    const rot = obj.rot || 0;
+    const opacity = obj.opacity ?? 1;
+    const cx = obj.x + obj.w/2, cy = obj.y + obj.h/2;
+    const xfm = rot ? `rotate(${rot},${cx},${cy})` : null;
+
+    if(obj.type === 'txt'){
+      const g = document.createElementNS(ns, 'g');
+      if(xfm) g.setAttribute('transform', xfm);
+      g.setAttribute('opacity', opacity);
+
+      const lines = (obj.text || '').split('\n');
+      const sz = obj.size || 24;
+      const lh = sz * 1.25;
+      const totalH = lines.length * lh;
+
+      // 文字垂直置中於物件框
+      const baseY = obj.y + (obj.h - totalH) / 2 + sz * 0.85;
+
+      // 對齊
+      let tx, anchor;
+      if(obj.align === 'center'){ tx = obj.x + obj.w/2; anchor = 'middle'; }
+      else if(obj.align === 'right'){ tx = obj.x + obj.w; anchor = 'end'; }
+      else { tx = obj.x; anchor = 'start'; }
+
+      lines.forEach((line, i)=>{
+        const t = document.createElementNS(ns, 'text');
+        t.setAttribute('x', tx);
+        t.setAttribute('y', baseY + i * lh);
+        t.setAttribute('font-family', `'${obj.fontFamily||'Noto Sans TC'}',sans-serif`);
+        t.setAttribute('font-size', sz);
+        t.setAttribute('font-weight', obj.weight || '400');
+        t.setAttribute('fill', obj.color || '#000000');
+        t.setAttribute('text-anchor', anchor);
+        if(obj.fontStyle === 'italic') t.setAttribute('font-style','italic');
+        t.textContent = line || '';
+        g.appendChild(t);
+      });
+      root.appendChild(g);
+    }
+    else if(obj.type === 'img' && obj.imgEl){
+      const du = imgElToDataUrl(obj.imgEl);
+      if(du){
+        const g = document.createElementNS(ns, 'g');
+        if(xfm) g.setAttribute('transform', xfm);
+        const im = document.createElementNS(ns, 'image');
+        im.setAttribute('x', obj.x); im.setAttribute('y', obj.y);
+        im.setAttribute('width', obj.w); im.setAttribute('height', obj.h);
+        im.setAttribute('opacity', opacity);
+        im.setAttribute('preserveAspectRatio','xMidYMid meet');
+        im.setAttribute('href', du);
+        g.appendChild(im);
+        root.appendChild(g);
+      }
+    }
+    else if(obj.type === 'shape'){
+      const fill = (!obj.fillColor || obj.fillColor==='transparent') ? 'none' : obj.fillColor;
+      const stroke = obj.strokeColor || '#333333';
       const sw = obj.strokeWidth || 2;
-      const dash = (obj.strokeDash && obj.strokeDash !== 'solid') ? obj.strokeDash.split(',').map(Number) : null;
-      const baseProps = { fill, stroke, strokeWidth:sw, strokeDashArray:dash, angle:obj.rot||0, opacity:obj.opacity??1, originX:'left', originY:'top' };
-      let fo = null;
-      if(obj.shapeType==='rect'||obj.shapeType==='dashed-rect') fo = new fabric.Rect({...baseProps, left:obj.x, top:obj.y, width:obj.w, height:obj.h});
-      else if(obj.shapeType==='ellipse') fo = new fabric.Ellipse({...baseProps, left:obj.x, top:obj.y, rx:obj.w/2, ry:obj.h/2});
-      else if(obj.shapeType==='line') fo = new fabric.Line([0,0,obj.w,obj.h], {...baseProps, left:obj.x, top:obj.y});
-      else if(obj.shapeType==='triangle') fo = new fabric.Triangle({...baseProps, left:obj.x, top:obj.y, width:obj.w, height:obj.h});
-      if(fo) tempFab.add(fo);
-    });
-    const svgStr = tempFab.toSVG({ suppressPreamble: false });
-    tempFab.dispose();
-    const blob = new Blob([svgStr], {type:'image/svg+xml'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'poster-vector.svg';
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
-  } catch(e) { alert('SVG匯出錯誤: ' + e.message); }
+      const dash = (obj.strokeDash && obj.strokeDash!=='solid') ? obj.strokeDash : null;
+      const g = document.createElementNS(ns, 'g');
+      if(xfm) g.setAttribute('transform', xfm);
+      g.setAttribute('opacity', opacity);
+      let sh = null;
+      if(obj.shapeType==='rect'||obj.shapeType==='dashed-rect'){
+        sh = document.createElementNS(ns,'rect');
+        sh.setAttribute('x',obj.x); sh.setAttribute('y',obj.y);
+        sh.setAttribute('width',obj.w); sh.setAttribute('height',obj.h);
+      } else if(obj.shapeType==='ellipse'){
+        sh = document.createElementNS(ns,'ellipse');
+        sh.setAttribute('cx',obj.x+obj.w/2); sh.setAttribute('cy',obj.y+obj.h/2);
+        sh.setAttribute('rx',obj.w/2); sh.setAttribute('ry',obj.h/2);
+      } else if(obj.shapeType==='line'){
+        sh = document.createElementNS(ns,'line');
+        sh.setAttribute('x1',obj.x); sh.setAttribute('y1',obj.y);
+        sh.setAttribute('x2',obj.x+obj.w); sh.setAttribute('y2',obj.y+obj.h);
+      } else if(obj.shapeType==='triangle'){
+        sh = document.createElementNS(ns,'polygon');
+        sh.setAttribute('points',`${obj.x+obj.w/2},${obj.y} ${obj.x},${obj.y+obj.h} ${obj.x+obj.w},${obj.y+obj.h}`);
+      }
+      if(sh){
+        sh.setAttribute('fill', fill);
+        sh.setAttribute('stroke', stroke);
+        sh.setAttribute('stroke-width', sw);
+        if(dash) sh.setAttribute('stroke-dasharray', dash);
+        g.appendChild(sh);
+      }
+      root.appendChild(g);
+    }
+  });
+
+  // 序列化並下載
+  const ser = new XMLSerializer();
+  const svgStr = '<?xml version="1.0" encoding="utf-8"?>\n' + ser.serializeToString(root);
+  const ymd = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const blob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `poster-${ymd}.svg`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  snack('已匯出完整 SVG（文字、圖片、形狀全部包含）');
 }
 
 // ═══════════════════════════════════════════════
