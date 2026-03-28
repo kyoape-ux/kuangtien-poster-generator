@@ -494,6 +494,20 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 #ntab-qr{background:var(--indigo);color:#fff;opacity:.75}
 #ntab-qr:hover{opacity:.9}
 #ntab-qr.on{background:var(--indigo-l);color:#fff;opacity:1}
+#ntab-res{background:#059669;color:#fff;opacity:.75}
+#ntab-res:hover{opacity:.9}
+#ntab-res.on{background:#10B981;color:#fff;opacity:1}
+
+/* ── 素材資源面板 ── */
+#pg-res{display:none;flex-direction:column;padding:12px;gap:8px;overflow-y:auto;}
+.res-section-title{font-size:12px;font-weight:700;color:var(--g700);margin:8px 0 4px;border-left:3px solid #059669;padding-left:8px;}
+.res-link-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;text-decoration:none;color:var(--g800);transition:all .15s;cursor:pointer;}
+.res-link-item:hover{background:#dcfce7;border-color:#86efac;transform:translateX(2px);}
+.res-link-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0;}
+.res-link-info{flex:1;min-width:0;}
+.res-link-name{font-size:12px;font-weight:600;color:var(--g800);}
+.res-link-desc{font-size:10px;color:var(--g500);margin-top:1px;}
+.res-link-tag{font-size:9px;background:#d1fae5;color:#065f46;padding:2px 5px;border-radius:10px;white-space:nowrap;}
 
 /* ── QR CODE 產生器 ── */
 #pg-qr{display:none;flex-direction:column;padding:0;}
@@ -676,7 +690,15 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   display:flex;align-items:center;justify-content:center;
   opacity:0;transition:opacity .15s;z-index:2;padding:0;
 }
+.page-thumb-dup{
+  position:absolute;top:-4px;left:-4px;width:15px;height:15px;
+  border-radius:50%;background:var(--teal);color:#fff;border:none;
+  cursor:pointer;font-size:9px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .15s;z-index:2;padding:0;
+}
 .page-thumb-wrap:hover .page-thumb-del{opacity:1}
+.page-thumb-wrap:hover .page-thumb-dup{opacity:1}
 .page-thumb.drag-over{border-color:var(--blue);background:#EBF4FF;opacity:.65}
 
 /* ── CLOUD SYNC STATUS ── */
@@ -705,6 +727,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <button class="ntab" onclick="switchTab('ie',this)" id="ntab-ie">🖼 圖片編輯</button>
   <button class="ntab" onclick="switchTab('wm',this)" id="ntab-wm">💧 批次浮水印</button>
   <button class="ntab" onclick="switchTab('qr',this)" id="ntab-qr">⬛ QR碼產生</button>
+  <button class="ntab" onclick="switchTab('res',this)" id="ntab-res">🔗 素材資源</button>
   <div class="spacer"></div>
   <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed">↩ 復原</button>
   <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed">↪ 重做</button>
@@ -854,6 +877,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('line')">╱ 直線</button>
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('triangle')">▲ 三角</button>
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('dashrect')">⬜ 虛線框</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('superellipse')" title="光田超橢圓 CI形狀">⬡ 超橢圓</button>
       </div>
       <input type="file" id="imgInp" accept="image/*,.svg" style="display:none" onchange="addImg(this)">
       <input type="file" id="svgInp" accept=".svg,image/svg+xml" style="display:none" onchange="addSvgObj(this)">
@@ -1303,7 +1327,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   </div>
 </div><!-- /pg-qr -->
 
+
 </div><!-- /ca -->
+
+<!-- 素材資源 全版頁面 -->
+<div id="pg-res" style="display:none;flex:1;overflow:hidden;overflow-y:auto;background:#f0fdf4;padding:20px 24px;">
+  <div style="font-size:13px;font-weight:700;color:var(--g800);margin-bottom:4px">🔗 設計素材資源庫</div>
+  <div style="font-size:10px;color:var(--g500);margin-bottom:12px">點擊連結在新視窗開啟，免費設計素材網站精選</div>
+  <div id="res-links-container"></div>
+</div>
+
 </div><!-- /main -->
 
 <!-- WATERMARK PREVIEW MODAL -->
@@ -1542,6 +1575,83 @@ const FONTS = [
   { label:'商務黑 BIZ UDP', value:'BIZ UDPGothic' },
   { label:'手寫 Yusei Magic', value:'Yusei Magic' },
 ];
+
+// ═══════════════════════════════════════════════
+//  素材資源連結（管理者可自行新增 category 和 items）
+// ═══════════════════════════════════════════════
+const RESOURCE_LINKS = [
+  {
+    category: '📷 免費圖庫',
+    items: [
+      { name:'Freepik', url:'https://www.freepik.com', icon:'🎨', desc:'向量圖、PSD、圖示、照片大量免費素材', tag:'免費/付費' },
+      { name:'Unsplash', url:'https://unsplash.com', icon:'📸', desc:'高品質免費商用照片', tag:'完全免費' },
+      { name:'Pexels', url:'https://www.pexels.com', icon:'🖼', desc:'免費圖片與影片素材庫', tag:'完全免費' },
+      { name:'Pixabay', url:'https://pixabay.com', icon:'🌄', desc:'免費圖片、向量圖、影片', tag:'完全免費' },
+    ]
+  },
+  {
+    category: '🔤 字體資源',
+    items: [
+      { name:'Google Fonts', url:'https://fonts.google.com', icon:'G', desc:'免費開源字體，含繁體中文', tag:'完全免費' },
+      { name:'思源字體', url:'https://github.com/adobe-fonts/source-han-sans', icon:'字', desc:'Adobe開源中文字體 Source Han Sans', tag:'開源免費' },
+      { name:'justfont', url:'https://www.justfont.com', icon:'字', desc:'台灣中文字體平台', tag:'部分免費' },
+    ]
+  },
+  {
+    category: '🎭 圖示與插圖',
+    items: [
+      { name:'Flaticon', url:'https://www.flaticon.com', icon:'⬡', desc:'海量向量圖示下載', tag:'免費/付費' },
+      { name:'Iconfinder', url:'https://www.iconfinder.com', icon:'🔍', desc:'高品質SVG圖示庫', tag:'免費/付費' },
+      { name:'unDraw', url:'https://undraw.co', icon:'🎨', desc:'可自訂顏色的免費插圖', tag:'完全免費' },
+      { name:'IconsDB', url:'https://www.iconsdb.com', icon:'📌', desc:'免費SVG/PNG圖示下載', tag:'完全免費' },
+    ]
+  },
+  {
+    category: '🎨 顏色工具',
+    items: [
+      { name:'Color Hunt', url:'https://colorhunt.co', icon:'🎨', desc:'精選配色方案', tag:'完全免費' },
+      { name:'Coolors', url:'https://coolors.co', icon:'🌈', desc:'快速生成配色方案', tag:'免費/付費' },
+      { name:'Adobe Color', url:'https://color.adobe.com', icon:'🔵', desc:'Adobe配色輪，可儲存調色盤', tag:'免費' },
+    ]
+  },
+  {
+    category: '✂ 設計工具',
+    items: [
+      { name:'Remove.bg', url:'https://www.remove.bg', icon:'✂', desc:'一鍵AI去背', tag:'免費額度' },
+      { name:'Canva', url:'https://www.canva.com', icon:'C', desc:'線上設計工具，大量模板', tag:'免費/付費' },
+      { name:'SVG Repo', url:'https://www.svgrepo.com', icon:'⬡', desc:'50萬+免費SVG向量圖形', tag:'完全免費' },
+      { name:'Compressor.io', url:'https://compressor.io', icon:'⚡', desc:'圖片壓縮不失真', tag:'免費' },
+    ]
+  },
+  {
+    category: '🏥 醫療素材',
+    items: [
+      { name:'Healthicons', url:'https://healthicons.org', icon:'🏥', desc:'WHO提供的免費醫療圖示', tag:'完全免費' },
+      { name:'Medical Illustrations', url:'https://biorender.com', icon:'🔬', desc:'醫學生物插圖工具', tag:'免費/付費' },
+    ]
+  },
+];
+
+function renderResLinks(){
+  const c=document.getElementById('res-links-container');
+  if(!c) return;
+  c.innerHTML='';
+  RESOURCE_LINKS.forEach(sec=>{
+    const title=document.createElement('div');
+    title.className='res-section-title';
+    title.textContent=sec.category;
+    c.appendChild(title);
+    sec.items.forEach(item=>{
+      const a=document.createElement('a');
+      a.className='res-link-item';
+      a.href=item.url;
+      a.target='_blank';
+      a.rel='noopener noreferrer';
+      a.innerHTML=`<span class="res-link-icon">${item.icon}</span><div class="res-link-info"><div class="res-link-name">${item.name}</div><div class="res-link-desc">${item.desc}</div></div><span class="res-link-tag">${item.tag}</span>`;
+      c.appendChild(a);
+    });
+  });
+}
 
 // ── 類別定義（維護說明：新增類別請在此 array 加入 {id, name}，
 //    並在 TEMPLATES 中新增對應 category 的物件即可）──
@@ -2627,7 +2737,7 @@ function renderTxtPP(obj){
 }
 
 function renderShapePP(obj){
-  const shapes=[['rect','矩形'],['ellipse','橢圓'],['line','直線'],['triangle','三角']];
+  const shapes=[['rect','矩形'],['ellipse','橢圓'],['line','直線'],['triangle','三角'],['superellipse','超橢圓']];
   const dashes=[['solid','實線'],['8,4','虛線'],['2,4','點線']];
   const fc=obj.fillColor||'transparent';
   const fc_color=fc==='transparent'?'#ffffff':fc;
@@ -3602,6 +3712,32 @@ function addPage(){
   loadPage(S.pageIdx);
 }
 
+function duplicatePage(idx){
+  saveCurrentPage();
+  const src=S.pages[idx];
+  // Deep copy page (handle imgEl references)
+  const copy={
+    W:src.W, H:src.H,
+    name:(src.name||`第${idx+1}頁`)+'（複製）',
+    bgColor:src.bgColor,
+    bgImgEl:src.bgImgEl||null,
+    bgScale:src.bgScale||1,
+    bgOffsetX:src.bgOffsetX||0,
+    bgOffsetY:src.bgOffsetY||0,
+    bgLocked:false,
+    selId:null,
+    objs:src.objs.map(o=>{
+      const nc={...o};
+      nc.id='o'+(++S.cnt);
+      return nc;
+    })
+  };
+  S.pages.splice(idx+1,0,copy);
+  S.pageIdx=idx+1;
+  loadPage(S.pageIdx);
+  snack('已複製頁面');
+}
+
 function deletePage(idx){
   if(S.pages.length<=1){ snack('至少需要一頁'); return; }
   S.pages.splice(idx,1);
@@ -3676,8 +3812,15 @@ function renderPagesBar(){
     del.title='刪除此頁';
     del.onclick=(e)=>{ e.stopPropagation(); deletePage(i); };
 
+    const dup=document.createElement('button');
+    dup.className='page-thumb-dup';
+    dup.innerHTML='⧉';
+    dup.title='複製此頁面';
+    dup.onclick=e=>{e.stopPropagation();duplicatePage(i);};
+
     wrap.appendChild(thumb);
     wrap.appendChild(del);
+    wrap.appendChild(dup);
     list.appendChild(wrap);
   });
 }
@@ -3761,7 +3904,7 @@ function switchTab(tab, btn){
   document.querySelectorAll('.ntab').forEach(e=>e.classList.remove('on'));
   btn.classList.add('on');
   document.querySelectorAll('.pg').forEach(e=>e.classList.remove('on'));
-  if(tab!=='qr') document.getElementById('pg-'+tab).classList.add('on');
+  if(tab!=='qr'&&tab!=='res') document.getElementById('pg-'+tab).classList.add('on');
 
   const dlBtn=document.getElementById('dl-btn');
   const wmpBtn=document.getElementById('wm-preview-btn');
@@ -3775,13 +3918,16 @@ function switchTab(tab, btn){
   const sbEl=document.getElementById('sb');
   const caEl=document.getElementById('ca');
   const pgQr=document.getElementById('pg-qr');
+  const pgRes=document.getElementById('pg-res');
 
-  // QR 頁面：隱藏所有其他區塊，全版顯示
+  // QR / 素材資源 頁面：隱藏所有其他區塊，全版顯示
   const isQr = (tab==='qr');
+  const isRes = (tab==='res');
   pgQr.style.display   = isQr ? 'flex' : 'none';
-  if(sbEl)  sbEl.style.display  = isQr ? 'none' : '';
-  if(caEl)  caEl.style.display  = isQr ? 'none' : '';
-  tplPanel.style.display         = isQr ? 'none' : '';
+  pgRes.style.display  = isRes ? 'flex' : 'none';
+  if(sbEl)  sbEl.style.display  = (isQr||isRes) ? 'none' : '';
+  if(caEl)  caEl.style.display  = (isQr||isRes) ? 'none' : '';
+  tplPanel.style.display         = (isQr||isRes) ? 'none' : '';
 
   if(tab==='poster'){
     dlBtn.textContent='⬇ 下載海報 PNG';
@@ -3820,6 +3966,14 @@ function switchTab(tab, btn){
     ieArea.style.display='none';
     if(pagesPanel) pagesPanel.style.display='none';
     setTimeout(qrGenerate, 150);
+  } else if(tab==='res'){
+    dlBar.style.display='none';
+    wmpBtn.style.display='none';
+    catop.style.display='none';
+    cscroll.style.display='none';
+    ieArea.style.display='none';
+    if(pagesPanel) pagesPanel.style.display='none';
+    renderResLinks();
   }
 }
 
@@ -4814,6 +4968,19 @@ function _renderShapeSvg(el, obj){
   } else if(obj.shapeType==='triangle'){
     shape=document.createElementNS('http://www.w3.org/2000/svg','polygon');
     shape.setAttribute('points',`${w/2},${sw/2} ${Math.max(0,w-sw/2)},${Math.max(0,h-sw/2)} ${sw/2},${Math.max(0,h-sw/2)}`);
+  } else if(obj.shapeType==='superellipse'){
+    // 光田CI超橢圓 - 從AI SVG路徑縮放至物件尺寸
+    const SE_PATH='M815.68,415.68c0-72.67,0-149.44-22.79-217.77-26.71-80.08-79.38-132.75-159.42-159.46-68.37-22.79-145.13-22.79-217.81-22.79s-149.4,0-217.77,22.79C117.85,65.16,65.18,117.83,38.47,197.91c-22.79,68.33-22.79,145.1-22.79,217.77s0,149.44,22.79,217.77c26.71,80.08,79.38,132.75,159.42,159.46,68.37,22.79,145.1,22.79,217.77,22.79s149.44,0,217.81-22.79c80.05-26.71,132.72-79.38,159.42-159.46,22.79-68.33,22.79-145.1,22.79-217.77Z';
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',SE_PATH);
+    p.setAttribute('transform',`scale(${w/831.36},${h/831.36})`);
+    p.setAttribute('fill',fill);
+    p.setAttribute('stroke',stroke);
+    const swScaled = sw * (831.36/Math.max(w,h));
+    p.setAttribute('stroke-width',swScaled);
+    if(dashArr!=='none') p.setAttribute('stroke-dasharray',dashArr);
+    svg.appendChild(p);
+    return;
   } else {
     shape=document.createElementNS('http://www.w3.org/2000/svg','rect');
     const off=sw/2;
@@ -6084,6 +6251,12 @@ function exportSVG() {
       } else if(obj.shapeType==='triangle'){
         sh = document.createElementNS(ns,'polygon');
         sh.setAttribute('points',`${obj.x+obj.w/2},${obj.y} ${obj.x},${obj.y+obj.h} ${obj.x+obj.w},${obj.y+obj.h}`);
+      } else if(obj.shapeType==='superellipse'){
+        const SE_PATH='M815.68,415.68c0-72.67,0-149.44-22.79-217.77-26.71-80.08-79.38-132.75-159.42-159.46-68.37-22.79-145.13-22.79-217.81-22.79s-149.4,0-217.77,22.79C117.85,65.16,65.18,117.83,38.47,197.91c-22.79,68.33-22.79,145.1-22.79,217.77s0,149.44,22.79,217.77c26.71,80.08,79.38,132.75,159.42,159.46,68.37,22.79,145.1,22.79,217.77,22.79s149.44,0,217.81-22.79c80.05-26.71,132.72-79.38,159.42-159.46,22.79-68.33,22.79-145.1,22.79-217.77Z';
+        sh = document.createElementNS(ns,'path');
+        sh.setAttribute('d',SE_PATH);
+        const seXfm = `${xfm?xfm+' ':''}translate(${obj.x},${obj.y}) scale(${obj.w/831.36},${obj.h/831.36})`;
+        g.setAttribute('transform', seXfm);
       }
       if(sh){
         sh.setAttribute('fill', fill);
