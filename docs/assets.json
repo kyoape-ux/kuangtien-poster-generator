@@ -1,0 +1,19 @@
+{
+  "categories": [
+    {
+      "id": "logo",
+      "name": "醫院 LOGO",
+      "items": [
+        { "id": "ktgh-logo", "name": "光田主LOGO", "url": "./assets/ktgh-logo.png", "thumb": "./assets/ktgh-logo.png" }
+      ]
+    },
+    {
+      "id": "bg",
+      "name": "背景圖",
+      "items": [
+        { "id": "welcome-h-bg", "name": "歡迎橫式背景", "url": "./assets/welcome-h-bg.jpg", "thumb": "./assets/welcome-h-bg.jpg" },
+        { "id": "welcome-v-bg", "name": "歡迎直式背景", "url": "./assets/welcome-v-bg.jpg", "thumb": "./assets/welcome-v-bg.jpg" }
+      ]
+    }
+  ]
+}
