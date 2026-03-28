@@ -94,6 +94,26 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 .asset-card:hover{border-color:var(--blue);box-shadow:0 0 0 2px #DBEAFE}
 .asset-card img{width:100%;height:48px;object-fit:cover;display:block;background:var(--g100)}
 .asset-card-name{font-size:9px;color:var(--g600);padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ── CI COLOR SWATCHES ── */
+.ci-swatches{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.ci-swatch{
+  width:20px;height:20px;border-radius:4px;border:1.5px solid rgba(0,0,0,.12);
+  cursor:pointer;transition:transform .1s,box-shadow .1s;flex-shrink:0;padding:0;
+}
+.ci-swatch:hover{transform:scale(1.18);box-shadow:0 0 0 2px var(--blue)}
+.ci-swatch.active{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue)}
+/* CI sidebar panel */
+.ci-palette-row{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0}
+.ci-palette-chip{
+  display:flex;align-items:center;gap:5px;padding:4px 7px;border-radius:7px;
+  cursor:pointer;background:var(--g50);border:1px solid var(--g200);
+  font-size:10px;color:var(--g700);transition:all .12s;white-space:nowrap;
+}
+.ci-palette-chip:hover{border-color:var(--blue);background:#EBF4FF;color:var(--blue)}
+.ci-chip-dot{width:13px;height:13px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+.ci-dept-sel{width:100%;padding:5px 6px;border:1px solid var(--g200);border-radius:6px;font-size:11px;color:var(--g700);background:#fff;cursor:pointer;margin-top:4px}
+.ci-dept-sel:focus{outline:none;border-color:var(--blue)}
+
 
 /* ── SIDEBAR (中欄) ── */
 #sb{
@@ -795,6 +815,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <div style="flex:1"></div>
         <button class="btn btn-teal btn-sm" onclick="document.getElementById('bgImgInp').click()">🖼 上傳底圖</button>
         <input type="file" id="bgImgInp" accept="image/*,.svg" style="display:none" onchange="addBgImg(this)">
+
+      <div class="ci-swatches" style="margin:4px 0 2px">
+        <button class="ci-swatch" style="background:#FFFFFF;border-color:#ccc" title="純淨白 #FFFFFF" onclick="setCiBgColor('#FFFFFF')"></button>
+        <button class="ci-swatch" style="background:#E11928" title="熱情紅 #E11928" onclick="setCiBgColor('#E11928')"></button>
+        <button class="ci-swatch" style="background:#6EC300" title="生命綠 #6EC300" onclick="setCiBgColor('#6EC300')"></button>
+        <button class="ci-swatch" style="background:#00AAC8" title="寬廣藍 #00AAC8" onclick="setCiBgColor('#00AAC8')"></button>
+        <button class="ci-swatch" style="background:#FFB900" title="陽光黃 #FFB900" onclick="setCiBgColor('#FFB900')"></button>
+        <button class="ci-swatch" style="background:#AA7D5F" title="大地棕 #AA7D5F" onclick="setCiBgColor('#AA7D5F')"></button>
+        <button class="ci-swatch" style="background:#14286E" title="寧靜靛 #14286E" onclick="setCiBgColor('#14286E')"></button>
+      </div>
       </div>
       <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">✕ 清除底圖</button>
       <div id="bg-img-controls" style="display:none;margin-top:8px;border-top:1px solid var(--g200);padding-top:8px">
@@ -840,6 +870,52 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     </div>
 
     <!-- 圖層 -->
+    <div class="sec-title" id="ci-sec-title" style="cursor:pointer" onclick="toggleCiPanel()">
+      光田 CI 色彩
+      <span id="ci-toggle-icon" style="margin-left:auto;font-size:10px;color:var(--g400)">▼</span>
+    </div>
+    <div class="sec" id="ci-panel" style="display:none;padding-bottom:8px">
+      <div style="font-size:10px;color:var(--g500);margin-bottom:6px">點色塊套用至選取物件或背景色</div>
+      <div class="ci-palette-row">
+        <button class="ci-palette-chip" onclick="setCiBgColor('#E11928');setCiTextColor('#E11928')" title="熱情紅 #E11928"><span class="ci-chip-dot" style="background:#E11928"></span>熱情紅</button>
+        <button class="ci-palette-chip" onclick="setCiBgColor('#6EC300');setCiTextColor('#6EC300')" title="生命綠 #6EC300"><span class="ci-chip-dot" style="background:#6EC300"></span>生命綠</button>
+        <button class="ci-palette-chip" onclick="setCiBgColor('#00AAC8');setCiTextColor('#00AAC8')" title="寬廣藍 #00AAC8"><span class="ci-chip-dot" style="background:#00AAC8"></span>寬廣藍</button>
+      </div>
+      <div class="ci-palette-row">
+        <button class="ci-palette-chip" onclick="setCiBgColor('#FFB900');setCiTextColor('#FFB900')" title="陽光黃 #FFB900"><span class="ci-chip-dot" style="background:#FFB900"></span>陽光黃</button>
+        <button class="ci-palette-chip" onclick="setCiBgColor('#AA7D5F');setCiTextColor('#AA7D5F')" title="大地棕 #AA7D5F"><span class="ci-chip-dot" style="background:#AA7D5F"></span>大地棕</button>
+        <button class="ci-palette-chip" onclick="setCiBgColor('#14286E');setCiTextColor('#14286E')" title="寧靜靛 #14286E"><span class="ci-chip-dot" style="background:#14286E"></span>寧靜靛</button>
+      </div>
+      <div style="font-size:10px;color:var(--g500);margin:8px 0 4px">科別快速套色</div>
+      <select class="ci-dept-sel" onchange="if(this.value)applyDeptColor(this.value)">
+        <option value="">— 選擇科別 —</option>
+        <optgroup label="── 寬廣藍 #00AAC8 ──">
+          <option>健康管理中心</option><option>國際醫療服務中心</option><option>達文西微創手術中心</option>
+          <option>肺癌篩檢暨防治中心</option><option>神經內科</option><option>身心科</option>
+          <option>核子醫學科</option><option>泌尿科</option><option>其他（外科系）</option>
+        </optgroup>
+        <optgroup label="── 陽光黃 #FFB900 ──">
+          <option>高壓氧中心暨營養點滴中心</option><option>社區健康中心</option><option>兒童發展聯合評估中心</option>
+          <option>中醫部</option><option>家醫科</option><option>兒科</option><option>皮膚科</option>
+        </optgroup>
+        <optgroup label="── 大地棕 #AA7D5F ──">
+          <option>癌症中心</option><option>失智共照中心</option><option>骨質疏鬆照護中心</option>
+          <option>婦產科</option><option>腎臟內科</option><option>其他（內科系）</option>
+        </optgroup>
+        <optgroup label="── 寧靜靛 #14286E ──">
+          <option>運動醫學中心</option><option>睡眠醫學中心</option><option>骨科</option>
+          <option>心臟內外科</option><option>胸腔內外科</option><option>腦中風中心</option>
+        </optgroup>
+        <optgroup label="── 生命綠 #6EC300 ──">
+          <option>肝膽腸胃科</option><option>耳鼻喉頭頸部</option><option>復健科</option>
+          <option>放射腫瘤科</option><option>眼科</option>
+        </optgroup>
+        <optgroup label="── 熱情紅 #E11928 ──">
+          <option>醫學美容中心</option><option>急診</option><option>整形外科</option>
+        </optgroup>
+      </select>
+      <div style="font-size:9px;color:var(--g400);margin-top:5px">依光田品牌規範 Brand Guide v1 Dec.2023</div>
+    </div>
     <div class="sec-title">圖層</div>
     <div class="sec">
       <div id="layer-list"><div style="font-size:11px;color:var(--g400);padding:4px 0">尚無物件</div></div>
@@ -1340,6 +1416,110 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 <div id="snack"></div>
 
 <script>
+
+// ═══════════════════════════════════════════════
+//  光田 CI 色彩系統（Brand Guide Dec.2023）
+// ═══════════════════════════════════════════════
+const CI_COLORS = [
+  { id:'red',    name:'熱情紅', hex:'#E11928', desc:'標準色・親切熱忱' },
+  { id:'white',  name:'純淨白', hex:'#FFFFFF', desc:'標準色・潔淨舒適' },
+  { id:'green',  name:'生命綠', hex:'#6EC300', desc:'輔助色・綠能永續' },
+  { id:'teal',   name:'寬廣藍', hex:'#00AAC8', desc:'輔助色・開創未來' },
+  { id:'yellow', name:'陽光黃', hex:'#FFB900', desc:'輔助色・活力樂觀' },
+  { id:'brown',  name:'大地棕', hex:'#AA7D5F', desc:'輔助色・人文關懷' },
+  { id:'navy',   name:'寧靜靛', hex:'#14286E', desc:'輔助色・信賴穩重' },
+];
+
+const DEPT_COLORS = [
+  { dept:'健康管理中心',       color:'#00AAC8', name:'寬廣藍' },
+  { dept:'醫學美容中心',       color:'#E11928', name:'熱情紅' },
+  { dept:'高壓氧中心暨營養點滴中心', color:'#FFB900', name:'陽光黃' },
+  { dept:'癌症中心',           color:'#AA7D5F', name:'大地棕' },
+  { dept:'運動醫學中心',       color:'#14286E', name:'寧靜靛' },
+  { dept:'國際醫療服務中心',   color:'#00AAC8', name:'寬廣藍' },
+  { dept:'失智共照中心',       color:'#AA7D5F', name:'大地棕' },
+  { dept:'睡眠醫學中心',       color:'#14286E', name:'寧靜靛' },
+  { dept:'骨質疏鬆照護中心',   color:'#AA7D5F', name:'大地棕' },
+  { dept:'達文西微創手術中心', color:'#00AAC8', name:'寬廣藍' },
+  { dept:'肺癌篩檢暨防治中心', color:'#00AAC8', name:'寬廣藍' },
+  { dept:'社區健康中心',       color:'#FFB900', name:'陽光黃' },
+  { dept:'兒童發展聯合評估中心', color:'#FFB900', name:'陽光黃' },
+  { dept:'神經內科',           color:'#00AAC8', name:'寬廣藍' },
+  { dept:'肝膽腸胃科',         color:'#6EC300', name:'生命綠' },
+  { dept:'骨科',               color:'#14286E', name:'寧靜靛' },
+  { dept:'中醫部',             color:'#FFB900', name:'陽光黃' },
+  { dept:'耳鼻喉頭頸部',       color:'#6EC300', name:'生命綠' },
+  { dept:'婦產科',             color:'#AA7D5F', name:'大地棕' },
+  { dept:'復健科',             color:'#6EC300', name:'生命綠' },
+  { dept:'心臟內外科',         color:'#14286E', name:'寧靜靛' },
+  { dept:'胸腔內外科',         color:'#14286E', name:'寧靜靛' },
+  { dept:'家醫科',             color:'#FFB900', name:'陽光黃' },
+  { dept:'兒科',               color:'#FFB900', name:'陽光黃' },
+  { dept:'眼科',               color:'#6EC300', name:'生命綠' },
+  { dept:'身心科',             color:'#00AAC8', name:'寬廣藍' },
+  { dept:'急診',               color:'#E11928', name:'熱情紅' },
+  { dept:'整形外科',           color:'#E11928', name:'熱情紅' },
+  { dept:'腦中風中心',         color:'#14286E', name:'寧靜靛' },
+  { dept:'放射腫瘤科',         color:'#6EC300', name:'生命綠' },
+  { dept:'核子醫學科',         color:'#00AAC8', name:'寬廣藍' },
+  { dept:'泌尿科',             color:'#00AAC8', name:'寬廣藍' },
+  { dept:'皮膚科',             color:'#FFB900', name:'陽光黃' },
+  { dept:'腎臟內科',           color:'#AA7D5F', name:'大地棕' },
+  { dept:'其他（內科系）',     color:'#AA7D5F', name:'大地棕' },
+  { dept:'其他（外科系）',     color:'#00AAC8', name:'寬廣藍' },
+];
+
+function ciSwatchesHtml(onclickFn){
+  return '<div class="ci-swatches">' + CI_COLORS.map(c=>{
+    const border = c.hex==='#FFFFFF' ? 'style="background:#fff;border-color:#ccc"' : `style="background:${c.hex}"`;
+    return `<button class="ci-swatch" ${border} title="${c.name}：${c.desc}" onclick="${onclickFn}('${c.hex}')"></button>`;
+  }).join('') + '</div>';
+}
+function setCiTextColor(hex){
+  const el=document.getElementById('pp-color');
+  const hexEl=document.getElementById('pp-color-hex');
+  if(el) el.value=hex;
+  if(hexEl) hexEl.value=hex;
+  if(S.selId) upP(S.selId,'color',hex);
+}
+
+function toggleCiPanel(){
+  const panel = document.getElementById('ci-panel');
+  const icon = document.getElementById('ci-toggle-icon');
+  if(!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : '';
+  if(icon) icon.textContent = isOpen ? '▼' : '▲';
+}
+function setCiBgColor(hex){
+  document.getElementById('bgColorInp').value=hex;
+  document.getElementById('bgColorHex').value=hex;
+  setBgC(hex);
+}
+function setCiShapeFill(hex){
+  const el=document.getElementById('pp-shape-fill');
+  if(el) el.value=hex;
+  const cb=document.getElementById('pp-shape-fill-none');
+  if(cb) cb.checked=false;
+  if(S.selId) upP(S.selId,'fillColor',hex);
+}
+function setCiShapeStroke(hex){
+  const el=document.getElementById('pp-shape-stroke');
+  if(el) el.value=hex;
+  if(S.selId) upP(S.selId,'strokeColor',hex);
+}
+function applyDeptColor(dept){
+  const d = DEPT_COLORS.find(x=>x.dept===dept);
+  if(!d) return;
+  const obj = getObj(S.selId);
+  if(obj && obj.type==='txt'){
+    setCiTextColor(d.color);
+  } else {
+    setCiBgColor(d.color);
+  }
+  snack(`套用 ${dept} CI 色：${d.name} ${d.color}`);
+}
+
 // ═══════════════════════════════════════════════
 //  FONTS & TEMPLATES
 // ═══════════════════════════════════════════════
@@ -2275,6 +2455,10 @@ function renderTxtPP(obj){
     <input type="color" id="pp-color" value="${obj.color}">
     <input type="text" id="pp-color-hex" class="hex-inp" value="${obj.color}" maxlength="7" style="width:66px">
   </div>
+  <div class="pp-row" style="align-items:flex-start">
+    <span class="pp-label" style="padding-top:3px">品牌色</span>
+    ${ciSwatchesHtml('setCiTextColor')}
+  </div>
   <div class="pp-row">
     <span class="pp-label">大小</span>
     <input type="range" id="pp-size" min="8" max="200" value="${obj.size}" style="flex:1">
@@ -2314,9 +2498,14 @@ function renderShapePP(obj){
       <input type="checkbox" id="pp-shape-fill-none" ${fc==='transparent'?'checked':''}> 透明
     </label>
   </div>
+  <div class="pp-row" style="align-items:flex-start">
+    <span class="pp-label" style="padding-top:3px">品牌色</span>
+    ${ciSwatchesHtml('setCiShapeFill')}
+  </div>
   <div class="pp-row">
     <span class="pp-label">框色</span>
     <input type="color" id="pp-shape-stroke" value="${obj.strokeColor||'#000000'}">
+    <span style="margin-left:4px;display:flex;gap:3px">${CI_COLORS.filter(c=>c.hex!=='#FFFFFF').map(c=>`<button class="ci-swatch" style="background:${c.hex};width:16px;height:16px" title="${c.name}" onclick="setCiShapeStroke('${c.hex}')"></button>`).join('')}</span>
   </div>
   <div class="pp-row">
     <span class="pp-label">線寬</span>
