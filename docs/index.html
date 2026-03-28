@@ -852,13 +852,13 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <div class="sc" id="sc-yt" onclick="selSz(this,'YouTube 封面',1920,1080)">YouTube封面<span>1920×1080px</span></div>
         <div class="sc" id="sc-shorts" onclick="selSz(this,'Shorts 封面',1080,1920)">Shorts封面<span>1080×1920px</span></div>
       </div>
-      <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:nowrap">
+      <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;min-width:0">
         <span class="inp-label" style="white-space:nowrap;flex-shrink:0">自訂</span>
-        <input class="inp" type="number" id="inW" placeholder="W" min="100" max="4000" value="794" style="width:80px;flex-shrink:0">
+        <input class="inp" type="number" id="inW" placeholder="W" min="100" max="4000" value="794" style="flex:1;min-width:0">
         <span style="color:var(--g400);font-size:13px;flex-shrink:0">×</span>
-        <input class="inp" type="number" id="inH" placeholder="H" min="100" max="4000" value="1123" style="width:80px;flex-shrink:0">
+        <input class="inp" type="number" id="inH" placeholder="H" min="100" max="4000" value="1123" style="flex:1;min-width:0">
         <span class="inp-unit" style="flex-shrink:0">px</span>
-        <button class="btn btn-blue btn-sm" onclick="applyCustom()" style="flex-shrink:0;padding:4px 8px;font-size:11px">套用</button>
+        <button class="btn btn-blue btn-sm" onclick="applyCustom()" style="flex-shrink:0">套用</button>
       </div>
     </div>
 
