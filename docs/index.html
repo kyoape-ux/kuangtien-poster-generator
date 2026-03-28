@@ -36,11 +36,12 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 }
 #nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
 .ntab{
-  padding:5px 14px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.65);
-  border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;
+  padding:5px 14px;border:1px solid rgba(255,255,255,.22);
+  background:#14286E;color:rgba(255,255,255,.9);
+  border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;
 }
-.ntab:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)}
-.ntab.on{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)}
+.ntab:hover{background:#1E368A;border-color:rgba(255,255,255,.38);color:#fff}
+.ntab.on{background:#fff;color:#14286E;border-color:transparent;font-weight:700;}
 #nav .spacer{flex:1}
 #nav .ver{color:rgba(255,255,255,.45);font-size:11px}
 
@@ -509,10 +510,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 .zip-progress-bar{height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .15s}
 
-/* ── NAV TABS (深藍底，啟用稍亮) ── */
-#ntab-poster.on,#ntab-ie.on,#ntab-wm.on,#ntab-qr.on,#ntab-res.on{
-  background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.35);font-weight:600;
-}
+/* ── NAV TABS: 已在上面 .ntab.on 統一處理 ── */
 
 /* ── 素材資源面板 ── */
 #pg-res{display:none;flex-direction:column;padding:12px;gap:8px;overflow-y:auto;}
@@ -970,6 +968,14 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <button class="btn btn-ghost btn-full btn-sm" onclick="clearWmImgs()">清除全部圖片</button>
     </div>
 
+    <!-- WM 下載按鈕 -->
+    <div class="sec" style="padding-top:0">
+      <button class="btn btn-green btn-full" onclick="handleDl()">⬇ 批次壓 LOGO 下載</button>
+      <div style="margin-top:5px">
+        <button class="btn btn-teal btn-full" onclick="previewAll()">👁 預覽後下載</button>
+      </div>
+    </div>
+
     <!-- LOGO 槽位 -->
     <div class="sec-title">LOGO 設定</div>
     <div class="sec">
@@ -1133,16 +1139,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
   <!-- DOWNLOAD BAR -->
   <div id="dlbar">
-    <button class="btn btn-green btn-full" onclick="handleDl()" id="dl-btn">
-      ⬇ 下載海報 PNG
-    </button>
-    <button class="btn btn-amber btn-full btn-sm" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:5px">
-      ⬇ 匯出 PDF（全部頁面）
-    </button>
-    <button class="btn btn-teal btn-full" onclick="exportSVG()" style="margin-top:6px">⬡ 匯出 SVG 向量檔</button>
-    <div id="wm-preview-btn" style="display:none;margin-top:6px">
-      <button class="btn btn-teal btn-full" onclick="previewAll()">👁 預覽後下載</button>
-    </div>
+    <button class="btn btn-green btn-full" onclick="handleDl()" id="dl-btn">⬇ 下載海報 PNG</button>
+    <button class="btn btn-amber btn-full" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:5px">⬇ 匯出 PDF（全部頁面）</button>
+    <button class="btn btn-teal btn-full" onclick="exportSVG()" id="dl-svg-btn" style="margin-top:5px">⬡ 匯出 SVG 向量檔</button>
   </div>
 </div><!-- /sb -->
 
@@ -2058,7 +2057,38 @@ function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='
   mkEl(id);
   selObj(id);
   updLayerList();
+  fitTextBox(obj);
   return obj;
+}
+
+function fitTextBox(obj){
+  requestAnimationFrame(()=>{
+    const el = document.getElementById('o'+obj.id);
+    if(!el) return;
+    const ti = el.querySelector('.tinner');
+    if(!ti || ti.contentEditable==='true') return;
+    const z = S.zoom;
+    const ff = obj.fontFamily||'Noto Sans TC';
+    const ffStack = ff==='Noto Serif TC'?`'Noto Serif TC',serif`
+      :ff==='Dela Gothic One'?`'Dela Gothic One',sans-serif`
+      :ff==='Zen Maru Gothic'?`'Zen Maru Gothic',sans-serif`
+      :ff==='BIZ UDPGothic'?`'BIZ UDPGothic',sans-serif`
+      :ff==='Yusei Magic'?`'Yusei Magic',cursive`
+      :`'Noto Sans TC',sans-serif`;
+    const m = document.createElement('div');
+    m.style.cssText = `position:fixed;visibility:hidden;pointer-events:none;white-space:nowrap;`
+      +`font-size:${obj.size*z}px;font-family:${ffStack};font-weight:${obj.weight};`
+      +`font-style:${obj.fontStyle||'normal'};line-height:1.4;`;
+    m.textContent = obj.text||'文字';
+    document.body.appendChild(m);
+    const tw = Math.ceil(m.offsetWidth/z)+12;
+    const th = Math.ceil(m.offsetHeight/z)+4;
+    document.body.removeChild(m);
+    obj.w = Math.max(tw, 40);
+    obj.h = Math.max(th, Math.ceil(obj.size*1.4));
+    applyStyle(el, obj);
+    if(S.selId===obj.id) updPP();
+  });
 }
 
 function addImg(inp){
@@ -2264,8 +2294,8 @@ function mkEl(id){
       if(parentEl){ parentEl.style.height = 'auto'; parentEl.style.overflow = 'visible'; }
       const _ff2 = obj.fontFamily||'Noto Sans TC';
       const _ffs2 = _ff2==='Noto Serif TC'?`'Noto Serif TC',serif`:_ff2==='Dela Gothic One'?`'Dela Gothic One',sans-serif`:_ff2==='Zen Maru Gothic'?`'Zen Maru Gothic',sans-serif`:_ff2==='BIZ UDPGothic'?`'BIZ UDPGothic',sans-serif`:_ff2==='Yusei Magic'?`'Yusei Magic',cursive`:`'Noto Sans TC',sans-serif`;
-      const _ts2=(obj.textShadow&&obj.textShadow.on)?`text-shadow:${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'};`:'';
-      const _tsk2=(obj.strokeWidth)?`-webkit-text-stroke:${obj.strokeWidth*S.zoom}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;`:'';
+      const _ts2=(obj.textShadow&&obj.textShadow.on)?`filter:drop-shadow(${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'});`:'';
+      const _tsk2=(obj.strokeWidth)?`-webkit-text-stroke:${obj.strokeWidth*S.zoom}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;stroke-linecap:round;stroke-linejoin:round;`:'';
       ti.style.cssText = `
         position:relative; width:100%; height:auto; overflow:visible;
         min-height:${obj.h * S.zoom}px;
@@ -2377,10 +2407,10 @@ function applyStyle(el, obj){
       if(ti.contentEditable !== 'true'){
         // 非編輯：還原 absolute 佈局，同步 innerHTML
         const tShadow = (obj.textShadow&&obj.textShadow.on)
-          ? `text-shadow:${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'};`
+          ? `filter:drop-shadow(${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'});`
           : '';
         const tStroke = (obj.strokeWidth)
-          ? `-webkit-text-stroke:${obj.strokeWidth*z}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;`
+          ? `-webkit-text-stroke:${obj.strokeWidth*z}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;stroke-linecap:round;stroke-linejoin:round;`
           : '';
         ti.style.cssText = `
           position:absolute;inset:0;overflow:hidden;
@@ -4009,10 +4039,7 @@ function switchTab(tab, btn){
     ieArea.style.display='none';
     if(pagesPanel) pagesPanel.style.display='';
   } else if(tab==='wm'){
-    dlBtn.textContent='⬇ 批次壓 LOGO 下載';
-    wmpBtn.style.display='block';
-    dlBar.style.display='';
-    if(dlPdfBtn) dlPdfBtn.style.display='none';
+    dlBar.style.display='none';
     tplPanel.style.display='none';
     catop.style.display='none';
     cscroll.style.display='none';
