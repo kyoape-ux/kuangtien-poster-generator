@@ -2497,8 +2497,9 @@ function attachDrag(el, obj){
         nh = nw * obj.aspectRatio;
         if(dir.includes('n')) ny = oy+oh-nh;
       }
-      // shape: Shift 鍵鎖定長寬比（橢圓強制 1:1 正圓）
-      if(obj.type==='shape' && e.shiftKey && ow>0){
+      // shape: Shift 鍵鎖定長寬比（橢圓強制 1:1；超橢圓/自訂路徑不鎖，可自由拉伸）
+      const _shiftLock = obj.shapeType==='superellipse'||obj.shapeType==='custompath' ? false : e.shiftKey;
+      if(obj.type==='shape' && _shiftLock && ow>0){
         const ar = obj.shapeType==='ellipse' ? 1 : oar; // 橢圓→正圓
         if(dir==='n'||dir==='s'){
           nw=Math.max(20,nh/ar); nx=ox+(ow-nw)/2;
@@ -4974,10 +4975,12 @@ function addShape(shapeType){
   const id = mkId();
   const isDash = shapeType==='dashrect';
   const realType = isDash?'rect':shapeType;
+  // 超橢圓原始為正方形（831.36×831.36），預設用正方形；其餘形狀 h=150
+  const defH = realType==='line' ? 0 : (realType==='superellipse' ? 200 : 150);
   const obj = {
     id, type:'shape',
     shapeType: realType,
-    x:60, y:60, w:200, h:realType==='line'?0:150,
+    x:60, y:60, w:200, h:defH,
     rot:0, opacity:1,
     fillColor: (realType==='line'||isDash)?'transparent':'#4A90D9',
     strokeColor:'#1C5FA3',
