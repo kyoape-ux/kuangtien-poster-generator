@@ -2167,13 +2167,14 @@ function attachDrag(el, obj){
         nh = nw * obj.aspectRatio;
         if(dir.includes('n')) ny = oy+oh-nh;
       }
-      // shape: Shift 鍵鎖定長寬比
-      if(obj.type==='shape' && e.shiftKey && oar>0 && ow>0){
+      // shape: Shift 鍵鎖定長寬比（橢圓強制 1:1 正圓）
+      if(obj.type==='shape' && e.shiftKey && ow>0){
+        const ar = obj.shapeType==='ellipse' ? 1 : oar; // 橢圓→正圓
         if(dir==='n'||dir==='s'){
-          nw=Math.max(20,nh/oar); nx=ox+(ow-nw)/2;
+          nw=Math.max(20,nh/ar); nx=ox+(ow-nw)/2;
           if(dir==='n') ny=oy+oh-nh;
         } else {
-          nh=Math.max(20,nw*oar);
+          nh=Math.max(20,nw*ar);
           if(dir.includes('n')) ny=oy+oh-nh;
           if(dir.includes('w')) nx=ox+ow-nw;
         }
