@@ -664,7 +664,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <div class="spacer"></div>
   <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed">↩ 復原</button>
   <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed">↪ 重做</button>
+  <button class="ntab" onclick="saveProject()" title="儲存專案為 JSON">💾 儲存專案</button>
+  <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟專案 JSON">📂 開啟專案</button>
+  <input type="file" id="proj-load-inp" accept=".json" style="display:none" onchange="loadProject(this)">
   <span class="ver" style="margin-left:6px">v3.0</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.35);margin-left:6px">updated: 2026/03/28 17:47</span>
 </div>
 
 <div id="main">
@@ -795,6 +799,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <button class="btn btn-indigo btn-sm add-obj-btn" onclick="addTxt('標題文字',72,'#005BAC','700',40,40,400,100)">H1 大標</button>
         <button class="btn btn-ghost btn-sm add-obj-btn" style="color:var(--g600)" onclick="addTxt('副標題',36,'#475569','500',40,160,360,60)">H2 副標</button>
         <button class="btn btn-ghost btn-sm add-obj-btn" style="color:var(--g500)" onclick="addTxt('內文文字',24,'#334155','300',40,240,400,40)">¶ 內文</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('rect')">▬ 矩形</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('ellipse')">⬭ 橢圓</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('line')">╱ 直線</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('triangle')">▲ 三角</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('dashrect')">⬜ 虛線框</button>
       </div>
       <input type="file" id="imgInp" accept="image/*" style="display:none" onchange="addImg(this)">
     </div>
@@ -1965,6 +1974,12 @@ function mkEl(id){
     lb.className = 'lock-badge';
     lb.textContent = '⊞';
     el.appendChild(lb);
+  } else if(obj.type==='shape'){
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;';
+    el.appendChild(svg);
+    el._shapeSvg = svg;
+    _renderShapeSvg(el, obj);
   } else {
     const imgEl = document.createElement('img');
     imgEl.src = obj.imgEl.src;
@@ -2037,6 +2052,13 @@ function applyStyle(el, obj){
     }
   } else if(obj.type==='table'){
     renderTableInEl(el, obj);
+  } else if(obj.type==='shape'){
+    if(!el._shapeSvg){
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;';
+      el.appendChild(svg); el._shapeSvg=svg;
+    }
+    _renderShapeSvg(el, obj);
   }
 }
 
@@ -2232,6 +2254,9 @@ function updLayerList(){
     } else if(obj.type==='table'){
       thumb.textContent='⊞';
       thumb.style.cssText='color:var(--teal);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;';
+    } else if(obj.type==='shape'){
+      thumb.textContent='▬';
+      thumb.style.cssText='color:var(--amber);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;';
     } else {
       thumb.textContent='T';
       thumb.style.cssText='color:var(--blue);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;';
@@ -2268,8 +2293,9 @@ function showPP(id){
 
 function renderPPHTML(obj){
   const isT = obj.type==='txt';
+  const isSh = obj.type==='shape';
   return `
-  <div class="pp-title">${isT?'文字屬性':'圖片屬性'}</div>
+  <div class="pp-title">${isT?'文字屬性':isSh?'形狀屬性':'圖片屬性'}</div>
   <div class="pp-row">
     <span class="pp-label">X</span>
     <input class="inp" type="number" id="pp-x" value="${Math.round(obj.x)}" style="width:60px">
@@ -2293,7 +2319,8 @@ function renderPPHTML(obj){
     <span id="pp-op-lbl" style="font-size:11px;color:var(--g500);min-width:34px">${Math.round(obj.opacity*100)}%</span>
   </div>
   ${isT?renderTxtPP(obj):''}
-  ${!isT?`
+  ${isSh?renderShapePP(obj):''}
+  ${!isT&&!isSh?`
   <div class="pp-row" style="margin-top:6px">
     <span class="pp-label">去背容許度</span>
     <input type="range" id="pp-bg-thresh" min="10" max="120" value="40" style="flex:1" oninput="document.getElementById('pp-bg-thresh-lbl').textContent=this.value">
@@ -2350,6 +2377,43 @@ function renderTxtPP(obj){
   </div>`;
 }
 
+function renderShapePP(obj){
+  const shapes=[['rect','矩形'],['ellipse','橢圓'],['line','直線'],['triangle','三角']];
+  const dashes=[['solid','實線'],['8,4','虛線'],['2,4','點線']];
+  const fc=obj.fillColor||'transparent';
+  const fc_color=fc==='transparent'?'#ffffff':fc;
+  return `
+  <div class="pp-sep"></div>
+  <div class="pp-row">
+    <span class="pp-label">形狀</span>
+    <select class="inp" id="pp-shape-type">
+      ${shapes.map(([v,l])=>`<option value="${v}"${obj.shapeType===v?' selected':''}>${l}</option>`).join('')}
+    </select>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">填色</span>
+    <input type="color" id="pp-shape-fill" value="${fc_color}">
+    <label style="font-size:11px;color:var(--g500);margin-left:4px;display:flex;align-items:center;gap:3px">
+      <input type="checkbox" id="pp-shape-fill-none" ${fc==='transparent'?'checked':''}> 透明
+    </label>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">框色</span>
+    <input type="color" id="pp-shape-stroke" value="${obj.strokeColor||'#000000'}">
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">線寬</span>
+    <input class="inp" type="number" id="pp-shape-sw" value="${obj.strokeWidth||0}" min="0" max="50" style="width:60px">
+    <span style="font-size:11px;color:var(--g400);margin-left:4px">px</span>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">線型</span>
+    <select class="inp" id="pp-shape-dash">
+      ${dashes.map(([v,l])=>`<option value="${v}"${(obj.strokeDash||'solid')===v?' selected':''}>${l}</option>`).join('')}
+    </select>
+  </div>`;
+}
+
 function bindPPEvents(obj){
   const bind = (id, key, transform) => {
     const el = document.getElementById(id);
@@ -2366,6 +2430,21 @@ function bindPPEvents(obj){
   bind('pp-h','h',v=>Math.max(10,parseFloat(v)||10));
   bind('pp-rot','rot',v=>parseFloat(v)||0);
   bind('pp-op','opacity',v=>v/100);
+  if(obj.type==='shape'){
+    bind('pp-shape-type','shapeType');
+    bind('pp-shape-stroke','strokeColor');
+    bind('pp-shape-sw','strokeWidth',v=>Math.max(0,parseFloat(v)||0));
+    bind('pp-shape-dash','strokeDash');
+    const fillEl=document.getElementById('pp-shape-fill');
+    const fillNone=document.getElementById('pp-shape-fill-none');
+    if(fillEl) fillEl.addEventListener('input',()=>{
+      if(fillNone&&fillNone.checked) return;
+      upP(obj.id,'fillColor',fillEl.value);
+    });
+    if(fillNone) fillNone.addEventListener('change',()=>{
+      upP(obj.id,'fillColor',fillNone.checked?'transparent':(fillEl?fillEl.value:'#ffffff'));
+    });
+  }
   if(obj.type==='txt'){
     bind('pp-font','fontFamily');
     // color picker → also sync hex
@@ -2452,7 +2531,28 @@ async function dlPoster(){
     ctx.translate(cx,cy);
     ctx.rotate(obj.rot*Math.PI/180);
 
-    if(obj.type==='img' && obj.imgEl){
+    if(obj.type==='shape'){
+      const sw=obj.strokeWidth||0;
+      const dashArr=obj.strokeDash&&obj.strokeDash!=='solid'?obj.strokeDash.split(',').map(Number):[];
+      ctx.setLineDash(dashArr);
+      ctx.lineWidth=sw;
+      ctx.fillStyle=obj.fillColor||'transparent';
+      ctx.strokeStyle=obj.strokeColor||'none';
+      const hw=obj.w/2, hh=obj.h/2;
+      ctx.beginPath();
+      if(obj.shapeType==='rect'){
+        ctx.rect(-hw,-hh,obj.w,obj.h);
+      } else if(obj.shapeType==='ellipse'){
+        ctx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2);
+      } else if(obj.shapeType==='line'){
+        ctx.moveTo(-hw,-hh); ctx.lineTo(hw,hh);
+      } else if(obj.shapeType==='triangle'){
+        ctx.moveTo(0,-hh); ctx.lineTo(hw,hh); ctx.lineTo(-hw,hh); ctx.closePath();
+      }
+      if(obj.fillColor&&obj.fillColor!=='transparent') ctx.fill();
+      if(sw>0) ctx.stroke();
+      ctx.setLineDash([]);
+    } else if(obj.type==='img' && obj.imgEl){
       ctx.drawImage(obj.imgEl, -obj.w/2, -obj.h/2, obj.w, obj.h);
     } else if(obj.type==='table'){
       const tcvs = renderTableToCanvas(obj.tableData, obj.tableStyle);
@@ -3236,7 +3336,21 @@ async function exportPDF(){
       const cx=obj.x+obj.w/2, cy=obj.y+obj.h/2;
       ctx.translate(cx,cy);
       ctx.rotate((obj.rot||0)*Math.PI/180);
-      if(obj.type==='img'&&obj.imgEl){
+      if(obj.type==='shape'){
+        const sw=obj.strokeWidth||0;
+        const dashArr=obj.strokeDash&&obj.strokeDash!=='solid'?obj.strokeDash.split(',').map(Number):[];
+        ctx.setLineDash(dashArr); ctx.lineWidth=sw;
+        ctx.fillStyle=obj.fillColor||'transparent'; ctx.strokeStyle=obj.strokeColor||'none';
+        const hw=obj.w/2, hh=obj.h/2;
+        ctx.beginPath();
+        if(obj.shapeType==='rect'){ ctx.rect(-hw,-hh,obj.w,obj.h); }
+        else if(obj.shapeType==='ellipse'){ ctx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2); }
+        else if(obj.shapeType==='line'){ ctx.moveTo(-hw,-hh); ctx.lineTo(hw,hh); }
+        else if(obj.shapeType==='triangle'){ ctx.moveTo(0,-hh); ctx.lineTo(hw,hh); ctx.lineTo(-hw,hh); ctx.closePath(); }
+        if(obj.fillColor&&obj.fillColor!=='transparent') ctx.fill();
+        if(sw>0) ctx.stroke();
+        ctx.setLineDash([]);
+      } else if(obj.type==='img'&&obj.imgEl){
         try{ ctx.drawImage(obj.imgEl,-obj.w/2,-obj.h/2,obj.w,obj.h); }catch(e){}
       } else if(obj.type==='txt'){
         await document.fonts.ready;
@@ -4089,6 +4203,149 @@ function exitAdminMode() {
 }
 
 // ═══════════════════════════════════════════════
+//  SAVE / LOAD PROJECT
+// ═══════════════════════════════════════════════
+function saveProject(){
+  const today = new Date();
+  const ymd = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const data = {
+    v:2,
+    W:S.W, H:S.H,
+    bgColor:S.bgColor,
+    bgImgDataUrl: S.bgImgEl ? imgElToDataUrl(S.bgImgEl) : null,
+    bgScale:S.bgScale, bgOffsetX:S.bgOffsetX, bgOffsetY:S.bgOffsetY,
+    objs: S.objs.map(o=>{
+      if(o.type==='img'&&o.imgEl) return{...o,imgEl:undefined,imgDataUrl:imgElToDataUrl(o.imgEl)};
+      return{...o,imgEl:undefined};
+    })
+  };
+  const blob = new Blob([JSON.stringify(data)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'poster-project-'+ymd+'.json';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+  snack('專案已儲存');
+}
+
+async function loadProject(inp){
+  const file = inp.files[0];
+  if(!file) return;
+  inp.value='';
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!data.v || !data.objs) throw new Error('invalid');
+    // clear canvas
+    document.getElementById('ol').innerHTML='';
+    S.objs=[]; S.selId=null;
+    document.getElementById('pp').style.display='none';
+    S.W=data.W||794; S.H=data.H||1123;
+    S.bgColor=data.bgColor||'#FFFFFF';
+    S.bgScale=data.bgScale||1; S.bgOffsetX=data.bgOffsetX||0; S.bgOffsetY=data.bgOffsetY||0;
+    document.getElementById('bgColorInp').value=S.bgColor;
+    document.getElementById('bgColorHex').value=S.bgColor;
+    document.getElementById('inW').value=S.W;
+    document.getElementById('inH').value=S.H;
+    document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
+    if(data.bgImgDataUrl){
+      const bgImg=new Image();
+      bgImg._srcDataUrl=data.bgImgDataUrl;
+      bgImg.onload=()=>{S.bgImgEl=bgImg;showBgImgControls();renderBg();};
+      bgImg.src=data.bgImgDataUrl;
+    } else { S.bgImgEl=null; showBgImgControls(); }
+    S._skipHistory=true;
+    const promises=[];
+    data.objs.forEach(o=>{
+      const id=mkId();
+      if(o.type==='txt'||o.type==='table'||o.type==='shape'){
+        S.objs.push({...o,id,imgEl:undefined});
+        mkEl(id);
+      } else if(o.type==='img'){
+        const obj={...o,id,imgEl:null,imgDataUrl:undefined};
+        S.objs.push(obj);
+        if(o.imgDataUrl){
+          promises.push(new Promise(res=>{
+            const img=new Image();
+            img.onload=()=>{ img._srcDataUrl=o.imgDataUrl; obj.imgEl=img; obj.aspectRatio=img.naturalHeight/img.naturalWidth; mkEl(id); res(); };
+            img.src=o.imgDataUrl;
+          }));
+        }
+      }
+    });
+    S._skipHistory=false;
+    const fin=()=>{ renderBg(); updLayerList(); setTimeout(zfit,50); };
+    promises.length?Promise.all(promises).then(fin):fin();
+    snack('專案已載入');
+  } catch(e){ alert('無法載入：檔案格式不正確'); }
+}
+
+// ═══════════════════════════════════════════════
+//  VECTOR SHAPES
+// ═══════════════════════════════════════════════
+function addShape(shapeType){
+  pushHistory();
+  const id = mkId();
+  const isDash = shapeType==='dashrect';
+  const realType = isDash?'rect':shapeType;
+  const obj = {
+    id, type:'shape',
+    shapeType: realType,
+    x:60, y:60, w:200, h:realType==='line'?0:150,
+    rot:0, opacity:1,
+    fillColor: (realType==='line'||isDash)?'transparent':'#4A90D9',
+    strokeColor:'#1C5FA3',
+    strokeWidth:3,
+    strokeDash: isDash?'8,4':'solid'
+  };
+  S.objs.push(obj);
+  mkEl(id);
+  selObj(id);
+  updLayerList();
+  return obj;
+}
+
+function _renderShapeSvg(el, obj){
+  const svg = el._shapeSvg;
+  if(!svg) return;
+  const w=obj.w, h=obj.h;
+  const sw=obj.strokeWidth||0;
+  const fill=obj.fillColor||'transparent';
+  const stroke=obj.strokeColor||'none';
+  const dashArr=obj.strokeDash&&obj.strokeDash!=='solid'?obj.strokeDash:'none';
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.innerHTML='';
+  let shape;
+  if(obj.shapeType==='rect'){
+    shape=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    const off=sw/2;
+    shape.setAttribute('x',off); shape.setAttribute('y',off);
+    shape.setAttribute('width',Math.max(0,w-sw)); shape.setAttribute('height',Math.max(0,h-sw));
+  } else if(obj.shapeType==='ellipse'){
+    shape=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    shape.setAttribute('cx',w/2); shape.setAttribute('cy',h/2);
+    shape.setAttribute('rx',Math.max(0,w/2-sw/2)); shape.setAttribute('ry',Math.max(0,h/2-sw/2));
+  } else if(obj.shapeType==='line'){
+    shape=document.createElementNS('http://www.w3.org/2000/svg','line');
+    shape.setAttribute('x1',0); shape.setAttribute('y1',0);
+    shape.setAttribute('x2',w); shape.setAttribute('y2',h);
+  } else if(obj.shapeType==='triangle'){
+    shape=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    shape.setAttribute('points',`${w/2},${sw/2} ${Math.max(0,w-sw/2)},${Math.max(0,h-sw/2)} ${sw/2},${Math.max(0,h-sw/2)}`);
+  } else {
+    shape=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    const off=sw/2;
+    shape.setAttribute('x',off); shape.setAttribute('y',off);
+    shape.setAttribute('width',Math.max(0,w-sw)); shape.setAttribute('height',Math.max(0,h-sw));
+  }
+  shape.setAttribute('fill',fill);
+  shape.setAttribute('stroke',stroke);
+  shape.setAttribute('stroke-width',sw);
+  if(dashArr!=='none') shape.setAttribute('stroke-dasharray',dashArr);
+  svg.appendChild(shape);
+}
+
+// ═══════════════════════════════════════════════
 //  AUTO-SAVE
 // ═══════════════════════════════════════════════
 const AUTOSAVE_KEY = 'kt_poster_autosave';
@@ -4156,6 +4413,9 @@ async function restoreAutoSave(data){
       S.objs.push({...o,id,imgEl:undefined});
       mkEl(id);
     } else if(o.type==='table'){
+      S.objs.push({...o,id});
+      mkEl(id);
+    } else if(o.type==='shape'){
       S.objs.push({...o,id});
       mkEl(id);
     } else if(o.type==='img'){
@@ -5173,7 +5433,7 @@ window.addEventListener('load', ()=>{
   S.pages = [getCurrentPageData()];
   S.pageIdx = 0;
   renderPagesBar();
-  checkAutoSave();
+  // checkAutoSave(); // 停用自動還原，每次載入從空白畫布開始
   // QR Code 初始化
   setTimeout(qrGenerate, 200);
 });
