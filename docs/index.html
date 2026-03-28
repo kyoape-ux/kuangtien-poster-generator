@@ -816,15 +816,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <button class="btn btn-teal btn-sm" onclick="document.getElementById('bgImgInp').click()">🖼 上傳底圖</button>
         <input type="file" id="bgImgInp" accept="image/*,.svg" style="display:none" onchange="addBgImg(this)">
 
-      <div class="ci-swatches" style="margin:4px 0 2px">
-        <button class="ci-swatch" style="background:#FFFFFF;border-color:#ccc" title="純淨白 #FFFFFF" onclick="setCiBgColor('#FFFFFF')"></button>
-        <button class="ci-swatch" style="background:#E11928" title="熱情紅 #E11928" onclick="setCiBgColor('#E11928')"></button>
-        <button class="ci-swatch" style="background:#6EC300" title="生命綠 #6EC300" onclick="setCiBgColor('#6EC300')"></button>
-        <button class="ci-swatch" style="background:#00AAC8" title="寬廣藍 #00AAC8" onclick="setCiBgColor('#00AAC8')"></button>
-        <button class="ci-swatch" style="background:#FFB900" title="陽光黃 #FFB900" onclick="setCiBgColor('#FFB900')"></button>
-        <button class="ci-swatch" style="background:#AA7D5F" title="大地棕 #AA7D5F" onclick="setCiBgColor('#AA7D5F')"></button>
-        <button class="ci-swatch" style="background:#14286E" title="寧靜靛 #14286E" onclick="setCiBgColor('#14286E')"></button>
-      </div>
+
       </div>
       <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">✕ 清除底圖</button>
       <div id="bg-img-controls" style="display:none;margin-top:8px;border-top:1px solid var(--g200);padding-top:8px">
@@ -875,16 +867,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <span id="ci-toggle-icon" style="margin-left:auto;font-size:10px;color:var(--g400)">▼</span>
     </div>
     <div class="sec" id="ci-panel" style="display:none;padding-bottom:8px">
-      <div style="font-size:10px;color:var(--g500);margin-bottom:6px">點色塊套用至選取物件或背景色</div>
+      <div style="font-size:10px;color:var(--g500);margin-bottom:6px">選取物件後點色塊即套色；無選取時套用背景色</div>
       <div class="ci-palette-row">
-        <button class="ci-palette-chip" onclick="setCiBgColor('#E11928');setCiTextColor('#E11928')" title="熱情紅 #E11928"><span class="ci-chip-dot" style="background:#E11928"></span>熱情紅</button>
-        <button class="ci-palette-chip" onclick="setCiBgColor('#6EC300');setCiTextColor('#6EC300')" title="生命綠 #6EC300"><span class="ci-chip-dot" style="background:#6EC300"></span>生命綠</button>
-        <button class="ci-palette-chip" onclick="setCiBgColor('#00AAC8');setCiTextColor('#00AAC8')" title="寬廣藍 #00AAC8"><span class="ci-chip-dot" style="background:#00AAC8"></span>寬廣藍</button>
+        <button class="ci-palette-chip" onclick="applyCiColor('#E11928')" title="熱情紅 #E11928"><span class="ci-chip-dot" style="background:#E11928"></span>熱情紅</button>
+        <button class="ci-palette-chip" onclick="applyCiColor('#6EC300')" title="生命綠 #6EC300"><span class="ci-chip-dot" style="background:#6EC300"></span>生命綠</button>
+        <button class="ci-palette-chip" onclick="applyCiColor('#00AAC8')" title="寬廣藍 #00AAC8"><span class="ci-chip-dot" style="background:#00AAC8"></span>寬廣藍</button>
       </div>
       <div class="ci-palette-row">
-        <button class="ci-palette-chip" onclick="setCiBgColor('#FFB900');setCiTextColor('#FFB900')" title="陽光黃 #FFB900"><span class="ci-chip-dot" style="background:#FFB900"></span>陽光黃</button>
-        <button class="ci-palette-chip" onclick="setCiBgColor('#AA7D5F');setCiTextColor('#AA7D5F')" title="大地棕 #AA7D5F"><span class="ci-chip-dot" style="background:#AA7D5F"></span>大地棕</button>
-        <button class="ci-palette-chip" onclick="setCiBgColor('#14286E');setCiTextColor('#14286E')" title="寧靜靛 #14286E"><span class="ci-chip-dot" style="background:#14286E"></span>寧靜靛</button>
+        <button class="ci-palette-chip" onclick="applyCiColor('#FFB900')" title="陽光黃 #FFB900"><span class="ci-chip-dot" style="background:#FFB900"></span>陽光黃</button>
+        <button class="ci-palette-chip" onclick="applyCiColor('#AA7D5F')" title="大地棕 #AA7D5F"><span class="ci-chip-dot" style="background:#AA7D5F"></span>大地棕</button>
+        <button class="ci-palette-chip" onclick="applyCiColor('#14286E')" title="寧靜靛 #14286E"><span class="ci-chip-dot" style="background:#14286E"></span>寧靜靛</button>
       </div>
       <div style="font-size:10px;color:var(--g500);margin:8px 0 4px">科別快速套色</div>
       <select class="ci-dept-sel" onchange="if(this.value)applyDeptColor(this.value)">
@@ -1508,16 +1500,27 @@ function setCiShapeStroke(hex){
   if(el) el.value=hex;
   if(S.selId) upP(S.selId,'strokeColor',hex);
 }
+function applyCiColor(hex){
+  const obj = getObj(S.selId);
+  if(obj){
+    if(obj.type==='txt'){
+      setCiTextColor(hex);
+    } else if(obj.type==='shape'){
+      setCiShapeFill(hex);
+    } else {
+      // img 物件無法改色，套背景
+      setCiBgColor(hex);
+    }
+  } else {
+    setCiBgColor(hex);
+  }
+}
+
 function applyDeptColor(dept){
   const d = DEPT_COLORS.find(x=>x.dept===dept);
   if(!d) return;
-  const obj = getObj(S.selId);
-  if(obj && obj.type==='txt'){
-    setCiTextColor(d.color);
-  } else {
-    setCiBgColor(d.color);
-  }
-  snack(`套用 ${dept} CI 色：${d.name} ${d.color}`);
+  applyCiColor(d.color);
+  snack(`已套用 ${dept}：${d.name} ${d.color}`);
 }
 
 // ═══════════════════════════════════════════════
