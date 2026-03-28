@@ -80,7 +80,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
   background:#fff;color:var(--g500);font-size:10px;font-weight:600;
   cursor:pointer;text-align:center;transition:all .15s;
 }
-.lptab.on{background:#E3F0FD;color:#1A5FA8;border-color:#90C4F0;font-weight:700}
+.lptab.on{background:#DFF6FA;color:#006E84;border-color:#7FD4E3;font-weight:700}
 .lptab:hover:not(.on){background:var(--g100)}
 /* asset grid inside left panel */
 #asset-panel-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 8px 4px;display:none}
@@ -141,55 +141,69 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
   background:var(--g50);cursor:pointer;text-align:center;font-size:11px;
   color:var(--g600);transition:all .15s;line-height:1.3;
 }
-.sc:hover{border-color:#90C4F0;color:#1A5FA8;background:#EAF3FD;}
-.sc.on{border-color:#90C4F0;background:#E3F0FD;color:#1A5FA8;font-weight:700;}
+.sc:hover{border-color:#7FD4E3;color:#006E84;background:#DFF6FA;}
+.sc.on{border-color:#7FD4E3;background:#DFF6FA;color:#006E84;font-weight:700;}
 .sc span{display:block;font-size:9px;color:var(--g400)}
 
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:5px;
-  padding:6px 14px;border-radius:20px;cursor:pointer;border:1px solid transparent;
-  font-size:11px;font-weight:700;transition:all .15s;white-space:nowrap;letter-spacing:.1px;
+  padding:6px 16px;border-radius:50px;cursor:pointer;border:1px solid transparent;
+  font-size:11px;font-weight:700;transition:all .15s;white-space:nowrap;letter-spacing:.15px;
 }
-/* Blue — 藍色膠囊（如「支援單」） */
-.btn-blue{background:#E3F0FD;color:#1A5FA8;border-color:#90C4F0;}
-.btn-blue:hover{background:#D0E6FC;border-color:#6AAEE8;}
-/* Green — 綠色膠囊（如「●自主」） */
-.btn-green{background:#E8F5E9;color:#2D7D32;border-color:#A5D6A7;}
-.btn-green:hover{background:#D8EDD9;border-color:#81C784;}
-/* Teal — 薄荷膠囊（如「+子任務」） */
-.btn-teal{background:#E0F5F4;color:#00796B;border-color:#80CBC4;}
-.btn-teal:hover{background:#CCEDEB;border-color:#4DB6AC;}
-/* Purple — 紫色膠囊 */
-.btn-purple{background:#EDE7F6;color:#6A1B9A;border-color:#CE93D8;}
-.btn-purple:hover{background:#E1D5F0;border-color:#BA68C8;}
-/* Amber — 琥珀膠囊 */
-.btn-amber{background:#FFF3E0;color:#C66900;border-color:#FFCC80;}
-.btn-amber:hover{background:#FFE9C4;border-color:#FFB74D;}
-/* Indigo — 靛藍膠囊 */
-.btn-indigo{background:#EDE9F8;color:#4527A0;border-color:#B39DDB;}
-.btn-indigo:hover{background:#E0D9F2;border-color:#9575CD;}
-/* Red — 紅色膠囊（刪除/警告） */
-.btn-red{background:#FFF0F0;color:#B71C1C;border-color:#FFCDD2;}
-.btn-red:hover{background:#FFE2E2;border-color:#EF9A9A;}
-/* Ghost — 灰色膠囊（如類別標籤） */
-.btn-ghost{background:#F1F3F7;color:#6B7280;border-color:#E2E4EC;}
-.btn-ghost:hover{background:#E8EAF0;border-color:#CBD0DC;color:#4B5563;}
+/* ── 光田 CI 膠囊色系 ── */
 
-.btn-full{width:100%;border-radius:12px;}
-.btn-sm{padding:4px 11px;font-size:10px;}
-/* 全寬主要按鈕：加深色填充，更有份量 */
-.btn-full.btn-green{background:#3D9660;color:#fff;border-color:#2E7D52;}
-.btn-full.btn-green:hover{background:#2E7D52;}
-.btn-full.btn-teal{background:#3AA5A0;color:#fff;border-color:#2C8880;}
-.btn-full.btn-teal:hover{background:#2C8880;}
-.btn-full.btn-blue{background:#4E78A8;color:#fff;border-color:#3A608C;}
-.btn-full.btn-blue:hover{background:#3A608C;}
-.btn-full.btn-amber{background:#B88A3A;color:#fff;border-color:#9A7228;}
-.btn-full.btn-amber:hover{background:#9A7228;}
-.btn-full.btn-purple{background:#7A6AB8;color:#fff;border-color:#6858A6;}
-.btn-full.btn-purple:hover{background:#6858A6;}
-.btn-full.btn-red{background:#B85858;color:#fff;border-color:#9E4444;}
-.btn-full.btn-red:hover{background:#9E4444;}
+/* 寬廣藍 #00AAC8 — 文字/圖片/表格/主要操作 */
+.btn-blue{background:#DFF6FA;color:#006E84;border-color:#7FD4E3;}
+.btn-blue:hover{background:#C8EFF6;border-color:#00AAC8;}
+
+/* 生命綠 #6EC300 — 下載/完成/確認 */
+.btn-green{background:#EAF6CC;color:#3F7000;border-color:#A8DB60;}
+.btn-green:hover{background:#D9EEB3;border-color:#6EC300;}
+
+/* 寬廣藍（淺青）#00AAC8 — 圖片/SVG/teal類 */
+.btn-teal{background:#DFF6FA;color:#006E84;border-color:#7FD4E3;}
+.btn-teal:hover{background:#C8EFF6;border-color:#00AAC8;}
+
+/* 寧靜靛 #14286E — SVG/標題/indigo類 */
+.btn-indigo{background:#E8EBFA;color:#14286E;border-color:#9AAAD8;}
+.btn-indigo:hover{background:#D5DAEF;border-color:#14286E;}
+
+/* 寧靜靛（深）— H1/H2/副標 */
+.btn-purple{background:#E8EBFA;color:#14286E;border-color:#9AAAD8;}
+.btn-purple:hover{background:#D5DAEF;border-color:#14286E;}
+
+/* 陽光黃 #FFB900 — 形狀/圖形工具/匯出PDF */
+.btn-amber{background:#FFF5CC;color:#7A5500;border-color:#FFCF4D;}
+.btn-amber:hover{background:#FFECAA;border-color:#FFB900;}
+
+/* 熱情紅 #E11928 — 刪除/警告 */
+.btn-red{background:#FDEAEC;color:#A0101D;border-color:#F5909A;}
+.btn-red:hover{background:#FAD4D7;border-color:#E11928;}
+
+/* 大地棕 #AA7D5F — 中性次要 */
+.btn-ghost{background:#F4F0ED;color:#6B5444;border-color:#D4C4B8;}
+.btn-ghost:hover{background:#EAE4DF;border-color:#AA7D5F;color:#4A3828;}
+
+/* ── 全寬主要按鈕（實色填充，更有份量感）── */
+.btn-full{width:100%;border-radius:14px;padding:9px 16px;font-size:12px;}
+.btn-full.btn-green{background:#6EC300;color:#fff;border-color:#58A000;}
+.btn-full.btn-green:hover{background:#58A000;}
+.btn-full.btn-teal{background:#00AAC8;color:#fff;border-color:#0088A0;}
+.btn-full.btn-teal:hover{background:#0088A0;}
+.btn-full.btn-blue{background:#00AAC8;color:#fff;border-color:#0088A0;}
+.btn-full.btn-blue:hover{background:#0088A0;}
+.btn-full.btn-amber{background:#E6A700;color:#fff;border-color:#C48F00;}
+.btn-full.btn-amber:hover{background:#C48F00;}
+.btn-full.btn-purple{background:#14286E;color:#fff;border-color:#0C1C50;}
+.btn-full.btn-purple:hover{background:#0C1C50;}
+.btn-full.btn-indigo{background:#14286E;color:#fff;border-color:#0C1C50;}
+.btn-full.btn-indigo:hover{background:#0C1C50;}
+.btn-full.btn-red{background:#E11928;color:#fff;border-color:#B01520;}
+.btn-full.btn-red:hover{background:#B01520;}
+.btn-full.btn-ghost{background:#F4F0ED;color:#4A3828;border-color:#D4C4B8;}
+.btn-full.btn-ghost:hover{background:#EAE4DF;}
+
+.btn-sm{padding:4px 12px;font-size:10px;}
 
 /* inputs */
 .inp{
@@ -211,7 +225,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   border:1px solid transparent;
 }
 .layer-item:hover{background:var(--g100)}
-.layer-item.sel{background:#E4ECF5;border-color:#B8CCE4}
+.layer-item.sel{background:#DFF6FA;border-color:#7FD4E3}
 .layer-thumb{
   width:28px;height:28px;border-radius:4px;background:var(--g100);
   display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
@@ -869,7 +883,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px">
         <button class="btn btn-blue btn-sm add-obj-btn" onclick="addTxt('文字內容',48,'#1C2340','400',60,60,300,80)">Aa 文字</button>
         <button class="btn btn-purple btn-sm add-obj-btn" onclick="document.getElementById('imgInp').click()">🖼 圖片</button>
-        <button class="btn btn-sm add-obj-btn" style="background:#4338CA;color:#fff" onclick="document.getElementById('svgInp').click()" title="匯入 Illustrator SVG 向量檔，縮放不失真">⬡ SVG</button>
+        <button class="btn btn-indigo btn-sm add-obj-btn" onclick="document.getElementById('svgInp').click()" title="匯入 Illustrator SVG 向量檔，縮放不失真">⬡ SVG</button>
         <button class="btn btn-teal btn-sm add-obj-btn" onclick="openTblBuilder()">⊞ 表格</button>
         <button class="btn btn-indigo btn-sm add-obj-btn" onclick="addTxt('標題文字',72,'#005BAC','700',40,40,400,100)">H1 大標</button>
         <button class="btn btn-ghost btn-sm add-obj-btn" style="color:var(--g600)" onclick="addTxt('副標題',36,'#475569','500',40,160,360,60)">H2 副標</button>
