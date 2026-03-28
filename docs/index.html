@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <!-- QR 改用 api.qrserver.com REST API，不依賴 CDN library -->
 <style>
 :root{
@@ -999,6 +1000,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <button class="btn btn-amber btn-full btn-sm" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:5px">
       ⬇ 匯出 PDF（全部頁面）
     </button>
+    <button class="btn btn-ghost btn-sm" onclick="exportSVG()" style="margin-top:6px" title="匯出向量形狀為SVG">&#x2197; 匯出 SVG</button>
     <div id="wm-preview-btn" style="display:none;margin-top:6px">
       <button class="btn btn-teal btn-full" onclick="previewAll()">👁 預覽後下載</button>
     </div>
@@ -1024,6 +1026,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <div id="pw">
         <canvas id="bgc"></canvas>
         <div id="ol"></div>
+        <canvas id="fab-canvas" style="position:absolute;top:0;left:0;pointer-events:none;z-index:1;"></canvas>
       </div>
     </div>
 
@@ -1707,6 +1710,8 @@ function renderBg(){
   }
   scaleObjs();
   document.getElementById('sz-lbl').textContent = getSzLabel(S.W, S.H, S.name);
+  // Fabric.js vector shape overlay
+  renderFabShapes();
 }
 
 function setBgC(color){
@@ -5415,6 +5420,101 @@ function ieInitMouseEvents(){
   ov.addEventListener('mouseleave',()=>{dragging=false;});
 }
 
+// ── Fabric.js vector canvas for shapes ──
+let fabCanvas = null;
+
+function initFabCanvas() {
+  try {
+    if(typeof fabric === 'undefined') return;
+    if(fabCanvas) { try{fabCanvas.dispose();}catch(e){} fabCanvas = null; }
+    const el = document.getElementById('fab-canvas');
+    if(!el) return;
+    fabCanvas = new fabric.StaticCanvas('fab-canvas', {
+      width: S.W * S.zoom,
+      height: S.H * S.zoom
+    });
+  } catch(e) { console.warn('Fabric init failed:', e); }
+}
+
+function renderFabShapes() {
+  if(!fabCanvas || typeof fabric === 'undefined') return;
+  try {
+    fabCanvas.clear();
+    const z = S.zoom;
+    S.objs.forEach(obj => {
+      if(obj.type !== 'shape') return;
+      const fill = (obj.fillColor === 'transparent' || !obj.fillColor) ? '' : obj.fillColor;
+      const stroke = obj.strokeColor || '#333333';
+      const sw = (obj.strokeWidth || 2) * z;
+      const dash = (obj.strokeDash && obj.strokeDash !== 'solid')
+        ? obj.strokeDash.split(',').map(Number) : [];
+      const baseProps = {
+        fill: fill || 'transparent',
+        stroke, strokeWidth: sw,
+        strokeDashArray: dash.length ? dash : null,
+        angle: obj.rot || 0,
+        opacity: obj.opacity != null ? obj.opacity : 1,
+        selectable: false, evented: false,
+        originX: 'left', originY: 'top'
+      };
+      let fabObj = null;
+      try {
+        if(obj.shapeType === 'rect' || obj.shapeType === 'dashed-rect') {
+          fabObj = new fabric.Rect({ ...baseProps, left: obj.x*z, top: obj.y*z, width: obj.w*z, height: obj.h*z });
+        } else if(obj.shapeType === 'ellipse') {
+          fabObj = new fabric.Ellipse({ ...baseProps, left: obj.x*z, top: obj.y*z, rx: (obj.w*z)/2, ry: (obj.h*z)/2 });
+        } else if(obj.shapeType === 'line') {
+          fabObj = new fabric.Line([0, 0, obj.w*z, obj.h*z], { ...baseProps, left: obj.x*z, top: obj.y*z });
+        } else if(obj.shapeType === 'triangle') {
+          fabObj = new fabric.Triangle({ ...baseProps, left: obj.x*z, top: obj.y*z, width: obj.w*z, height: obj.h*z });
+        }
+        if(fabObj) fabCanvas.add(fabObj);
+      } catch(e2) {}
+    });
+    fabCanvas.renderAll();
+  } catch(e) { console.warn('renderFabShapes error:', e); }
+}
+
+function resizeFabCanvas() {
+  if(!fabCanvas || typeof fabric === 'undefined') return;
+  try {
+    fabCanvas.setWidth(S.W * S.zoom);
+    fabCanvas.setHeight(S.H * S.zoom);
+    renderFabShapes();
+  } catch(e) {}
+}
+
+function exportSVG() {
+  if(typeof fabric === 'undefined') { alert('Fabric.js 未載入，SVG匯出不可用'); return; }
+  try {
+    const tempFab = new fabric.StaticCanvas(null, { width: S.W, height: S.H });
+    if(S.bgColor) tempFab.backgroundColor = S.bgColor;
+    S.objs.forEach(obj => {
+      if(obj.type !== 'shape') return;
+      const fill = (obj.fillColor === 'transparent' || !obj.fillColor) ? 'transparent' : obj.fillColor;
+      const stroke = obj.strokeColor || '#333';
+      const sw = obj.strokeWidth || 2;
+      const dash = (obj.strokeDash && obj.strokeDash !== 'solid') ? obj.strokeDash.split(',').map(Number) : null;
+      const baseProps = { fill, stroke, strokeWidth:sw, strokeDashArray:dash, angle:obj.rot||0, opacity:obj.opacity??1, originX:'left', originY:'top' };
+      let fo = null;
+      if(obj.shapeType==='rect'||obj.shapeType==='dashed-rect') fo = new fabric.Rect({...baseProps, left:obj.x, top:obj.y, width:obj.w, height:obj.h});
+      else if(obj.shapeType==='ellipse') fo = new fabric.Ellipse({...baseProps, left:obj.x, top:obj.y, rx:obj.w/2, ry:obj.h/2});
+      else if(obj.shapeType==='line') fo = new fabric.Line([0,0,obj.w,obj.h], {...baseProps, left:obj.x, top:obj.y});
+      else if(obj.shapeType==='triangle') fo = new fabric.Triangle({...baseProps, left:obj.x, top:obj.y, width:obj.w, height:obj.h});
+      if(fo) tempFab.add(fo);
+    });
+    const svgStr = tempFab.toSVG({ suppressPreamble: false });
+    tempFab.dispose();
+    const blob = new Blob([svgStr], {type:'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'poster-vector.svg';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  } catch(e) { alert('SVG匯出錯誤: ' + e.message); }
+}
+
 // ═══════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════
@@ -5436,6 +5536,8 @@ window.addEventListener('load', ()=>{
   // checkAutoSave(); // 停用自動還原，每次載入從空白畫布開始
   // QR Code 初始化
   setTimeout(qrGenerate, 200);
+  // Init Fabric.js canvas for vector shapes
+  setTimeout(initFabCanvas, 500);
 });
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
