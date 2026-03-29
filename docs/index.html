@@ -5,13 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田綜合醫院｜美編小助手</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@400;500;700;900&family=BIZ+UDPGothic:wght@400;700&family=Yusei+Magic&display=swap" rel="stylesheet">
-<!-- 開源中文字體 @font-face (OFL 授權，via jsDelivr CDN，lazy-load 使用時才下載)
-     保留 <10MB 字體；≥15MB 的 GenSeki/GenSen/GenRyu 已移除避免影響使用體驗 -->
-<style>
-@font-face{font-family:'jf-openhuninn';src:url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@master/font/jf-openhuninn-2.1.ttf') format('truetype');font-display:swap;}
-@font-face{font-family:'Iansui';src:url('https://cdn.jsdelivr.net/gh/ButTaiwan/iansui@main/fonts/ttf/Iansui-Regular.ttf') format('truetype');font-display:swap;}
-@font-face{font-family:'ChenYuLuoYan';src:url('https://cdn.jsdelivr.net/gh/Chenyu-otf/chenyuluoyan_thin@main/ChenYuluoyan-2.0-Thin.ttf') format('truetype');font-display:swap;}
-</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -1615,27 +1608,13 @@ function applyDeptColor(dept){
 //  FONTS & TEMPLATES
 // ═══════════════════════════════════════════════
 const FONTS = [
-  // ── 思源 / 黑體系列（Google Fonts，極輕快）──
   { label:'思源黑體 Noto Sans TC', value:'Noto Sans TC' },
   { label:'思源宋體 Noto Serif TC', value:'Noto Serif TC' },
   { label:'商務黑 BIZ UDPGothic', value:'BIZ UDPGothic' },
   { label:'綜藝黑 Dela Gothic', value:'Dela Gothic One' },
-  // ── 圓體系列 ──
   { label:'圓體 Zen Maru Gothic', value:'Zen Maru Gothic' },
-  { label:'jf 粉圓體', value:'jf-openhuninn' },
-  // ── 明體 / 書法系列 ──
-  // ── 手寫 / 創意體 ──
-  { label:'芫荽體 Iansui', value:'Iansui' },
-  { label:'辰宇落雁體', value:'ChenYuLuoYan' },
   { label:'手寫 Yusei Magic', value:'Yusei Magic' },
 ];
-
-// CDN 字體清單（首次使用需下載，標示容量）
-const CDN_FONTS = new Map([
-  ['jf-openhuninn', '4.7MB'],
-  ['Iansui',        '9MB'],
-  ['ChenYuLuoYan',  '9MB'],
-]);
 
 // ═══════════════════════════════════════════════
 //  素材資源連結（管理者可自行新增 category 和 items）
@@ -1765,40 +1744,6 @@ const S = {
 //  UTILITIES
 // ═══════════════════════════════════════════════
 function mkId(){ return ++S.cnt; }
-
-// ── CDN 字體下載按鈕控制 ──────────────────────────
-function updFontDlBtn(val){
-  const btn = document.getElementById('pp-font-dl-btn');
-  if(!btn) return;
-  if(CDN_FONTS.has(val)){
-    btn.style.display = '';
-    const loaded = document.fonts.check(`16px '${val}'`, '光');
-    if(loaded){
-      btn.textContent = '✅'; btn.disabled = true;
-      btn.title = '字體已載入';
-    } else {
-      btn.textContent = '⬇'; btn.disabled = false;
-      btn.title = '預先下載 ' + CDN_FONTS.get(val);
-    }
-  } else {
-    btn.style.display = 'none';
-  }
-}
-
-async function preloadFont(family){
-  const btn = document.getElementById('pp-font-dl-btn');
-  if(!btn || !CDN_FONTS.has(family)) return;
-  btn.textContent = '⏳'; btn.disabled = true;
-  try {
-    await document.fonts.load(`400 16px '${family}'`, '光田醫院健康檢查');
-    btn.textContent = '✅';
-    btn.title = '字體已載入';
-    snack('✅ 字體下載完成，可以使用了');
-  } catch(e) {
-    btn.textContent = '⬇'; btn.disabled = false;
-    snack('⚠ 字體下載失敗，請確認網路連線');
-  }
-}
 
 function snack(msg, dur=2000){
   const el = document.getElementById('snack');
@@ -2851,10 +2796,9 @@ function renderTxtPP(obj){
   return `
   <div class="pp-row">
     <span class="pp-label">字體</span>
-    <select class="inp" id="pp-font" style="flex:1;min-width:0" onchange="updFontDlBtn(this.value)">
-      ${FONTS.map(f=>`<option value="${f.value}"${ff===f.value?' selected':''}>${f.label}${CDN_FONTS.has(f.value)?' ↓':''}</option>`).join('')}
+    <select class="inp" id="pp-font">
+      ${FONTS.map(f=>`<option value="${f.value}"${ff===f.value?' selected':''}>${f.label}</option>`).join('')}
     </select>
-    <button id="pp-font-dl-btn" class="btn btn-blue btn-sm" onclick="preloadFont(document.getElementById('pp-font').value)" title="${CDN_FONTS.has(ff)?'預先下載 '+CDN_FONTS.get(ff):'已載入'}" style="${CDN_FONTS.has(ff)?'':'display:none'}">⬇</button>
   </div>
   <div class="pp-row">
     <span class="pp-label">字色</span>
