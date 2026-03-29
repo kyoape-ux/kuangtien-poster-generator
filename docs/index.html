@@ -2069,7 +2069,7 @@ function applyCustom(){
 // ═══════════════════════════════════════════════
 function getObj(id){ return S.objs.find(o=>o.id===id); }
 
-function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='left', fontFamily='Noto Sans TC'){
+function addTxt(text, size, color, weight, x, y, w, h, rot=0, opacity=1, align='center', fontFamily='Noto Sans TC'){
   h = Math.max(h||0, Math.ceil(size * 1.4));
   pushHistory();
   const id = mkId();
