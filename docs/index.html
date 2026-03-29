@@ -1372,9 +1372,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 </div><!-- /ca -->
 
 <!-- 素材資源 全版頁面 -->
-<div id="pg-res" style="display:none;flex:1;overflow:hidden;overflow-y:auto;background:#f0fdf4;padding:20px 24px;">
-  <div style="font-size:13px;font-weight:700;color:var(--g800);margin-bottom:4px">🔗 設計素材資源庫</div>
-  <div style="font-size:10px;color:var(--g500);margin-bottom:12px">點擊連結在新視窗開啟，免費設計素材網站精選</div>
+<div id="pg-res" style="display:none;flex:1;overflow:hidden;overflow-y:auto;background:#f8f9ff;padding:20px 24px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:15px;font-weight:800;color:#1F2875;letter-spacing:.3px">🔗 設計素材資源庫</div>
+      <div style="font-size:11px;color:var(--g500);margin-top:2px">點擊連結在新視窗開啟 · 共 <span id="res-count">0</span> 個資源</div>
+    </div>
+    <input id="res-search" type="search" placeholder="🔍 搜尋資源名稱…"
+      style="padding:6px 12px;border:1px solid var(--g300);border-radius:20px;font-size:12px;outline:none;width:180px;background:#fff"
+      oninput="filterResLinks(this.value)">
+  </div>
   <div id="res-links-container"></div>
 </div>
 
@@ -1627,23 +1634,39 @@ const RESOURCE_LINKS = [
       { name:'Unsplash', url:'https://unsplash.com', icon:'📸', desc:'高品質免費商用照片', tag:'完全免費' },
       { name:'Pexels', url:'https://www.pexels.com', icon:'🖼', desc:'免費圖片與影片素材庫', tag:'完全免費' },
       { name:'Pixabay', url:'https://pixabay.com', icon:'🌄', desc:'免費圖片、向量圖、影片', tag:'完全免費' },
+      { name:'StockSnap.io', url:'https://stocksnap.io', icon:'📷', desc:'高解析度免費商用照片，每週更新', tag:'完全免費' },
+      { name:'Lorem Picsum', url:'https://picsum.photos', icon:'🖼', desc:'隨機佔位圖片產生器', tag:'完全免費' },
     ]
   },
   {
     category: '🔤 字體資源',
     items: [
       { name:'Google Fonts', url:'https://fonts.google.com', icon:'G', desc:'免費開源字體，含繁體中文', tag:'完全免費' },
-      { name:'思源字體', url:'https://github.com/adobe-fonts/source-han-sans', icon:'字', desc:'Adobe開源中文字體 Source Han Sans', tag:'開源免費' },
+      { name:'思源字體 Source Han', url:'https://github.com/adobe-fonts/source-han-sans', icon:'字', desc:'Adobe開源中文字體 Source Han Sans', tag:'開源免費' },
       { name:'justfont', url:'https://www.justfont.com', icon:'字', desc:'台灣中文字體平台', tag:'部分免費' },
+      { name:'字體天下', url:'https://www.fonts.net.cn', icon:'字', desc:'中文字體下載與預覽', tag:'部分免費' },
+      { name:'DaFont', url:'https://www.dafont.com', icon:'A', desc:'英文字體免費下載', tag:'部分免費' },
     ]
   },
   {
     category: '🎭 圖示與插圖',
     items: [
       { name:'Flaticon', url:'https://www.flaticon.com', icon:'⬡', desc:'海量向量圖示下載', tag:'免費/付費' },
-      { name:'Iconfinder', url:'https://www.iconfinder.com', icon:'🔍', desc:'高品質SVG圖示庫', tag:'免費/付費' },
+      { name:'Font Awesome', url:'https://fontawesome.com/icons', icon:'🔠', desc:'最廣泛使用的圖示庫', tag:'免費/付費' },
+      { name:'Lucide Icons', url:'https://lucide.dev', icon:'✦', desc:'乾淨一致的開源SVG圖示', tag:'完全免費' },
+      { name:'Phosphor Icons', url:'https://phosphoricons.com', icon:'⬡', desc:'靈活多風格的開源圖示庫', tag:'完全免費' },
       { name:'unDraw', url:'https://undraw.co', icon:'🎨', desc:'可自訂顏色的免費插圖', tag:'完全免費' },
-      { name:'IconsDB', url:'https://www.iconsdb.com', icon:'📌', desc:'免費SVG/PNG圖示下載', tag:'完全免費' },
+      { name:'Storyset', url:'https://storyset.com', icon:'🖼', desc:'可自訂動畫插圖素材', tag:'完全免費' },
+      { name:'SVG Repo', url:'https://www.svgrepo.com', icon:'⬡', desc:'50萬+免費SVG向量圖形', tag:'完全免費' },
+    ]
+  },
+  {
+    category: '🌆 背景與紋理',
+    items: [
+      { name:'Hero Patterns', url:'https://heropatterns.com', icon:'▦', desc:'可自訂顏色的SVG幾何背景', tag:'完全免費' },
+      { name:'SVG Backgrounds', url:'https://www.svgbackgrounds.com', icon:'🌐', desc:'可客製化SVG背景素材', tag:'免費/付費' },
+      { name:'Trianglify', url:'https://trianglify.io', icon:'△', desc:'幾何三角形漸層背景產生器', tag:'完全免費' },
+      { name:'CSS Gradient', url:'https://cssgradient.io', icon:'🌈', desc:'視覺化CSS漸層產生器', tag:'完全免費' },
     ]
   },
   {
@@ -1652,46 +1675,80 @@ const RESOURCE_LINKS = [
       { name:'Color Hunt', url:'https://colorhunt.co', icon:'🎨', desc:'精選配色方案', tag:'完全免費' },
       { name:'Coolors', url:'https://coolors.co', icon:'🌈', desc:'快速生成配色方案', tag:'免費/付費' },
       { name:'Adobe Color', url:'https://color.adobe.com', icon:'🔵', desc:'Adobe配色輪，可儲存調色盤', tag:'免費' },
+      { name:'Paletton', url:'https://paletton.com', icon:'🎯', desc:'色彩搭配理論工具', tag:'完全免費' },
     ]
   },
   {
     category: '✂ 設計工具',
     items: [
       { name:'Remove.bg', url:'https://www.remove.bg', icon:'✂', desc:'一鍵AI去背', tag:'免費額度' },
+      { name:'Cleanup.pictures', url:'https://cleanup.pictures', icon:'🧹', desc:'AI去除照片中不要的物件', tag:'免費額度' },
+      { name:'Vectorizer.ai', url:'https://vectorizer.ai', icon:'⬡', desc:'AI自動將點陣圖轉向量SVG', tag:'免費額度' },
+      { name:'Photopea', url:'https://www.photopea.com', icon:'🖌', desc:'免費線上版Photoshop（支援PSD）', tag:'完全免費' },
       { name:'Canva', url:'https://www.canva.com', icon:'C', desc:'線上設計工具，大量模板', tag:'免費/付費' },
-      { name:'SVG Repo', url:'https://www.svgrepo.com', icon:'⬡', desc:'50萬+免費SVG向量圖形', tag:'完全免費' },
-      { name:'Compressor.io', url:'https://compressor.io', icon:'⚡', desc:'圖片壓縮不失真', tag:'免費' },
+      { name:'TinyPNG', url:'https://tinypng.com', icon:'⚡', desc:'PNG/JPEG/WebP智能壓縮', tag:'免費額度' },
+      { name:'Compressor.io', url:'https://compressor.io', icon:'🗜', desc:'圖片壓縮不失真', tag:'免費' },
+    ]
+  },
+  {
+    category: '🤖 AI 設計工具',
+    items: [
+      { name:'Adobe Firefly', url:'https://firefly.adobe.com', icon:'🔥', desc:'Adobe AI生成圖像與填充工具', tag:'免費額度' },
+      { name:'Microsoft Designer', url:'https://designer.microsoft.com', icon:'🪟', desc:'微軟AI設計工具，快速產生海報', tag:'免費' },
+      { name:'Ideogram', url:'https://ideogram.ai', icon:'🤖', desc:'AI圖像生成，擅長文字排版', tag:'免費額度' },
+      { name:'Canva AI', url:'https://www.canva.com/ai-image-generator', icon:'✨', desc:'Canva內建AI圖像生成', tag:'免費額度' },
     ]
   },
   {
     category: '🏥 醫療素材',
     items: [
       { name:'Healthicons', url:'https://healthicons.org', icon:'🏥', desc:'WHO提供的免費醫療圖示', tag:'完全免費' },
-      { name:'Medical Illustrations', url:'https://biorender.com', icon:'🔬', desc:'醫學生物插圖工具', tag:'免費/付費' },
+      { name:'BioRender', url:'https://biorender.com', icon:'🔬', desc:'醫學生物插圖工具', tag:'免費/付費' },
+      { name:'Smart Servier', url:'https://smart.servier.com', icon:'💊', desc:'免費醫學插圖（CC授權）', tag:'完全免費' },
+      { name:'PhysioEx', url:'https://www.iconfinder.com/search/icons?q=medical', icon:'🫀', desc:'醫療主題SVG圖示搜尋', tag:'免費/付費' },
     ]
   },
 ];
 
-function renderResLinks(){
+function renderResLinks(keyword=''){
   const c=document.getElementById('res-links-container');
   if(!c) return;
   c.innerHTML='';
+  const kw=(keyword||'').toLowerCase();
+  let total=0, shown=0;
+  // 計算總數
+  RESOURCE_LINKS.forEach(sec=>total+=sec.items.length);
+  const countEl=document.getElementById('res-count');
   RESOURCE_LINKS.forEach(sec=>{
+    const filtered=kw ? sec.items.filter(i=>
+      i.name.toLowerCase().includes(kw)||i.desc.toLowerCase().includes(kw)||i.tag.toLowerCase().includes(kw)
+    ) : sec.items;
+    if(!filtered.length) return;
+    shown+=filtered.length;
     const title=document.createElement('div');
     title.className='res-section-title';
     title.textContent=sec.category;
     c.appendChild(title);
-    sec.items.forEach(item=>{
+    const grid=document.createElement('div');
+    grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;margin-bottom:4px';
+    filtered.forEach(item=>{
       const a=document.createElement('a');
       a.className='res-link-item';
-      a.href=item.url;
-      a.target='_blank';
-      a.rel='noopener noreferrer';
+      a.href=item.url; a.target='_blank'; a.rel='noopener noreferrer';
       a.innerHTML=`<span class="res-link-icon">${item.icon}</span><div class="res-link-info"><div class="res-link-name">${item.name}</div><div class="res-link-desc">${item.desc}</div></div><span class="res-link-tag">${item.tag}</span>`;
-      c.appendChild(a);
+      grid.appendChild(a);
     });
+    c.appendChild(grid);
   });
+  if(countEl) countEl.textContent=kw?`${shown}/${total}`:total;
+  if(!shown&&kw){
+    const empty=document.createElement('div');
+    empty.style.cssText='text-align:center;padding:40px;color:var(--g400);font-size:13px';
+    empty.textContent='找不到相關資源，請試試其他關鍵字';
+    c.appendChild(empty);
+  }
 }
+function filterResLinks(kw){ renderResLinks(kw); }
 
 // ── 類別定義（維護說明：新增類別請在此 array 加入 {id, name}，
 //    並在 TEMPLATES 中新增對應 category 的物件即可）──
