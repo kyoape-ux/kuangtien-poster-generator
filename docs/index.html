@@ -2465,6 +2465,12 @@ function applyStyle(el, obj){
   }
   // Apply clip shape for images
   if(obj.type==='img' && obj.clipShape) _applyClipShape(el, obj);
+  // Gradient mask overlay
+  let mOvr=el.querySelector('.mask-ovr');
+  if(obj.mask&&obj.mask.on&&obj.type!=='txt'){
+    if(!mOvr){ mOvr=document.createElement('div'); mOvr.className='mask-ovr'; el.appendChild(mOvr); }
+    mOvr.style.cssText='position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:5;background:'+_maskGradientCss(obj.mask)+';';
+  } else if(mOvr){ mOvr.remove(); }
 }
 
 function scaleObjs(){
@@ -2755,6 +2761,34 @@ function renderPPHTML(obj){
     <span class="pp-label" style="margin-left:4px">模糊</span>
     <input type="number" id="pp-shadow-blur" value="${(obj.shadow&&obj.shadow.blur)||8}" style="width:44px">
   </div>
+  ${!isT?`
+  <div class="pp-sep"></div>
+  <div class="pp-section-label">漸層遮罩</div>
+  <div class="pp-row">
+    <label style="font-size:11px;display:flex;align-items:center;gap:4px;flex:1">
+      <input type="checkbox" id="pp-mask-on" ${(obj.mask&&obj.mask.on)?'checked':''}> 啟用遮罩
+    </label>
+    <input type="color" id="pp-mask-color" value="${(obj.mask&&obj.mask.color)||'#000000'}">
+  </div>
+  <div id="pp-mask-body" style="${(obj.mask&&obj.mask.on)?'':'display:none'}">
+    <div class="pp-row" style="flex-wrap:wrap;gap:3px">
+      ${[['top','↑'],['bottom','↓'],['left','←'],['right','→'],['top-left','↖'],['top-right','↗'],['bottom-left','↙'],['bottom-right','↘'],['radial','●']].map(([d,ic])=>{
+        const cur=obj.mask&&obj.mask.on;
+        const active=cur&&(d==='radial'?(obj.mask.type==='radial'):(obj.mask.dir===d&&obj.mask.type!=='radial'));
+        return `<button class="btn btn-sm ${active?'btn-blue':'btn-ghost'}" style="padding:3px 8px;font-size:13px" onclick="setMaskDir(${obj.id},'${d}')" title="${d}">${ic}</button>`;
+      }).join('')}
+    </div>
+    <div class="pp-row">
+      <span class="pp-label">強度</span>
+      <input type="range" id="pp-mask-op" min="0" max="100" value="${(obj.mask&&obj.mask.opacity)??70}" style="flex:1">
+      <span id="pp-mask-op-lbl" style="font-size:11px;color:var(--g500);min-width:32px">${(obj.mask&&obj.mask.opacity)??70}%</span>
+    </div>
+    <div class="pp-row">
+      <span class="pp-label">起始</span>
+      <input type="range" id="pp-mask-start" min="0" max="90" value="${(obj.mask&&obj.mask.start)??0}" style="flex:1">
+      <span id="pp-mask-start-lbl" style="font-size:11px;color:var(--g500);min-width:32px">${(obj.mask&&obj.mask.start)??0}%</span>
+    </div>
+  </div>`:''}
   ${isT?renderTxtPP(obj):''}
   ${isSh?renderShapePP(obj):''}
   ${!isT&&!isSh?`
@@ -3075,6 +3109,44 @@ function bindPPEvents(obj){
       const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
     };
   });
+  // Gradient mask
+  const ppMaskOn=document.getElementById('pp-mask-on');
+  if(ppMaskOn){
+    ppMaskOn.onchange=()=>{
+      if(!obj.mask) obj.mask={on:false,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+      obj.mask.on=ppMaskOn.checked;
+      const body=document.getElementById('pp-mask-body');
+      if(body) body.style.display=ppMaskOn.checked?'':'none';
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+      pushHistory();
+    };
+  }
+  const ppMaskColor=document.getElementById('pp-mask-color');
+  if(ppMaskColor){
+    ppMaskColor.oninput=()=>{
+      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+      obj.mask.color=ppMaskColor.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  const ppMaskOp=document.getElementById('pp-mask-op');
+  if(ppMaskOp){
+    ppMaskOp.oninput=()=>{
+      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+      obj.mask.opacity=+ppMaskOp.value;
+      const lbl=document.getElementById('pp-mask-op-lbl'); if(lbl) lbl.textContent=ppMaskOp.value+'%';
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  const ppMaskSt=document.getElementById('pp-mask-start');
+  if(ppMaskSt){
+    ppMaskSt.oninput=()=>{
+      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+      obj.mask.start=+ppMaskSt.value;
+      const lbl=document.getElementById('pp-mask-start-lbl'); if(lbl) lbl.textContent=ppMaskSt.value+'%';
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
 }
 
 function updatePPValues(obj){
@@ -3088,6 +3160,49 @@ function updatePPValues(obj){
   const lbl=document.getElementById('pp-op-lbl');
   if(lbl) lbl.textContent=Math.round(obj.opacity*100)+'%';
 }
+
+// ─── Gradient Mask Helpers ────────────────────────────────
+function _hexToRgba(hex, alpha){
+  const c=(hex||'#000000').replace('#','');
+  return `rgba(${parseInt(c.slice(0,2),16)},${parseInt(c.slice(2,4),16)},${parseInt(c.slice(4,6),16)},${alpha})`;
+}
+const _maskDirMap={
+  top:'to top',bottom:'to bottom',left:'to left',right:'to right',
+  'top-left':'to top left','top-right':'to top right',
+  'bottom-left':'to bottom left','bottom-right':'to bottom right'
+};
+function _maskGradientCss(m){
+  if(!m||!m.on) return '';
+  const col=_hexToRgba(m.color||'#000000',(m.opacity??70)/100);
+  const st=(m.start??0)+'%';
+  if(m.type==='radial') return `radial-gradient(ellipse at center,transparent ${st},${col} 100%)`;
+  return `linear-gradient(${_maskDirMap[m.dir||'bottom']||'to bottom'},transparent ${st},${col} 100%)`;
+}
+function _maskCanvasGrad(ctx,m,hw,hh){
+  if(!m||!m.on) return null;
+  const col=_hexToRgba(m.color||'#000000',(m.opacity??70)/100);
+  const frac=(m.start??0)/100;
+  if(m.type==='radial'){
+    const r=Math.max(hw,hh);
+    const g=ctx.createRadialGradient(0,0,r*frac,0,0,r);
+    g.addColorStop(0,'transparent'); g.addColorStop(1,col); return g;
+  }
+  const pts={top:[0,hh,0,-hh],bottom:[0,-hh,0,hh],left:[hw,0,-hw,0],right:[-hw,0,hw,0],
+    'top-left':[hw,hh,-hw,-hh],'top-right':[-hw,hh,hw,-hh],
+    'bottom-left':[hw,-hh,-hw,hh],'bottom-right':[-hw,-hh,hw,hh]};
+  const [x0,y0,x1,y1]=pts[m.dir||'bottom']||pts.bottom;
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  g.addColorStop(frac,'transparent'); g.addColorStop(1,col); return g;
+}
+function setMaskDir(id,dir){
+  const obj=getObj(id); if(!obj) return;
+  if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+  if(dir==='radial'){ obj.mask.type='radial'; obj.mask.dir='radial'; }
+  else { obj.mask.type='linear'; obj.mask.dir=dir; }
+  const el=document.getElementById('o'+id); if(el) applyStyle(el,obj);
+  showPP(id); pushHistory();
+}
+// ─────────────────────────────────────────────────────────
 
 function upP(id, key, val){
   const obj = getObj(id);
@@ -3162,8 +3277,10 @@ async function dlPoster(){
       if(obj.fillColor&&obj.fillColor!=='transparent') ctx.fill();
       if(sw>0) ctx.stroke();
       ctx.setLineDash([]);
+      if(obj.mask&&obj.mask.on){const g=_maskCanvasGrad(ctx,obj.mask,hw,hh);if(g){ctx.fillStyle=g;ctx.fillRect(-hw,-hh,obj.w,obj.h);}}
     } else if(obj.type==='img' && obj.imgEl){
       ctx.drawImage(obj.imgEl, -obj.w/2, -obj.h/2, obj.w, obj.h);
+      if(obj.mask&&obj.mask.on){const hw2=obj.w/2,hh2=obj.h/2,g=_maskCanvasGrad(ctx,obj.mask,hw2,hh2);if(g){ctx.fillStyle=g;ctx.fillRect(-hw2,-hh2,obj.w,obj.h);}}
     } else if(obj.type==='table'){
       const tcvs = renderTableToCanvas(obj.tableData, obj.tableStyle);
       ctx.drawImage(tcvs, -obj.w/2, -obj.h/2, obj.w, obj.h);
@@ -3993,8 +4110,10 @@ async function exportPDF(){
         if(obj.fillColor&&obj.fillColor!=='transparent') ctx.fill();
         if(sw>0) ctx.stroke();
         ctx.setLineDash([]);
+        if(obj.mask&&obj.mask.on){const g=_maskCanvasGrad(ctx,obj.mask,hw,hh);if(g){ctx.fillStyle=g;ctx.fillRect(-hw,-hh,obj.w,obj.h);}}
       } else if(obj.type==='img'&&obj.imgEl){
         try{ ctx.drawImage(obj.imgEl,-obj.w/2,-obj.h/2,obj.w,obj.h); }catch(e){}
+        if(obj.mask&&obj.mask.on){const hw2=obj.w/2,hh2=obj.h/2,g=_maskCanvasGrad(ctx,obj.mask,hw2,hh2);if(g){ctx.fillStyle=g;ctx.fillRect(-hw2,-hh2,obj.w,obj.h);}}
       } else if(obj.type==='txt'){
         await document.fonts.ready;
         const ff=obj.fontFamily||'Noto Sans TC';
