@@ -2319,7 +2319,11 @@ function mkEl(id){
       const _ff2 = obj.fontFamily||'Noto Sans TC';
       const _ffs2 = _ff2==='Noto Serif TC'?`'Noto Serif TC',serif`:_ff2==='Dela Gothic One'?`'Dela Gothic One',sans-serif`:_ff2==='Zen Maru Gothic'?`'Zen Maru Gothic',sans-serif`:_ff2==='BIZ UDPGothic'?`'BIZ UDPGothic',sans-serif`:_ff2==='Yusei Magic'?`'Yusei Magic',cursive`:`'Noto Sans TC',sans-serif`;
       const _ts2=(obj.textShadow&&obj.textShadow.on)?`filter:drop-shadow(${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'});`:'';
-      const _tsk2=(obj.strokeWidth)?`-webkit-text-stroke:${obj.strokeWidth*S.zoom}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;stroke-linecap:round;stroke-linejoin:round;`:'';
+      const _tsk2=(obj.strokeWidth)
+        ? (obj.strokeRound!==false
+          ? `text-shadow:${_txtRoundStrokeShadow(obj.strokeWidth,obj.strokeColor||'#000000',S.zoom)};`
+          : `-webkit-text-stroke:${obj.strokeWidth*S.zoom}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;`)
+        :'';
       ti.style.cssText = `
         position:relative; width:100%; height:auto; overflow:visible;
         min-height:${obj.h * S.zoom}px;
@@ -2434,7 +2438,9 @@ function applyStyle(el, obj){
           ? `filter:drop-shadow(${obj.textShadow.x||2}px ${obj.textShadow.y||2}px ${obj.textShadow.blur||4}px ${obj.textShadow.color||'rgba(0,0,0,0.5)'});`
           : '';
         const tStroke = (obj.strokeWidth)
-          ? `-webkit-text-stroke:${obj.strokeWidth*z}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;stroke-linecap:round;stroke-linejoin:round;`
+          ? (obj.strokeRound!==false
+            ? `text-shadow:${_txtRoundStrokeShadow(obj.strokeWidth,obj.strokeColor||'#000000',z)};`
+            : `-webkit-text-stroke:${obj.strokeWidth*z}px ${obj.strokeColor||'#000000'};paint-order:stroke fill;`)
           : '';
         ti.style.cssText = `
           position:absolute;inset:0;overflow:hidden;
@@ -2880,8 +2886,13 @@ function renderTxtPP(obj){
   </div>
   <div class="pp-row">
     <span class="pp-label">外框寬</span>
-    <input type="range" id="pp-stroke-w" min="0" max="30" value="${obj.strokeWidth||0}" style="flex:1">
+    <input type="range" id="pp-stroke-w" min="0" max="60" value="${obj.strokeWidth||0}" style="flex:1">
     <span id="pp-stroke-w-lbl" style="font-size:11px;color:var(--g500);min-width:34px;text-align:right">${obj.strokeWidth||0}px</span>
+  </div>
+  <div class="pp-row">
+    <label style="font-size:11px;display:flex;align-items:center;gap:5px;flex:1;cursor:pointer">
+      <input type="checkbox" id="pp-stroke-round" ${obj.strokeRound!==false?'checked':''}> ● 圓角端點（推薦）
+    </label>
   </div>
   <div class="pp-sep"></div>
   <div class="pp-section-label">文字陰影</div>
@@ -3066,6 +3077,15 @@ function bindPPEvents(obj){
       }
     };
   }
+  // Stroke round toggle
+  const ppStrokeRound = document.getElementById('pp-stroke-round');
+  if(ppStrokeRound){
+    ppStrokeRound.onchange = ()=>{
+      obj.strokeRound = ppStrokeRound.checked;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+      pushHistory();
+    };
+  }
   // Text shadow
   const ppTshOn = document.getElementById('pp-tshadow-on');
   if(ppTshOn){
@@ -3160,6 +3180,22 @@ function updatePPValues(obj){
   if(lbl) lbl.textContent=Math.round(obj.opacity*100)+'%';
 }
 
+// ─── Text Round Stroke Helper ────────────────────────────────
+// -webkit-text-stroke 無法做圓角端點；改用 text-shadow 環繞疊加法
+// 在文字四周等角度打出多個 0-blur text-shadow，形成連續圓角外框
+function _txtRoundStrokeShadow(w, color, zoom){
+  const pw = w * (zoom||1);
+  if(pw <= 0) return '';
+  const STEPS = Math.min(180, Math.max(16, Math.round(pw * 5)));
+  const s = [];
+  for(let i=0; i<STEPS; i++){
+    const a = (i/STEPS)*Math.PI*2;
+    const x = +(Math.cos(a)*pw).toFixed(2);
+    const y = +(Math.sin(a)*pw).toFixed(2);
+    s.push(`${x}px ${y}px 0 ${color}`);
+  }
+  return s.join(',');
+}
 // ─── Gradient Mask Helpers (透明漸層遮罩) ───────────────────
 // CSS: mask-image 直接套用在 img/svg 上 — black=顯示, transparent=隱藏
 // Canvas: globalCompositeOperation destination-out on offscreen canvas
@@ -3348,12 +3384,16 @@ async function dlPoster(){
       ctx.textAlign = obj.align;
       const lines = obj.text.split('\n');
       const ax = obj.align==='center'?0 : obj.align==='right'?obj.w/2 : -obj.w/2;
-      // CSS line-height:1.4 adds 0.2×size half-leading above first line;
-      // compensate here so canvas matches the DOM preview exactly
       const halfLead = obj.size * 0.2;
-      lines.forEach((line,i)=>{
-        ctx.fillText(line, ax, -obj.h/2 + halfLead + i*obj.size*1.4);
-      });
+      // 文字外框（strokeText，圓角 lineJoin/Cap）
+      if(obj.strokeWidth){
+        ctx.strokeStyle = obj.strokeColor||'#000000';
+        ctx.lineWidth = obj.strokeWidth;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        lines.forEach((line,i)=>ctx.strokeText(line, ax, -obj.h/2+halfLead+i*obj.size*1.4));
+      }
+      lines.forEach((line,i)=>ctx.fillText(line, ax, -obj.h/2+halfLead+i*obj.size*1.4));
     }
     ctx.restore();
   }
@@ -4204,8 +4244,15 @@ async function exportPDF(){
         ctx.textAlign=obj.align||'left';
         const lines=(obj.text||'').split('\n');
         const ax=obj.align==='center'?0:obj.align==='right'?obj.w/2:-obj.w/2;
-        // CSS line-height:1.4 半行距補償，使匯出位置與編輯器一致
         const halfLead=obj.size*0.2;
+        // 文字外框（圓角 lineJoin/Cap）
+        if(obj.strokeWidth){
+          ctx.strokeStyle=obj.strokeColor||'#000000';
+          ctx.lineWidth=obj.strokeWidth;
+          ctx.lineJoin='round';
+          ctx.lineCap='round';
+          lines.forEach((line,i)=>ctx.strokeText(line,ax,-obj.h/2+halfLead+i*obj.size*1.4));
+        }
         lines.forEach((line,i)=>ctx.fillText(line,ax,-obj.h/2+halfLead+i*obj.size*1.4));
       }
       ctx.restore();
@@ -6538,6 +6585,8 @@ function exportSVG() {
           t.setAttribute('stroke',obj.strokeColor||'#000000');
           t.setAttribute('stroke-width',obj.strokeWidth);
           t.setAttribute('paint-order','stroke fill');
+          t.setAttribute('stroke-linejoin','round');
+          t.setAttribute('stroke-linecap','round');
         }
         t.textContent = line || '';
         g.appendChild(t);
