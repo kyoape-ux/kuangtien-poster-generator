@@ -5,14 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>光田綜合醫院｜美編小助手</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@400;500;700;900&family=BIZ+UDPGothic:wght@400;700&family=Yusei+Magic&family=LXGW+WenKai+TC&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
-<!-- 開源中文字體 @font-face (OFL 授權，via jsDelivr CDN，URL 均已驗證 200) -->
+<!-- 開源中文字體 @font-face (OFL 授權，via jsDelivr CDN，lazy-load 使用時才下載)
+     保留 <10MB 字體；≥15MB 的 GenSeki/GenSen/GenRyu 已移除避免影響使用體驗 -->
 <style>
 @font-face{font-family:'jf-openhuninn';src:url('https://cdn.jsdelivr.net/gh/justfont/open-huninn-font@master/font/jf-openhuninn-2.1.ttf') format('truetype');font-display:swap;}
 @font-face{font-family:'Iansui';src:url('https://cdn.jsdelivr.net/gh/ButTaiwan/iansui@main/fonts/ttf/Iansui-Regular.ttf') format('truetype');font-display:swap;}
 @font-face{font-family:'ChenYuLuoYan';src:url('https://cdn.jsdelivr.net/gh/Chenyu-otf/chenyuluoyan_thin@main/ChenYuluoyan-2.0-Thin.ttf') format('truetype');font-display:swap;}
-@font-face{font-family:'GenSekiGothic';src:url('https://cdn.jsdelivr.net/gh/ButTaiwan/genseki-font@master/otf/TC/GenSekiGothic2TC-R.otf') format('opentype');font-display:swap;}
-@font-face{font-family:'GenSenRounded';src:url('https://cdn.jsdelivr.net/gh/ButTaiwan/gensen-font@master/otf/TC/GenSenRounded2TC-R.otf') format('opentype');font-display:swap;}
-@font-face{font-family:'GenRyuMin';src:url('https://cdn.jsdelivr.net/gh/ButTaiwan/genryu-font@master/otf/TC/GenRyuMin2TC-R.otf') format('opentype');font-display:swap;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -1617,23 +1615,20 @@ function applyDeptColor(dept){
 //  FONTS & TEMPLATES
 // ═══════════════════════════════════════════════
 const FONTS = [
-  // ── 思源 / 黑體系列 ──
+  // ── 思源 / 黑體系列（Google Fonts，極輕快）──
   { label:'思源黑體 Noto Sans TC', value:'Noto Sans TC' },
   { label:'思源宋體 Noto Serif TC', value:'Noto Serif TC' },
-  { label:'源石黑體 GenSeki', value:'GenSekiGothic' },
   { label:'商務黑 BIZ UDPGothic', value:'BIZ UDPGothic' },
   { label:'綜藝黑 Dela Gothic', value:'Dela Gothic One' },
   // ── 圓體系列 ──
   { label:'圓體 Zen Maru Gothic', value:'Zen Maru Gothic' },
-  { label:'jf 粉圓體', value:'jf-openhuninn' },
-  { label:'源泉圓體 GenSen', value:'GenSenRounded' },
-  // ── 明體 / 書法系列 ──
+  { label:'jf 粉圓體（4.7MB）', value:'jf-openhuninn' },
+  // ── 明體 / 書法系列（Google Fonts，極輕快）──
   { label:'霞鶩文楷 LXGW WenKai', value:'LXGW WenKai TC' },
-  { label:'源流明體 GenRyu', value:'GenRyuMin' },
   { label:'手寫 Klee One', value:'Klee One' },
   // ── 手寫 / 創意體 ──
-  { label:'芫荽體 Iansui', value:'Iansui' },
-  { label:'辰宇落雁體', value:'ChenYuLuoYan' },
+  { label:'芫荽體 Iansui（9MB）', value:'Iansui' },
+  { label:'辰宇落雁體（9MB）', value:'ChenYuLuoYan' },
   { label:'手寫 Yusei Magic', value:'Yusei Magic' },
 ];
 
