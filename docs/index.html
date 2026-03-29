@@ -2568,10 +2568,10 @@ function attachDrag(el, obj){
         nh = nw * obj.aspectRatio;
         if(dir.includes('n')) ny = oy+oh-nh;
       }
-      // shape: Shift 鍵鎖定長寬比（橢圓強制 1:1；超橢圓/自訂路徑不鎖，可自由拉伸）
-      const _shiftLock = obj.shapeType==='superellipse'||obj.shapeType==='custompath' ? false : e.shiftKey;
+      // shape: Shift 鍵鎖定長寬比（橢圓/超橢圓強制 1:1；自訂路徑不鎖）
+      const _shiftLock = obj.shapeType==='custompath' ? false : e.shiftKey;
       if(obj.type==='shape' && _shiftLock && ow>0){
-        const ar = obj.shapeType==='ellipse' ? 1 : oar; // 橢圓→正圓
+        const ar = (obj.shapeType==='ellipse'||obj.shapeType==='superellipse') ? 1 : oar; // 橢圓/超橢圓→正圓
         if(dir==='n'||dir==='s'){
           nw=Math.max(20,nh/ar); nx=ox+(ow-nw)/2;
           if(dir==='n') ny=oy+oh-nh;
@@ -5047,8 +5047,8 @@ function addShape(shapeType){
     x:60, y:60, w:200, h:defH,
     rot:0, opacity:1,
     fillColor: (realType==='line'||isDash)?'transparent':'#4A90D9',
-    strokeColor:'#1C5FA3',
-    strokeWidth:3,
+    strokeColor: realType==='superellipse' ? 'transparent' : '#1C5FA3',
+    strokeWidth: realType==='superellipse' ? 0 : 3,
     strokeDash: isDash?'8,4':'solid'
   };
   S.objs.push(obj);
