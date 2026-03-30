@@ -774,6 +774,47 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .page-thumb-wrap:hover .page-thumb-dup{opacity:1}
 .page-thumb.drag-over{border-color:var(--blue);background:#EBF4FF;opacity:.65}
 
+/* ── 使用須知 Modal ── */
+#tos-overlay{
+  position:fixed;inset:0;background:rgba(10,15,40,.7);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(4px);
+}
+.tos-box{
+  background:#fff;border-radius:20px;max-width:560px;width:100%;
+  box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden;
+  display:flex;flex-direction:column;max-height:90vh;
+}
+.tos-head{
+  background:linear-gradient(135deg,#1F2875,#3B55B8);
+  padding:20px 24px 16px;color:#fff;flex-shrink:0;
+}
+.tos-head h2{margin:0;font-size:16px;font-weight:800;letter-spacing:.3px}
+.tos-head p{margin:4px 0 0;font-size:11px;opacity:.7}
+.tos-body{padding:20px 24px;overflow-y:auto;flex:1}
+.tos-item{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start}
+.tos-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center;margin-top:1px}
+.tos-text strong{display:block;font-size:13px;font-weight:700;color:#1F2875;margin-bottom:2px}
+.tos-text span{font-size:12px;color:#4b5563;line-height:1.6}
+.tos-footer{
+  padding:16px 24px;border-top:1px solid #e5e7eb;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;background:#f9fafb;
+}
+.tos-footer label{display:flex;align-items:center;gap:6px;font-size:12px;color:#374151;cursor:pointer}
+/* 頁底 */
+#app-footer{
+  position:fixed;bottom:0;left:0;right:0;height:24px;
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  background:rgba(255,255,255,.9);backdrop-filter:blur(6px);
+  border-top:1px solid #e5e7eb;z-index:100;
+}
+#app-footer a,#app-footer span{
+  font-size:10px;color:#9ca3af;text-decoration:none;cursor:pointer;
+  transition:color .15s;
+}
+#app-footer a:hover,#app-footer span:hover{color:#1F2875}
+
 /* ── CLOUD SYNC STATUS ── */
 #cloud-bar{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:var(--g100);margin-bottom:6px;}
 #cloud-bar #cloud-sync-btn,#cloud-bar #cloud-admin-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1.5px solid var(--blue);background:transparent;color:var(--blue);cursor:pointer;font-weight:700;white-space:nowrap}
@@ -810,6 +851,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   </button>
   <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔">📂 開啟專案</button>
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
+  <button class="ntab" onclick="showTos()" title="使用須知" style="opacity:.8">📋 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
   <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/29 00:20</span>
 </div>
@@ -6809,5 +6851,98 @@ window.addEventListener('load', ()=>{
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- ══ 使用須知 Modal ══ -->
+<div id="tos-overlay" style="display:none">
+  <div class="tos-box">
+    <div class="tos-head">
+      <h2>📋 美編小助手 使用須知</h2>
+      <p>光田綜合醫院 內部設計工具</p>
+    </div>
+    <div class="tos-body">
+      <div class="tos-item">
+        <div class="tos-icon">👤</div>
+        <div class="tos-text">
+          <strong>適用對象</strong>
+          <span>本工具限光田綜合醫院內部員工使用，請勿將連結分享至院外或提供給非員工使用。</span>
+        </div>
+      </div>
+      <div class="tos-item">
+        <div class="tos-icon">🎨</div>
+        <div class="tos-text">
+          <strong>CI 規範</strong>
+          <span>請優先使用公版模板，維持院內視覺識別一致性。自行設計時請遵循光田藍（#1F2875）與相關配色規範。</span>
+        </div>
+      </div>
+      <div class="tos-item">
+        <div class="tos-icon">⚠️</div>
+        <div class="tos-text">
+          <strong>資料安全</strong>
+          <span>請勿上傳含有病患個人資料、病歷或任何敏感醫療資訊的圖片。所有操作皆在本地瀏覽器執行，不會上傳至外部伺服器。</span>
+        </div>
+      </div>
+      <div class="tos-item">
+        <div class="tos-icon">🖼</div>
+        <div class="tos-text">
+          <strong>素材版權</strong>
+          <span>使用外部素材資源時，請確認授權範圍。免費素材仍需確認商業使用許可，正式文宣建議使用已授權素材或自行拍攝照片。</span>
+        </div>
+      </div>
+      <div class="tos-item">
+        <div class="tos-icon">🖨</div>
+        <div class="tos-text">
+          <strong>印刷輸出</strong>
+          <span>A3/A2 海報可匯出 PDF 直接送印。A1 大型印刷建議匯出 SVG 後由美編確認解析度再輸出，以確保印刷品質。</span>
+        </div>
+      </div>
+      <div class="tos-item" style="margin-bottom:0">
+        <div class="tos-icon">📞</div>
+        <div class="tos-text">
+          <strong>聯絡窗口</strong>
+          <span>工具問題或功能建議，請聯絡院內資訊室或美編團隊，我們會持續更新改善。</span>
+        </div>
+      </div>
+    </div>
+    <div class="tos-footer">
+      <label>
+        <input type="checkbox" id="tos-no-show">
+        <span>下次不再自動顯示</span>
+      </label>
+      <button class="btn btn-blue" onclick="closeTos()" style="padding:7px 24px;font-size:13px;border-radius:20px">
+        了解，開始使用 →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 頁底 -->
+<div id="app-footer">
+  <span>© 光田綜合醫院</span>
+  <span style="color:#d1d5db">|</span>
+  <span onclick="showTos()">📋 使用須知</span>
+  <span style="color:#d1d5db">|</span>
+  <span>v3.0</span>
+</div>
+
+<script>
+// ── 使用須知 ──
+const TOS_KEY = 'kt_tos_accepted';
+function showTos(){
+  document.getElementById('tos-overlay').style.display='flex';
+}
+function closeTos(){
+  if(document.getElementById('tos-no-show').checked){
+    localStorage.setItem(TOS_KEY,'1');
+  }
+  document.getElementById('tos-overlay').style.display='none';
+}
+// 首次進入自動顯示
+window.addEventListener('DOMContentLoaded',()=>{
+  if(!localStorage.getItem(TOS_KEY)) showTos();
+  // 頁底讓出空間
+  document.body.style.paddingBottom='24px';
+});
+</script>
+
 </body>
 </html>
