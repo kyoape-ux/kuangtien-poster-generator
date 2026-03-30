@@ -80,7 +80,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 #nav .ver{color:rgba(255,255,255,.45);font-size:11px}
 
 /* ── LAYOUT ── */
-#main{display:flex;height:calc(100vh - 44px);overflow:hidden}
+#main{display:flex;height:calc(100vh - 44px - 24px);overflow:hidden}
 
 /* ── TEMPLATE PANEL (左欄) ── */
 #tpl-panel{
@@ -6939,8 +6939,6 @@ function closeTos(){
 // 首次進入自動顯示
 window.addEventListener('DOMContentLoaded',()=>{
   if(!localStorage.getItem(TOS_KEY)) showTos();
-  // 頁底讓出空間
-  document.body.style.paddingBottom='24px';
 });
 </script>
 
