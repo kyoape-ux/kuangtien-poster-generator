@@ -991,6 +991,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('triangle')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2L14 13H2L8 2z"/></svg> 三角</button>
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('dashrect')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 1.5" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="2" y="2" width="12" height="12" rx="1.5"/></svg> 虛線框</button>
         <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('superellipse')" title="光田超橢圓 CI形狀"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2C12 2 14 4 14 8C14 12 12 14 8 14C4 14 2 12 2 8C2 4 4 2 8 2Z"/></svg> 超橢圓</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('parallelogram')" title="平行四邊形（斜切）"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="4,3 15,3 12,13 1,13"/></svg> 平行四邊</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('trapezoid')" title="梯形"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="4,3 12,3 15,13 1,13"/></svg> 梯形</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('diagonal-cut')" title="斜切矩形（單角斜切）"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="1,2 11,2 15,6 15,14 1,14"/></svg> 斜切矩形</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('arrow')" title="箭頭形狀"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="1,5 10,5 10,2 15,8 10,14 10,11 1,11"/></svg> 箭頭</button>
+        <button class="btn btn-amber btn-sm add-obj-btn" onclick="addShape('chevron')" title="菱形箭頭／色帶形狀"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><polygon points="1,2 12,2 15,8 12,14 1,14 4,8"/></svg> 色帶箭頭</button>
       </div>
       <input type="file" id="imgInp" accept="image/*,.svg" style="display:none" onchange="addImg(this)">
       <input type="file" id="svgInp" accept=".svg,image/svg+xml" style="display:none" onchange="addSvgObj(this)">
@@ -2891,7 +2896,7 @@ function updLayerList(){
       ? ((obj.text||'文字').substring(0,16)||'文字')
       : obj.type==='table' ? '表格'
       : obj.type==='shape'
-        ? (obj.shapeType==='superellipse'?'超橢圓':obj.shapeType==='custompath'?'SVG向量':obj.shapeType==='ellipse'?'橢圓':obj.shapeType==='line'?'直線':obj.shapeType==='triangle'?'三角':'矩形')
+        ? (obj.shapeType==='superellipse'?'超橢圓':obj.shapeType==='custompath'?'SVG向量':obj.shapeType==='ellipse'?'橢圓':obj.shapeType==='line'?'直線':obj.shapeType==='triangle'?'三角':obj.shapeType==='parallelogram'?'平行四邊形':obj.shapeType==='trapezoid'?'梯形':obj.shapeType==='diagonal-cut'?'斜切矩形':obj.shapeType==='arrow'?'箭頭':obj.shapeType==='chevron'?'色帶箭頭':'矩形')
         : '圖片';
 
     const del = document.createElement('button');
@@ -3005,6 +3010,10 @@ function renderPPHTML(obj){
     <button class="btn btn-sm ${obj.clipShape==='diamond'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'diamond')">◆ 菱形</button>
     <button class="btn btn-sm ${obj.clipShape==='hexagon'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'hexagon')">⬡ 六角</button>
     <button class="btn btn-sm ${obj.clipShape==='star'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'star')">★ 星形</button>
+    <button class="btn btn-sm ${obj.clipShape==='parallelogram'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'parallelogram')">▱ 平行四邊</button>
+    <button class="btn btn-sm ${obj.clipShape==='trapezoid'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'trapezoid')">⏢ 梯形</button>
+    <button class="btn btn-sm ${obj.clipShape==='diagonal-cut'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'diagonal-cut')">⬔ 斜切</button>
+    <button class="btn btn-sm ${obj.clipShape==='chevron'?'btn-blue':'btn-ghost'}" onclick="setClipShape(${obj.id},'chevron')">➤ 色帶</button>
   </div>`:''}
   <div class="pp-sep"></div>
   <div class="pp-section-label">對齊畫布</div>
@@ -3095,7 +3104,7 @@ function renderTxtPP(obj){
 }
 
 function renderShapePP(obj){
-  const shapes=[['rect','矩形'],['ellipse','橢圓'],['line','直線'],['triangle','三角'],['superellipse','超橢圓'],['custompath','SVG路徑']];
+  const shapes=[['rect','矩形'],['ellipse','橢圓'],['line','直線'],['triangle','三角'],['superellipse','超橢圓'],['custompath','SVG路徑'],['parallelogram','平行四邊形'],['trapezoid','梯形'],['diagonal-cut','斜切矩形'],['arrow','箭頭'],['chevron','色帶箭頭']];
   const dashes=[['solid','實線'],['8,4','虛線'],['2,4','點線']];
   const fc=obj.fillColor||'transparent';
   const fc_color=fc==='transparent'?'#ffffff':fc;
@@ -3176,6 +3185,18 @@ function _applyClipShape(el, obj){
     target.style.borderRadius = '';
   } else if(obj.clipShape === 'star'){
     target.style.clipPath = 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'parallelogram'){
+    target.style.clipPath = 'polygon(20% 0%,100% 0%,80% 100%,0% 100%)';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'trapezoid'){
+    target.style.clipPath = 'polygon(10% 0%,90% 0%,100% 100%,0% 100%)';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'diagonal-cut'){
+    target.style.clipPath = 'polygon(0% 0%,80% 0%,100% 20%,100% 100%,0% 100%)';
+    target.style.borderRadius = '';
+  } else if(obj.clipShape === 'chevron'){
+    target.style.clipPath = 'polygon(0% 0%,80% 0%,100% 50%,80% 100%,0% 100%,20% 50%)';
     target.style.borderRadius = '';
   }
 }
@@ -3517,7 +3538,7 @@ async function dlPoster(){
         ctx.moveTo(-hw,-hh); ctx.lineTo(hw,hh);
       } else if(obj.shapeType==='triangle'){
         ctx.moveTo(0,-hh); ctx.lineTo(hw,hh); ctx.lineTo(-hw,hh); ctx.closePath();
-      }
+      } else { _drawPolyCanvas(ctx,obj.shapeType,hw,hh); }
       if(obj.mask&&obj.mask.on){
         // 有遮罩：offscreen canvas 畫形狀 → destination-out 切透明 → 複製到 main
         const off=document.createElement('canvas'); off.width=Math.ceil(obj.w)||1; off.height=Math.ceil(obj.h)||1;
@@ -3529,6 +3550,7 @@ async function dlPoster(){
         else if(obj.shapeType==='ellipse') oCtx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2);
         else if(obj.shapeType==='line'){ oCtx.moveTo(-hw,-hh); oCtx.lineTo(hw,hh); }
         else if(obj.shapeType==='triangle'){ oCtx.moveTo(0,-hh); oCtx.lineTo(hw,hh); oCtx.lineTo(-hw,hh); oCtx.closePath(); }
+        else { _drawPolyCanvas(oCtx,obj.shapeType,hw,hh); }
         if(obj.fillColor&&obj.fillColor!=='transparent') oCtx.fill(); if(sw>0) oCtx.stroke();
         oCtx.globalCompositeOperation='destination-out';
         oCtx.setTransform(1,0,0,1,0,0); // 重設座標至畫布左上角，gradient 才能正確覆蓋整個 offscreen
@@ -4462,6 +4484,7 @@ async function exportPDF(){
         else if(obj.shapeType==='ellipse'){ ctx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2); }
         else if(obj.shapeType==='line'){ ctx.moveTo(-hw,-hh); ctx.lineTo(hw,hh); }
         else if(obj.shapeType==='triangle'){ ctx.moveTo(0,-hh); ctx.lineTo(hw,hh); ctx.lineTo(-hw,hh); ctx.closePath(); }
+        else { _drawPolyCanvas(ctx,obj.shapeType,hw,hh); }
         if(obj.mask&&obj.mask.on){
           const off=document.createElement('canvas'); off.width=Math.ceil(obj.w)||1; off.height=Math.ceil(obj.h)||1;
           const oCtx=off.getContext('2d');
@@ -4472,6 +4495,7 @@ async function exportPDF(){
           else if(obj.shapeType==='ellipse') oCtx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2);
           else if(obj.shapeType==='line'){ oCtx.moveTo(-hw,-hh); oCtx.lineTo(hw,hh); }
           else if(obj.shapeType==='triangle'){ oCtx.moveTo(0,-hh); oCtx.lineTo(hw,hh); oCtx.lineTo(-hw,hh); oCtx.closePath(); }
+          else { _drawPolyCanvas(oCtx,obj.shapeType,hw,hh); }
           if(obj.fillColor&&obj.fillColor!=='transparent') oCtx.fill(); if(sw>0) oCtx.stroke();
           oCtx.globalCompositeOperation='destination-out';
           oCtx.setTransform(1,0,0,1,0,0); // 重設座標至畫布左上角，gradient 才能正確覆蓋整個 offscreen
@@ -5563,6 +5587,25 @@ function addShape(shapeType){
   return obj;
 }
 
+// 多邊形形狀 - 分數座標陣列（0~1，相對於寬高）
+function _getPolyPts(t){
+  if(t==='parallelogram') return [[0.2,0],[1,0],[0.8,1],[0,1]];
+  if(t==='trapezoid')     return [[0.1,0],[0.9,0],[1,1],[0,1]];
+  if(t==='diagonal-cut')  return [[0,0],[0.8,0],[1,0.2],[1,1],[0,1]];
+  if(t==='arrow')         return [[0,0.15],[0.65,0.15],[0.65,0],[1,0.5],[0.65,1],[0.65,0.85],[0,0.85]];
+  if(t==='chevron')       return [[0,0],[0.8,0],[1,0.5],[0.8,1],[0,1],[0.2,0.5]];
+  return null;
+}
+// Canvas 畫多邊形（座標以中心點為原點）
+function _drawPolyCanvas(ctx, shapeType, hw, hh){
+  const pts = _getPolyPts(shapeType);
+  if(!pts) return false;
+  ctx.moveTo(pts[0][0]*2*hw - hw, pts[0][1]*2*hh - hh);
+  for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i][0]*2*hw - hw, pts[i][1]*2*hh - hh);
+  ctx.closePath();
+  return true;
+}
+
 function _renderShapeSvg(el, obj){
   const svg = el._shapeSvg;
   if(!svg) return;
@@ -5590,6 +5633,11 @@ function _renderShapeSvg(el, obj){
   } else if(obj.shapeType==='triangle'){
     shape=document.createElementNS('http://www.w3.org/2000/svg','polygon');
     shape.setAttribute('points',`${w/2},${sw/2} ${Math.max(0,w-sw/2)},${Math.max(0,h-sw/2)} ${sw/2},${Math.max(0,h-sw/2)}`);
+  } else if(_getPolyPts(obj.shapeType)){
+    // 多邊形：平行四邊形、梯形、斜切矩形、箭頭、色帶箭頭
+    const pts = _getPolyPts(obj.shapeType);
+    shape = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    shape.setAttribute('points', pts.map(([px,py])=>`${px*w},${py*h}`).join(' '));
   } else if(obj.shapeType==='superellipse'){
     // 光田CI超橢圓 - 從AI SVG路徑縮放至物件尺寸
     const SE_PATH='M815.68,415.68c0-72.67,0-149.44-22.79-217.77-26.71-80.08-79.38-132.75-159.42-159.46-68.37-22.79-145.13-22.79-217.81-22.79s-149.4,0-217.77,22.79C117.85,65.16,65.18,117.83,38.47,197.91c-22.79,68.33-22.79,145.1-22.79,217.77s0,149.44,22.79,217.77c26.71,80.08,79.38,132.75,159.42,159.46,68.37,22.79,145.1,22.79,217.77,22.79s149.44,0,217.81-22.79c80.05-26.71,132.72-79.38,159.42-159.46,22.79-68.33,22.79-145.1,22.79-217.77Z';
@@ -6892,6 +6940,11 @@ function exportSVG() {
       } else if(obj.shapeType==='triangle'){
         sh = document.createElementNS(ns,'polygon');
         sh.setAttribute('points',`${obj.x+obj.w/2},${obj.y} ${obj.x},${obj.y+obj.h} ${obj.x+obj.w},${obj.y+obj.h}`);
+      } else if(_getPolyPts(obj.shapeType)){
+        // 多邊形：平行四邊形、梯形、斜切矩形、箭頭、色帶箭頭
+        const pts = _getPolyPts(obj.shapeType);
+        sh = document.createElementNS(ns,'polygon');
+        sh.setAttribute('points', pts.map(([px,py])=>`${obj.x+px*obj.w},${obj.y+py*obj.h}`).join(' '));
       } else if(obj.shapeType==='superellipse'){
         const SE_PATH='M815.68,415.68c0-72.67,0-149.44-22.79-217.77-26.71-80.08-79.38-132.75-159.42-159.46-68.37-22.79-145.13-22.79-217.81-22.79s-149.4,0-217.77,22.79C117.85,65.16,65.18,117.83,38.47,197.91c-22.79,68.33-22.79,145.1-22.79,217.77s0,149.44,22.79,217.77c26.71,80.08,79.38,132.75,159.42,159.46,68.37,22.79,145.1,22.79,217.77,22.79s149.44,0,217.81-22.79c80.05-26.71,132.72-79.38,159.42-159.46,22.79-68.33,22.79-145.1,22.79-217.77Z';
         sh = document.createElementNS(ns,'path');
