@@ -572,7 +572,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   border-color:#8898D8;
 }
 .res-card:hover::before{opacity:1;}
-.res-card-icon{display:flex;align-items:center;justify-content:center;margin-bottom:4px;color:var(--blue);}
+.res-card-icon{font-size:28px;line-height:1;margin-bottom:2px;}
 .res-card-name{font-size:13px;font-weight:700;color:#1F2875;line-height:1.3;}
 .res-card-desc{font-size:11px;color:#64748b;line-height:1.5;flex:1;}
 .res-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
@@ -849,7 +849,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <button class="ntab" onclick="saveProject()" title="儲存為 .ktposter 專案檔（可再次開啟繼續編輯）"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> 儲存專案</button>
   <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 5a1 1 0 011-1h3l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V5z"/></svg> 開啟專案</button>
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
-  <button class="ntab" onclick="showTos()" title="使用須知" style="opacity:.8"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
+  <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
   <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/03/29 00:20</span>
 </div>
@@ -1864,7 +1864,7 @@ function renderResLinks(keyword=''){
       a.className='res-card';
       a.href=item.url; a.target='_blank'; a.rel='noopener noreferrer';
       a.innerHTML=
-        `<div class="res-card-icon">${resIcon(item.icon)}</div>`+
+        `<div class="res-card-icon">${item.icon}</div>`+
         `<div class="res-card-name">${item.name}</div>`+
         `<div class="res-card-desc">${item.desc}</div>`+
         `<div class="res-card-footer">`+
