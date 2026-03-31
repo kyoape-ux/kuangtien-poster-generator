@@ -1092,12 +1092,6 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
           <option value="png">PNG</option>
         </select>
       </div>
-      <div class="inp-row">
-        <span class="inp-label">品質</span>
-        <input type="range" min="50" max="100" value="92" step="1"
-          oninput="S.wm.quality=this.value/100;document.getElementById('qlbl').textContent=this.value+'%'">
-        <span id="qlbl" style="font-size:11px;color:var(--g500);min-width:32px">92%</span>
-      </div>
     </div>
 
   </div>
@@ -1918,7 +1912,7 @@ const S = {
   tab:'poster',
   wm:{
     imgs:[], logos:[], logoCnt:0,
-    fmt:'jpeg', quality:0.92
+    fmt:'jpeg', quality:1
   },
   prevIdx:0, prevCanvases:[],
   // Undo/Redo
