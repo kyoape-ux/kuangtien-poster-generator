@@ -410,7 +410,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 #modal.open{display:flex}
 .modal-box{
   background:#fff;border-radius:14px;padding:20px;
-  max-width:420px;width:100%;max-height:90vh;display:flex;flex-direction:column;
+  max-width:700px;width:calc(100% - 32px);max-height:92vh;display:flex;flex-direction:column;
   box-shadow:0 20px 60px rgba(0,0,0,.3);
 }
 .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -423,12 +423,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .modal-close:hover{background:var(--g200)}
 .prev-card{
   flex:1;overflow:hidden;border-radius:8px;background:var(--g100);
-  display:flex;align-items:center;justify-content:center;margin-bottom:12px;min-height:200px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:12px;min-height:320px;
 }
-.prev-card canvas{max-width:100%;max-height:340px;border-radius:4px}
+.prev-card canvas{max-width:100%;max-height:540px;border-radius:4px;object-fit:contain}
 .modal-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .modal-nav .nav-info{font-size:12px;color:var(--g500)}
-.modal-btns{display:flex;gap:8px;margin-top:12px}
+.modal-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 
 /* ── TOAST ── */
 #snack{
@@ -1462,19 +1462,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 <div id="modal">
   <div class="modal-box">
     <div class="modal-head">
-      <h3>浮水印預覽</h3>
+      <h3 id="modal-title">浮水印預覽</h3>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="prev-card" id="prev-card"></div>
-    <div class="modal-nav">
+    <div class="modal-nav" id="modal-nav">
       <button class="btn btn-ghost btn-sm" onclick="navPrev()">◀ 上一張</button>
       <span class="nav-info" id="nav-info">1 / 1</span>
       <button class="btn btn-ghost btn-sm" onclick="navNext()">下一張 ▶</button>
     </div>
-    <div class="modal-btns">
-      <button class="btn btn-blue btn-full" onclick="dlAll()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 全部下載</button>
-      <button class="btn btn-ghost" onclick="closeModal()">關閉</button>
-    </div>
+    <div class="modal-btns" id="modal-btns"></div>
   </div>
 </div>
 
@@ -4063,6 +4060,77 @@ function compositeOne(baseImgEl){
   return cvs;
 }
 
+// ── 下載單張圖片 helper ──
+function downloadSingleWm(canvas, name){
+  const ext = S.wm.fmt==='png'?'png':'jpg';
+  const mime = 'image/'+S.wm.fmt;
+  canvas.toBlob(blob=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=name+'.'+ext;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }, mime, S.wm.quality);
+}
+
+// ── 下載預覽中目前這張 ──
+function dlCurrentPrev(){
+  const {canvas,name}=S.prevCanvases[S.prevIdx];
+  downloadSingleWm(canvas,name);
+  snack('下載中…');
+}
+
+// ── 逐一下載全部 ──
+async function dlAllIndividual(){
+  closeModal();
+  snack('逐一下載中…',8000);
+  const ext=S.wm.fmt==='png'?'png':'jpg';
+  const mime='image/'+S.wm.fmt;
+  for(let i=0;i<S.prevCanvases.length;i++){
+    const {canvas,name}=S.prevCanvases[i];
+    await new Promise(res=>canvas.toBlob(blob=>{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=name+'.'+ext;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      setTimeout(res,350);
+    },mime,S.wm.quality));
+  }
+  snack('全部下載完成');
+}
+
+// ── 更新 Modal 底部按鈕（依張數決定版型）──
+const _dlSvg='<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg>';
+function updateModalBtns(){
+  const n=S.prevCanvases.length;
+  // nav 只在多張時顯示
+  document.getElementById('modal-nav').style.display=n>1?'':'none';
+  document.getElementById('modal-title').textContent=n>1?`浮水印預覽（共 ${n} 張）`:'浮水印預覽';
+  const btns=document.getElementById('modal-btns');
+  if(n===1){
+    // 單張：直接下載按鈕
+    btns.innerHTML=`
+      <button class="btn btn-green btn-full" onclick="dlCurrentPrev();closeModal()">
+        ${_dlSvg} 下載此圖
+      </button>
+      <button class="btn btn-ghost" onclick="closeModal()">關閉</button>`;
+  } else {
+    // 多張：逐一下載 + 打包下載 + 下載此張
+    btns.innerHTML=`
+      <button class="btn btn-green" onclick="dlCurrentPrev()" style="flex:1">
+        ${_dlSvg} 下載此張
+      </button>
+      <button class="btn btn-blue" onclick="dlAllIndividual()" style="flex:1">
+        ${_dlSvg} 逐一下載全部
+      </button>
+      <button class="btn btn-indigo" onclick="dlAll()" style="flex:1">
+        ${_dlSvg} 打包 ZIP
+      </button>
+      <button class="btn btn-ghost" onclick="closeModal()">關閉</button>`;
+  }
+}
+
 async function previewAll(){
   if(!S.wm.imgs.length){ snack('請先上傳圖片'); return; }
   if(!S.wm.logos.some(l=>l.imgEl)){ snack('請先上傳至少一個 LOGO'); return; }
@@ -4073,6 +4141,7 @@ async function previewAll(){
     name: item.name.replace(/\.[^.]+$/,'')+'_wm'
   }));
   S.prevIdx=0;
+  updateModalBtns();
   renderModalPrev();
   document.getElementById('modal').classList.add('open');
   snack('預覽完成');
@@ -4082,7 +4151,7 @@ function renderModalPrev(){
   const {canvas,name}=S.prevCanvases[S.prevIdx];
   const card=document.getElementById('prev-card');
   card.innerHTML='';
-  const maxW=340, maxH=340;
+  const maxW=640, maxH=520;
   const scale=Math.min(maxW/canvas.width, maxH/canvas.height, 1);
   const preview=document.createElement('canvas');
   preview.width=Math.round(canvas.width*scale);
@@ -4096,23 +4165,28 @@ function navPrev(){ if(S.prevIdx>0){ S.prevIdx--; renderModalPrev(); } }
 function navNext(){ if(S.prevIdx<S.prevCanvases.length-1){ S.prevIdx++; renderModalPrev(); } }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 
-// 從預覽 Modal 點「全部下載」→ 開啟 ZIP 命名 Modal
+// 從 Modal「打包 ZIP」按鈕
 function dlAll(){
   closeModal();
   openZipModal(S.prevCanvases);
 }
 
-// 直接批次（不過預覽）→ 先合成再開 ZIP 命名 Modal
+// 直接批次下載（不過預覽）
 async function batchDirectDl(){
   if(!S.wm.imgs.length){ snack('請先上傳圖片'); return; }
   if(!S.wm.logos.some(l=>l.imgEl)){ snack('請先上傳至少一個 LOGO'); return; }
-  snack('合成中…', 4000);
-  await new Promise(r=>setTimeout(r,30));
-  const canvases = S.wm.imgs.map(item=>({
-    canvas: compositeOne(item.imgEl),
-    name: item.name.replace(/\.[^.]+$/,'')+'_wm'
-  }));
-  openZipModal(canvases);
+  if(S.wm.imgs.length===1){
+    // 單張 → 直接下載圖片
+    snack('合成中…', 3000);
+    await new Promise(r=>setTimeout(r,30));
+    const item=S.wm.imgs[0];
+    const canvas=compositeOne(item.imgEl);
+    downloadSingleWm(canvas, item.name.replace(/\.[^.]+$/,'')+'_wm');
+    snack('下載完成');
+  } else {
+    // 多張 → 開啟預覽 Modal（可選逐一或打包）
+    previewAll();
+  }
 }
 
 // ── ZIP MODAL ──
