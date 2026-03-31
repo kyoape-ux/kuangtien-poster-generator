@@ -572,7 +572,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   border-color:#8898D8;
 }
 .res-card:hover::before{opacity:1;}
-.res-card-icon{font-size:28px;line-height:1;margin-bottom:2px;}
+.res-card-icon{display:flex;align-items:center;justify-content:center;margin-bottom:4px;color:var(--blue);}
 .res-card-name{font-size:13px;font-weight:700;color:#1F2875;line-height:1.3;}
 .res-card-desc{font-size:11px;color:#64748b;line-height:1.5;flex:1;}
 .res-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
@@ -601,7 +601,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .qr-corner-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
 .qr-corner-btn{padding:5px 4px;border:1.5px solid var(--g200);border-radius:5px;background:#fff;cursor:pointer;font-size:11px;color:var(--g700);text-align:center;transition:all .15s}
 .qr-corner-btn.on,.qr-corner-btn:hover{border-color:var(--indigo);background:#EEF2FF;color:var(--indigo)}
-.qr-type-btn{padding:5px 8px;border:1.5px solid var(--g200);border-radius:5px;background:#fff;cursor:pointer;font-size:11px;color:var(--g700);transition:all .15s;white-space:nowrap}
+.qr-type-btn{padding:5px 8px;border:1.5px solid var(--g200);border-radius:5px;background:#fff;cursor:pointer;font-size:11px;color:var(--g700);transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center}
 .qr-type-btn.on{border-color:var(--indigo);background:#EEF2FF;color:var(--indigo);font-weight:600}
 
 /* ── HEX COLOR INPUT ── */
@@ -794,7 +794,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .tos-head p{margin:4px 0 0;font-size:11px;opacity:.7}
 .tos-body{padding:20px 24px;overflow-y:auto;flex:1}
 .tos-item{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start}
-.tos-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center;margin-top:1px}
+.tos-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;margin-top:1px;color:var(--blue)}
 .tos-text strong{display:block;font-size:13px;font-weight:700;color:#1F2875;margin-bottom:2px}
 .tos-text span{font-size:12px;color:#4b5563;line-height:1.6}
 .tos-footer{
@@ -844,12 +844,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <button class="ntab" onclick="switchTab('qr',this)" id="ntab-qr"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="10.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="13.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="10.5" y="13.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> QR碼產生</button>
   <button class="ntab" onclick="switchTab('res',this)" id="ntab-res"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M7 9a3 3 0 004.5.4l2-2a3 3 0 00-4.2-4.2l-1.2 1.2"/><path d="M9 7a3 3 0 00-4.5-.4l-2 2a3 3 0 004.2 4.2l1.2-1.2"/></svg> 素材資源</button>
   <div class="spacer"></div>
-  <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed">↩ 復原</button>
-  <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed">↪ 重做</button>
-  <button class="ntab" onclick="saveProject()" title="儲存為 .ktposter 專案檔（可再次開啟繼續編輯）" style="display:flex;align-items:center;gap:5px">
-    <svg width="15" height="15" viewBox="0 0 120 120" style="flex-shrink:0"><defs><linearGradient id="bi" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#003F7A"/><stop offset="100%" stop-color="#1A7DC4"/></linearGradient></defs><rect width="120" height="120" rx="22" fill="url(#bi)"/><rect x="10" y="14" width="8" height="18" rx="4" fill="#00BEB0"/><rect x="10" y="38" width="8" height="18" rx="4" fill="#7C3AED"/><rect x="10" y="62" width="8" height="18" rx="4" fill="#F59E0B"/><rect x="10" y="86" width="8" height="20" rx="4" fill="#EF4444"/><rect x="26" y="16" width="70" height="62" rx="5" fill="white" opacity=".95"/><rect x="26" y="16" width="70" height="24" rx="5" fill="#BFDBFE"/><rect x="26" y="34" width="70" height="6" fill="#BFDBFE"/><rect x="26" y="40" width="70" height="38" fill="#FEF3C7"/><rect x="26" y="72" width="70" height="6" fill="#A7F3D0"/><rect x="44" y="36" width="22" height="42" rx="2" fill="#93C5FD" opacity=".8"/><circle cx="82" cy="24" r="6" fill="#FCD34D"/><g transform="translate(78,76) rotate(-40)"><rect x="-4" y="-26" width="8" height="30" rx="2" fill="#FFA500"/><rect x="-4" y="-34" width="8" height="8" rx="2" fill="#FECACA"/><polygon points="-4,4 4,4 0,14" fill="#E5E7EB"/></g><rect x="8" y="90" width="104" height="22" rx="6" fill="white" opacity=".15"/><text x="60" y="105" text-anchor="middle" font-family="Arial" font-size="11" font-weight="700" fill="white">.ktposter</text></svg>
-    儲存專案
-  </button>
+  <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 6h8a4 4 0 010 8"/><path d="M5 3L2 6l3 3"/></svg> 復原</button>
+  <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M14 6H6a4 4 0 000 8"/><path d="M11 3l3 3-3 3"/></svg> 重做</button>
+  <button class="ntab" onclick="saveProject()" title="儲存為 .ktposter 專案檔（可再次開啟繼續編輯）"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> 儲存專案</button>
   <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 5a1 1 0 011-1h3l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V5z"/></svg> 開啟專案</button>
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button class="ntab" onclick="showTos()" title="使用須知" style="opacity:.8"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
@@ -880,7 +877,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <span id="cloud-dot" class="cloud-dot off"></span>
       <span id="cloud-status-txt">載入中...</span>
       <button id="cloud-sync-btn" onclick="fbPush()" title="立即同步">↑ 同步</button>
-      <button id="cloud-admin-btn" onclick="_fbAdminMode ? exitAdminMode() : toggleAdminMode()" title="管理員模式">🔑</button>
+      <button id="cloud-admin-btn" onclick="_fbAdminMode ? exitAdminMode() : toggleAdminMode()" title="管理員模式"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><circle cx="6" cy="7" r="3.5"/><path d="M8.5 9.5l5 5M11.5 12.5l1.5 1.5"/></svg></button>
     </div>
     <!-- 內建範本編輯模式 bar（平時隱藏） -->
     <div id="tpl-edit-bar" style="display:none">
@@ -893,11 +890,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <button class="btn btn-ghost btn-sm btn-full" onclick="cancelBuiltinEdit()" style="margin-top:4px;color:var(--g500)">✕ 取消編輯</button>
     </div>
     <button class="btn btn-teal btn-full btn-sm" onclick="openSaveTplModal()">
-      💾 另存為公版範本
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> 另存為公版範本
     </button>
 
     <button class="btn btn-ghost btn-full btn-sm" id="restore-builtin-btn" onclick="restoreAllBuiltins()" style="display:none;margin-top:4px;font-size:10px;color:var(--g500)">
-      🔄 還原已隱藏的內建範本
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2.5 9A5.5 5.5 0 1014 8"/><path d="M14 5v4h-4"/></svg> 還原已隱藏的內建範本
     </button>
   </div>
 </div>
@@ -1111,7 +1108,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
     <div class="sec-title">上傳圖片</div>
     <div class="sec">
       <button class="btn btn-purple btn-full" onclick="document.getElementById('ie-file').click()">
-        ＋ 載入圖片
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 13h10"/></svg> 載入圖片
       </button>
       <input type="file" id="ie-file" accept="image/*" style="display:none" onchange="ieLoad(this)">
     </div>
@@ -1202,7 +1199,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
           </div>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button class="btn btn-teal btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')">〰 模糊</button>
+          <button class="btn btn-teal btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="5.5" stroke-dasharray="2 2"/><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" opacity=".5"/></svg> 模糊</button>
           <button class="btn btn-purple btn-sm" style="flex:1" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> 馬賽克</button>
         </div>
         <div id="ie-region-controls" style="display:none">
@@ -1222,8 +1219,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <div class="sec-title">操作</div>
       <div class="sec">
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieUndo()">↩ 復原</button>
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieReset()">🔄 重置</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieUndo()"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 6h8a4 4 0 010 8"/><path d="M5 3L2 6l3 3"/></svg> 復原</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieReset()"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2.5 9A5.5 5.5 0 1014 8"/><path d="M14 5v4h-4"/></svg> 重置</button>
         </div>
         <div style="display:flex;gap:6px">
           <button class="btn btn-green btn-sm" style="flex:1" onclick="ieDownload('png')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> PNG</button>
@@ -1323,12 +1320,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 
       <div class="qr-sec-title" style="margin-top:0">QR 碼類型</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:12px">
-        <button class="qr-type-btn on" id="qrt-url"   onclick="qrSetType('url')">🌐 網址</button>
-        <button class="qr-type-btn"    id="qrt-text"  onclick="qrSetType('text')">📝 文字</button>
-        <button class="qr-type-btn"    id="qrt-email" onclick="qrSetType('email')">✉ 郵件</button>
-        <button class="qr-type-btn"    id="qrt-phone" onclick="qrSetType('phone')">📞 電話</button>
-        <button class="qr-type-btn"    id="qrt-sms"   onclick="qrSetType('sms')">💬 SMS</button>
-        <button class="qr-type-btn"    id="qrt-wifi"  onclick="qrSetType('wifi')">📶 Wi-Fi</button>
+        <button class="qr-type-btn on" id="qrt-url"   onclick="qrSetType('url')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:3px"><circle cx="12" cy="12" r="9"/><path d="M12 3C9 7 8 10 8 12s1 5 4 9"/><path d="M12 3c3 4 4 7 4 9s-1 5-4 9"/><path d="M3 12h18"/></svg>網址</button>
+        <button class="qr-type-btn"    id="qrt-text"  onclick="qrSetType('text')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:3px"><path d="M4 7h16M4 12h16M4 17h10"/></svg>文字</button>
+        <button class="qr-type-btn"    id="qrt-email" onclick="qrSetType('email')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:3px"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 8l10 7 10-7"/></svg>郵件</button>
+        <button class="qr-type-btn"    id="qrt-phone" onclick="qrSetType('phone')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:3px"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2C7 20 4 8 4 6a2 2 0 011-2z"/></svg>電話</button>
+        <button class="qr-type-btn"    id="qrt-sms"   onclick="qrSetType('sms')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:3px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>SMS</button>
+        <button class="qr-type-btn"    id="qrt-wifi"  onclick="qrSetType('wifi')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0;margin-right:3px"><path d="M5 12.5a10 10 0 0114 0"/><path d="M8 16a6 6 0 018 0"/><path d="M11 19.5a2 2 0 012 0"/></svg>Wi-Fi</button>
       </div>
 
       <!-- 動態表單 -->
@@ -1484,7 +1481,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 <!-- 儲存公版範本 Modal -->
 <div id="save-tpl-modal">
   <div class="save-tpl-box">
-    <h3>💾 另存為公版範本</h3>
+    <h3 style="display:flex;align-items:center;gap:6px"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> 另存為公版範本</h3>
     <div class="stb-sub" id="save-tpl-sub">目前版面將儲存至瀏覽器，下次開啟可直接套用</div>
     <div class="stb-field">
       <label>範本名稱</label>
@@ -1495,7 +1492,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
       <select class="inp" id="save-tpl-cat" style="padding:5px 8px;cursor:pointer"></select>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-teal btn-full" id="save-tpl-confirm-btn" onclick="confirmSaveTpl()">💾 確認儲存</button>
+      <button class="btn btn-teal btn-full" id="save-tpl-confirm-btn" onclick="confirmSaveTpl()"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> 確認儲存</button>
       <button class="btn btn-ghost" onclick="closeSaveTplModal()">取消</button>
     </div>
   </div>
@@ -1798,6 +1795,46 @@ const RESOURCE_LINKS = [
   },
 ];
 
+const _RES_ICONS={
+  '🎨':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg>',
+  '🖼':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 15l6-5 5 4 3-2 8 7"/><circle cx="16" cy="10" r="2" fill="currentColor" stroke="none"/></svg>',
+  '📸':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 8a2 2 0 012-2h2l2-2h8l2 2h2a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V8z"/><circle cx="12" cy="13" r="4"/></svg>',
+  '🌄':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 14l5-4 4 4 3-3 10 5"/><circle cx="17" cy="9" r="2" fill="currentColor" stroke="none"/></svg>',
+  '🌸':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>',
+  '📷':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 8a2 2 0 012-2h2l2-2h8l2 2h2a2 2 0 012 2v11a2 2 0 01-2 2H4a2 2 0 01-2-2V8z"/><circle cx="12" cy="13" r="4"/></svg>',
+  '⬡':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l8 4.5v9L12 22l-8-4.5v-9z"/></svg>',
+  '🔠':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 20l4-10 4 10M6 16h4M14 4v12M14 4h6M14 10h5"/></svg>',
+  '✦':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/></svg>',
+  '▦':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+  '🌐':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3C9 7 8 10 8 12s1 5 4 9M12 3c3 4 4 7 4 9s-1 5-4 9M3 12h18"/></svg>',
+  '△':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 3L21 20H3L12 3z"/></svg>',
+  '🌈':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 17a9 9 0 0118 0M6 17a6 6 0 0112 0M9 17a3 3 0 016 0"/></svg>',
+  '✂':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8.5L20 20M8.5 15.5L20 4"/></svg>',
+  '🧹':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 21l9-9M15 3l6 6-10 10H5v-6z"/></svg>',
+  '🖌':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 21c3 0 6-2 6-8V9"/><path d="M9 9l10-7 3 3-7 10"/><circle cx="5" cy="19" r="2"/></svg>',
+  '⚡':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg>',
+  '🗜':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 9h6M9 13h6M9 17h4M12 2v3"/></svg>',
+  '🔥':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2c0 5-5 7-5 12a5 5 0 0010 0c0-3-2-5-3-8"/><path d="M12 13c0 2-1 4-1 6a1 1 0 002 0c0-2-1-4-1-6z"/></svg>',
+  '🪟':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18M12 3v18"/></svg>',
+  '🤖':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="12" rx="2"/><path d="M9 12h.01M15 12h.01M9 16h6"/><path d="M12 8V5M9 5h6"/><path d="M5 13H3M19 13h2"/></svg>',
+  '✨':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M5 17l1 2.5L8.5 21 6 22l-1-2.5L2 18.5 4.5 17z"/></svg>',
+  '🏥':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 9v12h18V9M1 9h22M9 21v-6h6v6"/><path d="M12 3v6M9 6h6"/></svg>',
+  '🔬':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M6 18h12M12 14v4"/><path d="M8 6l2 7h4l2-7"/><circle cx="12" cy="5" r="2"/></svg>',
+  '💊':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="2" y="9" width="20" height="6" rx="3"/><line x1="12" y1="9" x2="12" y2="15"/></svg>',
+  '🫀':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 21C7 17 3 13 3 9a5 5 0 0110-1 5 5 0 0110 1c0 4-4 8-9 12z"/><path d="M8 12h2l1-2 2 4 1-2h2"/></svg>',
+  '🔵':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" stroke-dasharray="3 2"/></svg>',
+  '🎯':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>',
+  'G':'<svg width="22" height="22" viewBox="0 0 24 24"><text x="12" y="17" text-anchor="middle" font-size="16" font-weight="700" fill="currentColor" font-family="serif">G</text></svg>',
+  '字':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+  'A':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 20l6-16 6 16M7 14h6"/></svg>',
+  'C':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M18 8a7 7 0 100 8"/></svg>',
+  '🍌':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 8c0-3 5-6 12-4 2 5-1 12-8 14C4 19 3 15 4 8z"/></svg>',
+  '🎭':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 8c0 8 7 14 10 14s10-6 10-14"/><path d="M7 13c1 2 3 2 4 0"/><path d="M13 11c1-2 3-2 4 0"/></svg>',
+  '💬':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+  '✂️':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8.5L20 20M8.5 15.5L20 4"/></svg>',
+  '🪄':'<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 21l9-9M15 3l6 6-10 10M19 3l2 2M7 5l2 2"/></svg>',
+};
+function resIcon(e){return _RES_ICONS[e.replace(/\uFE0F/g,'')]||_RES_ICONS[e]||`<span style="font-size:20px;line-height:1">${e}</span>`;}
 function renderResLinks(keyword=''){
   const c=document.getElementById('res-links-container');
   if(!c) return;
@@ -1817,7 +1854,7 @@ function renderResLinks(keyword=''){
     // 分類標題
     const title=document.createElement('div');
     title.className='res-section-title';
-    title.textContent=sec.category;
+    title.innerHTML=sec.category.replace(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}✂✦▦△✨]\uFE0F?\s*/u,'');
     c.appendChild(title);
     // 卡片 Grid
     const grid=document.createElement('div');
@@ -1827,7 +1864,7 @@ function renderResLinks(keyword=''){
       a.className='res-card';
       a.href=item.url; a.target='_blank'; a.rel='noopener noreferrer';
       a.innerHTML=
-        `<div class="res-card-icon">${item.icon}</div>`+
+        `<div class="res-card-icon">${resIcon(item.icon)}</div>`+
         `<div class="res-card-name">${item.name}</div>`+
         `<div class="res-card-desc">${item.desc}</div>`+
         `<div class="res-card-footer">`+
@@ -3651,7 +3688,7 @@ function buildSlotEl(slot){
     im.src=slot.imgEl.src;
     icon.appendChild(im);
   } else {
-    icon.textContent='🖼';
+    icon.innerHTML='<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" style="color:var(--g400)"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 15l6-5 5 4 3-2 8 7"/><circle cx="16" cy="10" r="2" fill="currentColor" stroke="none"/></svg>';
   }
 
   const name=document.createElement('div');
@@ -4858,7 +4895,7 @@ async function confirmSaveTpl(){
   btn.disabled=true; btn.textContent='儲存中…';
   const tpl=await serializeCurrentAsTemplate(name, category);
   const ok=saveCustomTplToStorage(tpl);
-  btn.disabled=false; btn.textContent='💾 確認儲存';
+  btn.disabled=false; btn.innerHTML='<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> 確認儲存';
   if(ok){ closeSaveTplModal(); renderTemplates(); snack(`✅ 已儲存範本：${name}`); }
 }
 
@@ -5314,7 +5351,7 @@ function toggleAdminMode() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = `
     <div style="background:#fff;border-radius:12px;padding:24px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
-      <div style="font-weight:700;font-size:15px;margin-bottom:12px">🔑 管理員登入</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:6px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><circle cx="6" cy="7" r="3.5"/><path d="M8.5 9.5l5 5M11.5 12.5l1.5 1.5"/></svg> 管理員登入</div>
       <div style="color:#666;font-size:12px;margin-bottom:12px">輸入管理員密碼以啟用範本寫入功能</div>
       <input id="_admin_pwd_input" type="password" placeholder="請輸入密碼"
         style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;margin-bottom:12px">
@@ -6857,47 +6894,47 @@ window.addEventListener('load', ()=>{
 <div id="tos-overlay" style="display:none">
   <div class="tos-box">
     <div class="tos-head">
-      <h2>📋 美編小助手 使用須知</h2>
+      <h2 style="display:flex;align-items:center;gap:8px"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/><path d="M9 3v2h6V3"/></svg> 美編小助手 使用須知</h2>
       <p>光田綜合醫院 內部設計工具</p>
     </div>
     <div class="tos-body">
       <div class="tos-item">
-        <div class="tos-icon">👤</div>
+        <div class="tos-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
         <div class="tos-text">
           <strong>適用對象</strong>
           <span>本工具限光田綜合醫院內部員工使用，請勿將連結分享至院外或提供給非員工使用。</span>
         </div>
       </div>
       <div class="tos-item">
-        <div class="tos-icon">🎨</div>
+        <div class="tos-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg></div>
         <div class="tos-text">
           <strong>CI 規範</strong>
           <span>請優先使用公版模板，維持院內視覺識別一致性。自行設計時請遵循光田 CI 色系相關規範。</span>
         </div>
       </div>
       <div class="tos-item">
-        <div class="tos-icon">⚠️</div>
+        <div class="tos-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 3L22 20H2L12 3z"/><path d="M12 10v5M12 17.5v.5"/></svg></div>
         <div class="tos-text">
           <strong>資料安全</strong>
           <span>請勿上傳含有病患個人資料、病歷或任何敏感醫療資訊的圖片。所有操作皆在本地瀏覽器執行，不會上傳至外部伺服器。</span>
         </div>
       </div>
       <div class="tos-item">
-        <div class="tos-icon">🖼</div>
+        <div class="tos-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 15l6-5 5 4 3-2 8 7"/><circle cx="16" cy="10" r="2" fill="currentColor" stroke="none"/></svg></div>
         <div class="tos-text">
           <strong>素材版權</strong>
           <span>使用外部素材資源時，請確認授權範圍。免費素材仍需確認商業使用許可，正式文宣建議使用已授權素材或自行拍攝照片。</span>
         </div>
       </div>
       <div class="tos-item">
-        <div class="tos-icon">🖨</div>
+        <div class="tos-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="5" rx="1"/><path d="M6 7H3a1 1 0 00-1 1v8a1 1 0 001 1h3v4a1 1 0 001 1h12a1 1 0 001-1v-4h3a1 1 0 001-1V8a1 1 0 00-1-1h-3"/><rect x="7" y="14" width="10" height="7" rx="1"/><circle cx="18.5" cy="10.5" r="1" fill="currentColor" stroke="none"/></svg></div>
         <div class="tos-text">
           <strong>印刷輸出</strong>
           <span>A3/A2 海報可匯出 PDF 直接送印。A1 大型印刷建議匯出 SVG 後由美編確認解析度再輸出，以確保印刷品質。</span>
         </div>
       </div>
       <div class="tos-item" style="margin-bottom:0">
-        <div class="tos-icon">📞</div>
+        <div class="tos-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2C7 20 4 8 4 6a2 2 0 011-2z"/></svg></div>
         <div class="tos-text">
           <strong>聯絡窗口</strong>
           <span>工具問題或功能建議，請聯絡行銷企劃處 視覺多媒體設計組，分機 5204、5205、5206。</span>
@@ -6920,7 +6957,7 @@ window.addEventListener('load', ()=>{
 <div id="app-footer">
   <span>© 光田綜合醫院</span>
   <span style="color:#d1d5db">|</span>
-  <span onclick="showTos()">📋 使用須知</span>
+  <span onclick="showTos()" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</span>
   <span style="color:#d1d5db">|</span>
   <span>v3.0</span>
 </div>
