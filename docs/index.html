@@ -5970,8 +5970,10 @@ function _renderShapeSvg(el, obj){
     p.setAttribute('fill',fill);p.setAttribute('stroke',stroke);
     p.setAttribute('stroke-width',sw*(831.36/Math.max(w,h)));
     if(dashArr!=='none'){p.setAttribute('stroke-dasharray',dashArr);p.setAttribute('stroke-linecap',strokeLinecap);}
-    if(maskAttr) p.setAttribute('mask',maskAttr);
-    svg.appendChild(p); return;
+    // ★ 遮罩掛在 <g> 上（無 transform），避免 maskContentUnits=userSpaceOnUse 在 scaled path 座標系失效
+    if(maskAttr){ const g=document.createElementNS(ns,'g'); g.setAttribute('mask',maskAttr); g.appendChild(p); svg.appendChild(g); }
+    else svg.appendChild(p);
+    return;
   } else if(obj.shapeType==='custompath'){
     const pd=obj.pathData||'', pvw=obj.pathViewW||100, pvh=obj.pathViewH||100;
     const p=document.createElementNS(ns,'path');
@@ -5980,8 +5982,10 @@ function _renderShapeSvg(el, obj){
     p.setAttribute('fill',fill);p.setAttribute('stroke',stroke);
     p.setAttribute('stroke-width',sw>0?sw*Math.max(pvw,pvh)/Math.max(w,h):0);
     if(dashArr!=='none'){p.setAttribute('stroke-dasharray',dashArr);p.setAttribute('stroke-linecap',strokeLinecap);}
-    if(maskAttr) p.setAttribute('mask',maskAttr);
-    svg.appendChild(p); return;
+    // ★ 遮罩掛在 <g> 上（無 transform），避免 maskContentUnits=userSpaceOnUse 在 scaled path 座標系失效
+    if(maskAttr){ const g=document.createElementNS(ns,'g'); g.setAttribute('mask',maskAttr); g.appendChild(p); svg.appendChild(g); }
+    else svg.appendChild(p);
+    return;
   } else {
     shape=document.createElementNS(ns,'rect');
     const off=sw/2;
@@ -7351,9 +7355,22 @@ function exportSVG() {
       if(sh){
         sh.setAttribute('fill', fill);
         sh.setAttribute('stroke', stroke);
-        sh.setAttribute('stroke-width', sw);
+        // ★ superellipse/custompath 在 scaled path 座標系，stroke-width 需比例調整
+        if(obj.shapeType==='superellipse')
+          sh.setAttribute('stroke-width', sw*(831.36/Math.max(obj.w,obj.h)));
+        else if(obj.shapeType==='custompath'){
+          const pvw2=obj.pathViewW||100, pvh2=obj.pathViewH||100;
+          sh.setAttribute('stroke-width', sw>0?sw*Math.max(pvw2,pvh2)/Math.max(obj.w,obj.h):0);
+        } else {
+          sh.setAttribute('stroke-width', sw);
+        }
         if(dash){ sh.setAttribute('stroke-dasharray', dash); sh.setAttribute('stroke-linecap', linecap); }
-        if(maskAttr) sh.setAttribute('mask', maskAttr);
+        // ★ superellipse/custompath：mask 掛到 g（root 座標系），避免 scaled path 座標系失效
+        if(maskAttr){
+          if(obj.shapeType==='superellipse'||obj.shapeType==='custompath')
+            g.setAttribute('mask', maskAttr);
+          else sh.setAttribute('mask', maskAttr);
+        }
         g.appendChild(sh);
       }
       root.appendChild(g);
