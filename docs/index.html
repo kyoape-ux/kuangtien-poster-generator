@@ -3530,15 +3530,23 @@ const _maskDirMap={
 function _maskImageCss(m){
   // 產生 CSS mask-image 用的漸層字串 (black=顯示, transparent=隱藏)
   if(!m||!m.on) return '';
-  const st=(m.start??0)+'%';
-  // opacity:100 → 完全淡出(end=transparent); opacity:0 → 無效果
-  const endAlpha=(1-(m.opacity??100)/100).toFixed(2);
-  const end=`rgba(0,0,0,${endAlpha})`;
+  const frac=(m.start??0)/100;
+  const endAlpha=1-(m.opacity??100)/100; // 0=不透明,1=完全透明
+  // cosine easing 停止點，讓邊緣極度柔順
+  const _s=(pos,a)=>`rgba(0,0,0,${a.toFixed(3)}) ${(pos*100).toFixed(1)}%`;
+  const stops=[];
+  if(frac>0){ stops.push(_s(0,1)); stops.push(_s(frac,1)); }
+  else stops.push(_s(0,1));
+  [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.85,1.0].forEach(t=>{
+    const pos=frac+t*(1-frac);
+    const easedT=0.5-0.5*Math.cos(t*Math.PI);
+    const a=1-easedT*(1-endAlpha);
+    stops.push(_s(pos,a));
+  });
   if(m.type==='radial')
-    return `radial-gradient(ellipse at center,black ${st},${end} 100%)`;
-  // 支援自訂角度（旋轉角度滑桿）
+    return `radial-gradient(ellipse at center,${stops.join(',')})`;
   const dir = (m.angle!=null) ? `${m.angle}deg` : (_maskDirMap[m.dir||'bottom']||'to bottom');
-  return `linear-gradient(${dir},black ${st},${end} 100%)`;
+  return `linear-gradient(${dir},${stops.join(',')})`;
 }
 // 保留舊函式名稱（canvas export 不用，但避免 setMaskDir 等呼叫到空名稱）
 function _maskGradientCss(m){ return _maskImageCss(m); }
@@ -3571,7 +3579,16 @@ function _maskCanvasGradOut(ctx,m,w,h){
     [x0,y0,x1,y1]=pts[m.dir||'bottom']||pts.bottom;
   }
   const g=ctx.createLinearGradient(x0,y0,x1,y1);
-  g.addColorStop(frac,'transparent'); g.addColorStop(1,end); return g;
+  const endAlpha2=((m.opacity??100)/100).toFixed(3);
+  if(frac>0){ g.addColorStop(0,'transparent'); g.addColorStop(frac,'transparent'); }
+  else g.addColorStop(0,'transparent');
+  [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.85,1.0].forEach(t=>{
+    const pos=frac+t*(1-frac);
+    const easedT=0.5-0.5*Math.cos(t*Math.PI);
+    const a=(easedT*parseFloat(endAlpha2)).toFixed(3);
+    g.addColorStop(pos,`rgba(0,0,0,${a})`);
+  });
+  return g;
 }
 function _applyMaskOffscreen(srcCtx, obj){
   // 把 srcCtx 已畫的內容套用透明遮罩，回傳 offscreen canvas
@@ -3593,6 +3610,8 @@ function setMaskDir(id,dir){
   if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',opacity:100,start:0};
   if(dir==='radial'){ obj.mask.type='radial'; obj.mask.dir='radial'; }
   else { obj.mask.type='linear'; obj.mask.dir=dir; }
+  // ★ 清除角度，讓方向按鈕優先（避免 angle 覆蓋 dir 的 Bug）
+  delete obj.mask.angle;
   const el=document.getElementById('o'+id); if(el) applyStyle(el,obj);
   showPP(id); pushHistory();
 }
@@ -5863,22 +5882,29 @@ function _renderShapeSvg(el, obj){
       mgEl.setAttribute('x1',mp.x1);mgEl.setAttribute('y1',mp.y1);
       mgEl.setAttribute('x2',mp.x2);mgEl.setAttribute('y2',mp.y2);
     }
-    // stops: 白=顯示, stop-opacity=0=隱藏
+    // stops: 白=顯示(op=1), 黑/透=隱藏(op=0)；用 cosine easing 做超柔邊漸層
+    // 實色區段（0% → frac%）
+    const _mkStop=(offset,op)=>{
+      const s=document.createElementNS(ns,'stop');
+      s.setAttribute('offset',(offset*100).toFixed(2)+'%');
+      s.setAttribute('stop-color','white');
+      s.setAttribute('stop-opacity',op.toFixed(4));
+      return s;
+    };
     if(frac>0){
-      const ms0=document.createElementNS(ns,'stop');
-      ms0.setAttribute('offset','0%');ms0.setAttribute('stop-color','white');ms0.setAttribute('stop-opacity','1');
-      mgEl.appendChild(ms0);
-      const ms1=document.createElementNS(ns,'stop');
-      ms1.setAttribute('offset',(frac*100).toFixed(1)+'%');ms1.setAttribute('stop-color','white');ms1.setAttribute('stop-opacity','1');
-      mgEl.appendChild(ms1);
+      mgEl.appendChild(_mkStop(0,1));
+      mgEl.appendChild(_mkStop(frac,1));
     } else {
-      const ms0=document.createElementNS(ns,'stop');
-      ms0.setAttribute('offset','0%');ms0.setAttribute('stop-color','white');ms0.setAttribute('stop-opacity','1');
-      mgEl.appendChild(ms0);
+      mgEl.appendChild(_mkStop(0,1));
     }
-    const msEnd=document.createElementNS(ns,'stop');
-    msEnd.setAttribute('offset','100%');msEnd.setAttribute('stop-color','white');msEnd.setAttribute('stop-opacity',endOp);
-    mgEl.appendChild(msEnd);
+    // cosine easing 漸層區段（frac → 100%），9個停止點讓邊緣極度柔順
+    const endOpNum=1-(obj.mask.opacity??100)/100;
+    [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.85,1.0].forEach(t=>{
+      const pos=frac+t*(1-frac);
+      const easedT=0.5-0.5*Math.cos(t*Math.PI); // 0→0, 1→1，中段加速
+      const op=1-easedT*(1-endOpNum);
+      mgEl.appendChild(_mkStop(pos,op));
+    });
     // mask rect filled with gradient
     const maskEl=document.createElementNS(ns,'mask');
     maskEl.setAttribute('id',mId);
