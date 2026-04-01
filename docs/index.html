@@ -3711,7 +3711,16 @@ async function dlPoster(){
         const off=document.createElement('canvas'); off.width=Math.ceil(obj.w)||1; off.height=Math.ceil(obj.h)||1;
         const oCtx=off.getContext('2d');
         oCtx.save(); oCtx.translate(off.width/2,off.height/2);
-        oCtx.fillStyle=obj.fillColor||'transparent'; oCtx.strokeStyle=obj.strokeColor||'none';
+        // ★ 支援漸層填色（同無遮罩路徑）
+        let oFill=obj.fillColor||'transparent';
+        if(obj.fillGradient&&obj.fillGradient.on){
+          const [gx0,gy0,gx1,gy1]=_gradCanvasCoords(obj.fillGradient.angle||90,obj.w,obj.h);
+          const grad=oCtx.createLinearGradient(gx0-hw,gy0-hh,gx1-hw,gy1-hh);
+          grad.addColorStop(0,obj.fillGradient.color1||'#4A90D9');
+          grad.addColorStop(1,obj.fillGradient.color2||'#1C5FA3');
+          oFill=grad;
+        }
+        oCtx.fillStyle=oFill; oCtx.strokeStyle=obj.strokeColor||'none';
         oCtx.lineCap=ctx.lineCap||'butt'; oCtx.lineWidth=sw; oCtx.setLineDash(dashArr); oCtx.beginPath();
         if(obj.shapeType==='rect') oCtx.rect(-hw,-hh,obj.w,obj.h);
         else if(obj.shapeType==='ellipse') oCtx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2);
@@ -4673,7 +4682,16 @@ async function exportPDF(){
           const off=document.createElement('canvas'); off.width=Math.ceil(obj.w)||1; off.height=Math.ceil(obj.h)||1;
           const oCtx=off.getContext('2d');
           oCtx.save(); oCtx.translate(off.width/2,off.height/2);
-          oCtx.fillStyle=obj.fillColor||'transparent'; oCtx.strokeStyle=obj.strokeColor||'none';
+          // ★ 支援漸層填色（compositeOne，同 dlPoster 修正）
+          let oFill2=obj.fillColor||'transparent';
+          if(obj.fillGradient&&obj.fillGradient.on){
+            const [gx0,gy0,gx1,gy1]=_gradCanvasCoords(obj.fillGradient.angle||90,obj.w,obj.h);
+            const grad=oCtx.createLinearGradient(gx0-hw,gy0-hh,gx1-hw,gy1-hh);
+            grad.addColorStop(0,obj.fillGradient.color1||'#4A90D9');
+            grad.addColorStop(1,obj.fillGradient.color2||'#1C5FA3');
+            oFill2=grad;
+          }
+          oCtx.fillStyle=oFill2; oCtx.strokeStyle=obj.strokeColor||'none';
           oCtx.lineCap=ctx.lineCap||'butt'; oCtx.lineWidth=sw; oCtx.setLineDash(dashArr); oCtx.beginPath();
           if(obj.shapeType==='rect') oCtx.rect(-hw,-hh,obj.w,obj.h);
           else if(obj.shapeType==='ellipse') oCtx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2);
@@ -7279,11 +7297,58 @@ function exportSVG() {
         const cpXfm = `${xfm?xfm+' ':''}translate(${obj.x},${obj.y}) scale(${obj.w/pvw},${obj.h/pvh})`;
         g.setAttribute('transform', cpXfm);
       }
+      // ★ SVG 匯出：透明遮罩漸層（同 _renderShapeSvg 邏輯）
+      let maskAttr=null;
+      if(obj.mask&&obj.mask.on){
+        let defs=root.querySelector('defs');
+        if(!defs){ defs=document.createElementNS(ns,'defs'); root.insertBefore(defs,root.firstChild); }
+        const mId='exsm'+obj.id, mgId='exmg'+obj.id;
+        const frac=(obj.mask.start??0)/100;
+        const endOpNum=1-(obj.mask.opacity??100)/100;
+        let mgEl;
+        if(obj.mask.type==='radial'){
+          mgEl=document.createElementNS(ns,'radialGradient');
+          mgEl.setAttribute('id',mgId); mgEl.setAttribute('gradientUnits','userSpaceOnUse');
+          mgEl.setAttribute('cx',obj.x+obj.w/2); mgEl.setAttribute('cy',obj.y+obj.h/2);
+          mgEl.setAttribute('r',Math.max(obj.w,obj.h)/2);
+        } else {
+          mgEl=document.createElementNS(ns,'linearGradient');
+          mgEl.setAttribute('id',mgId); mgEl.setAttribute('gradientUnits','userSpaceOnUse');
+          const mp=_maskSvgPts(obj.mask,obj.w,obj.h);
+          mgEl.setAttribute('x1',obj.x+mp.x1); mgEl.setAttribute('y1',obj.y+mp.y1);
+          mgEl.setAttribute('x2',obj.x+mp.x2); mgEl.setAttribute('y2',obj.y+mp.y2);
+        }
+        const _mkSt=(offset,op)=>{
+          const s=document.createElementNS(ns,'stop');
+          s.setAttribute('offset',(offset*100).toFixed(2)+'%');
+          s.setAttribute('stop-color','white');
+          s.setAttribute('stop-opacity',op.toFixed(4));
+          return s;
+        };
+        if(frac>0){ mgEl.appendChild(_mkSt(0,1)); mgEl.appendChild(_mkSt(frac,1)); }
+        else { mgEl.appendChild(_mkSt(0,1)); }
+        [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.85,1.0].forEach(t=>{
+          const pos=frac+t*(1-frac);
+          const easedT=0.5-0.5*Math.cos(t*Math.PI);
+          const op=1-easedT*(1-endOpNum);
+          mgEl.appendChild(_mkSt(pos,op));
+        });
+        const maskEl=document.createElementNS(ns,'mask');
+        maskEl.setAttribute('id',mId);
+        const mr=document.createElementNS(ns,'rect');
+        mr.setAttribute('x',obj.x); mr.setAttribute('y',obj.y);
+        mr.setAttribute('width',obj.w); mr.setAttribute('height',obj.h);
+        mr.setAttribute('fill',`url(#${mgId})`);
+        maskEl.appendChild(mr);
+        defs.appendChild(mgEl); defs.appendChild(maskEl);
+        maskAttr=`url(#${mId})`;
+      }
       if(sh){
         sh.setAttribute('fill', fill);
         sh.setAttribute('stroke', stroke);
         sh.setAttribute('stroke-width', sw);
         if(dash){ sh.setAttribute('stroke-dasharray', dash); sh.setAttribute('stroke-linecap', linecap); }
+        if(maskAttr) sh.setAttribute('mask', maskAttr);
         g.appendChild(sh);
       }
       root.appendChild(g);
