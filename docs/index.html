@@ -5879,6 +5879,13 @@ function _renderShapeSvg(el, obj){
     const c=_gradSvgCoords(obj.fillGradient.angle||90,w,h);
     lg.setAttribute('x1',c.x1);lg.setAttribute('y1',c.y1);
     lg.setAttribute('x2',c.x2);lg.setAttribute('y2',c.y2);
+    // ★ superellipse/custompath 的 path 有 scale transform，fill 漸層需補償座標系
+    if(obj.shapeType==='superellipse')
+      lg.setAttribute('gradientTransform',`scale(${831.36/w},${831.36/h})`);
+    else if(obj.shapeType==='custompath'){
+      const pvw=obj.pathViewW||100, pvh=obj.pathViewH||100;
+      lg.setAttribute('gradientTransform',`scale(${pvw/w},${pvh/h})`);
+    }
     const s1=document.createElementNS(ns,'stop');
     s1.setAttribute('offset','0%');s1.setAttribute('stop-color',obj.fillGradient.color1||'#4A90D9');
     const s2=document.createElementNS(ns,'stop');
@@ -7264,6 +7271,13 @@ function exportSVG() {
         // translate gradient coords to object position
         lg.setAttribute('x1',obj.x+gc.x1);lg.setAttribute('y1',obj.y+gc.y1);
         lg.setAttribute('x2',obj.x+gc.x2);lg.setAttribute('y2',obj.y+gc.y2);
+        // ★ superellipse/custompath：path 有 scale transform，需補償 fill 漸層座標系
+        if(obj.shapeType==='superellipse')
+          lg.setAttribute('gradientTransform',`translate(${-obj.x},${-obj.y}) scale(${831.36/obj.w},${831.36/obj.h})`);
+        else if(obj.shapeType==='custompath'){
+          const pvw2=obj.pathViewW||100, pvh2=obj.pathViewH||100;
+          lg.setAttribute('gradientTransform',`translate(${-obj.x},${-obj.y}) scale(${pvw2/obj.w},${pvh2/obj.h})`);
+        }
         const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color',obj.fillGradient.color1||'#4A90D9');lg.appendChild(s1);
         const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color',obj.fillGradient.color2||'#1C5FA3');lg.appendChild(s2);
         defs.appendChild(lg);
