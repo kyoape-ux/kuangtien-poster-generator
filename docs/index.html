@@ -2553,9 +2553,13 @@ function mkEl(id){
     lb.textContent = '⊞';
     el.appendChild(lb);
   } else if(obj.type==='shape'){
+    const shWrap = document.createElement('div');
+    shWrap.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
+    el.appendChild(shWrap);
+    el._shapeWrap = shWrap;
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;';
-    el.appendChild(svg);
+    shWrap.appendChild(svg);
     el._shapeSvg = svg;
     _renderShapeSvg(el, obj);
   } else {
@@ -2651,20 +2655,22 @@ function applyStyle(el, obj){
     renderTableInEl(el, obj);
   } else if(obj.type==='shape'){
     if(!el._shapeSvg){
+      const shWrap=document.createElement('div');
+      shWrap.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;';
+      el.appendChild(shWrap); el._shapeWrap=shWrap;
       const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
       svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;';
-      el.appendChild(svg); el._shapeSvg=svg;
+      shWrap.appendChild(svg); el._shapeSvg=svg;
     }
     _renderShapeSvg(el, obj);
   }
   // Apply clip shape for images
   if(obj.type==='img' && obj.clipShape) _applyClipShape(el, obj);
-  // Gradient mask — apply CSS mask-image directly to inner img/svg element
+  // Gradient mask — apply CSS mask-image to _shapeWrap (for shapes) or img (for images)
   {
     const maskCss=(obj.mask&&obj.mask.on&&obj.type!=='txt')?_maskImageCss(obj.mask):'';
     const innerImg=el.querySelector('img');
-    const innerSvg=el.querySelector('svg');
-    const target=innerImg||innerSvg;
+    const target = innerImg || el._shapeWrap || el.querySelector('svg');
     if(target){
       target.style.webkitMaskImage=maskCss;
       target.style.maskImage=maskCss;
@@ -2957,11 +2963,19 @@ function renderPPHTML(obj){
     <input type="color" id="pp-shadow-color" value="${(obj.shadow&&obj.shadow.color)||'#000000'}">
   </div>
   <div class="pp-row">
-    <span class="pp-label">X/Y</span>
-    <input type="number" id="pp-shadow-x" value="${(obj.shadow&&obj.shadow.x)||4}" style="width:44px">
-    <input type="number" id="pp-shadow-y" value="${(obj.shadow&&obj.shadow.y)||4}" style="width:44px">
-    <span class="pp-label" style="margin-left:4px">模糊</span>
-    <input type="number" id="pp-shadow-blur" value="${(obj.shadow&&obj.shadow.blur)||8}" style="width:44px">
+    <span class="pp-label" style="width:28px">X</span>
+    <input type="range" id="pp-shadow-x" min="-50" max="50" value="${(obj.shadow&&obj.shadow.x)||4}" style="flex:1">
+    <span id="pp-shadow-x-lbl" style="font-size:11px;color:var(--g500);min-width:28px;text-align:right">${(obj.shadow&&obj.shadow.x)||4}</span>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label" style="width:28px">Y</span>
+    <input type="range" id="pp-shadow-y" min="-50" max="50" value="${(obj.shadow&&obj.shadow.y)||4}" style="flex:1">
+    <span id="pp-shadow-y-lbl" style="font-size:11px;color:var(--g500);min-width:28px;text-align:right">${(obj.shadow&&obj.shadow.y)||4}</span>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label" style="width:28px">模糊</span>
+    <input type="range" id="pp-shadow-blur" min="0" max="80" value="${(obj.shadow&&obj.shadow.blur)||8}" style="flex:1">
+    <span id="pp-shadow-blur-lbl" style="font-size:11px;color:var(--g500);min-width:28px;text-align:right">${(obj.shadow&&obj.shadow.blur)||8}</span>
   </div>
   ${!isT?`
   <div class="pp-sep"></div>
@@ -2988,6 +3002,11 @@ function renderPPHTML(obj){
       <span class="pp-label">起始位置</span>
       <input type="range" id="pp-mask-start" min="0" max="90" value="${(obj.mask&&obj.mask.start)??0}" style="flex:1">
       <span id="pp-mask-start-lbl" style="font-size:11px;color:var(--g500);min-width:32px">${(obj.mask&&obj.mask.start)??0}%</span>
+    </div>
+    <div class="pp-row">
+      <span class="pp-label">旋轉角度</span>
+      <input type="range" id="pp-mask-angle" min="0" max="360" value="${(obj.mask&&obj.mask.angle)??180}" style="flex:1">
+      <span id="pp-mask-angle-lbl" style="font-size:11px;color:var(--g500);min-width:36px">${(obj.mask&&obj.mask.angle)??180}°</span>
     </div>
   </div>`:''}
   ${isT?renderTxtPP(obj):''}
@@ -3142,6 +3161,38 @@ function renderShapePP(obj){
     <select class="inp" id="pp-shape-dash">
       ${dashes.map(([v,l])=>`<option value="${v}"${(obj.strokeDash||'solid')===v?' selected':''}>${l}</option>`).join('')}
     </select>
+  </div>
+  <div id="pp-dash-opts" style="${(obj.strokeDash&&obj.strokeDash!=='solid')?'':'display:none'}">
+    <div class="pp-row">
+      <span class="pp-label">間隔</span>
+      <input class="inp" type="number" id="pp-dash-gap" value="${obj.dashGap||4}" min="1" max="60" style="width:54px">
+      <span style="font-size:11px;color:var(--g400);margin-left:2px;margin-right:8px">px</span>
+      <span class="pp-label">形狀</span>
+      <select class="inp" id="pp-dash-cap" style="flex:1">
+        <option value="butt" ${(obj.dashCap||'butt')==='butt'?'selected':''}>方形</option>
+        <option value="round" ${(obj.dashCap)==='round'?'selected':''}>圓點</option>
+      </select>
+    </div>
+  </div>
+  <div class="pp-sep"></div>
+  <div class="pp-section-label">漸層填色</div>
+  <div class="pp-row">
+    <label style="font-size:11px;display:flex;align-items:center;gap:4px;flex:1">
+      <input type="checkbox" id="pp-grad-on" ${(obj.fillGradient&&obj.fillGradient.on)?'checked':''}> 啟用漸層
+    </label>
+  </div>
+  <div id="pp-grad-body" style="${(obj.fillGradient&&obj.fillGradient.on)?'':'display:none'}">
+    <div class="pp-row">
+      <span class="pp-label">起始色</span>
+      <input type="color" id="pp-grad-c1" value="${(obj.fillGradient&&obj.fillGradient.color1)||'#4A90D9'}">
+      <span class="pp-label" style="margin-left:8px">結束色</span>
+      <input type="color" id="pp-grad-c2" value="${(obj.fillGradient&&obj.fillGradient.color2)||'#1C5FA3'}">
+    </div>
+    <div class="pp-row">
+      <span class="pp-label">漸層角度</span>
+      <input type="range" id="pp-grad-angle" min="0" max="360" value="${(obj.fillGradient&&obj.fillGradient.angle)||90}" style="flex:1">
+      <span id="pp-grad-angle-lbl" style="font-size:11px;color:var(--g500);min-width:32px">${(obj.fillGradient&&obj.fillGradient.angle)||90}°</span>
+    </div>
   </div>`;
 }
 
@@ -3337,6 +3388,7 @@ function bindPPEvents(obj){
     if(el2) el2.oninput=()=>{
       if(!obj.shadow)obj.shadow={on:true,x:4,y:4,blur:8,color:'rgba(0,0,0,0.4)'};
       obj.shadow[k]=+el2.value;
+      const lbl=document.getElementById('pp-shadow-'+k+'-lbl'); if(lbl) lbl.textContent=el2.value;
       const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
     };
   });
@@ -3344,7 +3396,7 @@ function bindPPEvents(obj){
   const ppMaskOn=document.getElementById('pp-mask-on');
   if(ppMaskOn){
     ppMaskOn.onchange=()=>{
-      if(!obj.mask) obj.mask={on:false,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+      if(!obj.mask) obj.mask={on:false,type:'linear',dir:'bottom',color:'#000000',opacity:100,start:0};
       obj.mask.on=ppMaskOn.checked;
       const body=document.getElementById('pp-mask-body');
       if(body) body.style.display=ppMaskOn.checked?'':'none';
@@ -3355,7 +3407,7 @@ function bindPPEvents(obj){
   const ppMaskOp=document.getElementById('pp-mask-op');
   if(ppMaskOp){
     ppMaskOp.oninput=()=>{
-      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',color:'#000000',opacity:100,start:0};
       obj.mask.opacity=+ppMaskOp.value;
       const lbl=document.getElementById('pp-mask-op-lbl'); if(lbl) lbl.textContent=ppMaskOp.value+'%';
       const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
@@ -3364,9 +3416,71 @@ function bindPPEvents(obj){
   const ppMaskSt=document.getElementById('pp-mask-start');
   if(ppMaskSt){
     ppMaskSt.oninput=()=>{
-      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',color:'#000000',opacity:70,start:0};
+      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',opacity:100,start:0};
       obj.mask.start=+ppMaskSt.value;
       const lbl=document.getElementById('pp-mask-start-lbl'); if(lbl) lbl.textContent=ppMaskSt.value+'%';
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  const ppMaskAng=document.getElementById('pp-mask-angle');
+  if(ppMaskAng){
+    ppMaskAng.oninput=()=>{
+      if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',opacity:100,start:0};
+      obj.mask.angle=+ppMaskAng.value;
+      obj.mask.type='linear';
+      const lbl=document.getElementById('pp-mask-angle-lbl'); if(lbl) lbl.textContent=ppMaskAng.value+'°';
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+  }
+  // Gradient fill bindings (shape only)
+  if(obj.type==='shape'){
+    const ppGradOn=document.getElementById('pp-grad-on');
+    if(ppGradOn){
+      ppGradOn.onchange=()=>{
+        if(!obj.fillGradient) obj.fillGradient={on:false,color1:'#4A90D9',color2:'#1C5FA3',angle:90};
+        obj.fillGradient.on=ppGradOn.checked;
+        const body=document.getElementById('pp-grad-body');
+        if(body) body.style.display=ppGradOn.checked?'':'none';
+        const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+        pushHistory();
+      };
+    }
+    const ppGradC1=document.getElementById('pp-grad-c1');
+    if(ppGradC1) ppGradC1.oninput=()=>{
+      if(!obj.fillGradient)obj.fillGradient={on:true,color1:'#4A90D9',color2:'#1C5FA3',angle:90};
+      obj.fillGradient.color1=ppGradC1.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+    const ppGradC2=document.getElementById('pp-grad-c2');
+    if(ppGradC2) ppGradC2.oninput=()=>{
+      if(!obj.fillGradient)obj.fillGradient={on:true,color1:'#4A90D9',color2:'#1C5FA3',angle:90};
+      obj.fillGradient.color2=ppGradC2.value;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+    const ppGradAng=document.getElementById('pp-grad-angle');
+    if(ppGradAng) ppGradAng.oninput=()=>{
+      if(!obj.fillGradient)obj.fillGradient={on:true,color1:'#4A90D9',color2:'#1C5FA3',angle:90};
+      obj.fillGradient.angle=+ppGradAng.value;
+      const lbl=document.getElementById('pp-grad-angle-lbl'); if(lbl) lbl.textContent=ppGradAng.value+'°';
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+    // Dash gap/cap bindings
+    const ppShDash=document.getElementById('pp-shape-dash');
+    if(ppShDash){
+      const origInput=ppShDash.oninput;
+      ppShDash.addEventListener('change',()=>{
+        const opts=document.getElementById('pp-dash-opts');
+        if(opts) opts.style.display=(ppShDash.value&&ppShDash.value!=='solid')?'':'none';
+      });
+    }
+    const ppDashGap=document.getElementById('pp-dash-gap');
+    if(ppDashGap) ppDashGap.oninput=()=>{
+      obj.dashGap=+ppDashGap.value||4;
+      const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
+    };
+    const ppDashCap=document.getElementById('pp-dash-cap');
+    if(ppDashCap) ppDashCap.onchange=()=>{
+      obj.dashCap=ppDashCap.value;
       const el=document.getElementById('o'+obj.id); if(el)applyStyle(el,obj);
     };
   }
@@ -3417,7 +3531,8 @@ function _maskImageCss(m){
   const end=`rgba(0,0,0,${endAlpha})`;
   if(m.type==='radial')
     return `radial-gradient(ellipse at center,black ${st},${end} 100%)`;
-  const dir=_maskDirMap[m.dir||'bottom']||'to bottom';
+  // 支援自訂角度（旋轉角度滑桿）
+  const dir = (m.angle!=null) ? `${m.angle}deg` : (_maskDirMap[m.dir||'bottom']||'to bottom');
   return `linear-gradient(${dir},black ${st},${end} 100%)`;
 }
 // 保留舊函式名稱（canvas export 不用，但避免 setMaskDir 等呼叫到空名稱）
@@ -3433,14 +3548,23 @@ function _maskCanvasGradOut(ctx,m,w,h){
     const g=ctx.createRadialGradient(cx,cy,r*frac,cx,cy,r);
     g.addColorStop(0,'transparent'); g.addColorStop(1,end); return g;
   }
-  // 線性漸層：起點=保留端, 終點=透明端
-  const pts={
-    top:   [w/2,h,w/2,0],   bottom:[w/2,0,w/2,h],
-    left:  [w,h/2,0,h/2],   right: [0,h/2,w,h/2],
-    'top-left':[w,h,0,0],   'top-right':[0,h,w,0],
-    'bottom-left':[w,0,0,h],'bottom-right':[0,0,w,h]
-  };
-  const[x0,y0,x1,y1]=pts[m.dir||'bottom']||pts.bottom;
+  let x0,y0,x1,y1;
+  if(m.angle!=null){
+    // CSS 角度 0°=上, 90°=右 轉換為 canvas 起終點座標
+    const rad=(m.angle-90)*Math.PI/180;
+    const cos=Math.cos(rad), sin=Math.sin(rad);
+    const r=Math.sqrt(w*w+h*h)/2, cx=w/2, cy=h/2;
+    x0=cx-cos*r; y0=cy-sin*r; x1=cx+cos*r; y1=cy+sin*r;
+  } else {
+    // 線性漸層：起點=保留端, 終點=透明端
+    const pts={
+      top:   [w/2,h,w/2,0],   bottom:[w/2,0,w/2,h],
+      left:  [w,h/2,0,h/2],   right: [0,h/2,w,h/2],
+      'top-left':[w,h,0,0],   'top-right':[0,h,w,0],
+      'bottom-left':[w,0,0,h],'bottom-right':[0,0,w,h]
+    };
+    [x0,y0,x1,y1]=pts[m.dir||'bottom']||pts.bottom;
+  }
   const g=ctx.createLinearGradient(x0,y0,x1,y1);
   g.addColorStop(frac,'transparent'); g.addColorStop(1,end); return g;
 }
@@ -3461,7 +3585,7 @@ function _applyMaskOffscreen(srcCtx, obj){
 }
 function setMaskDir(id,dir){
   const obj=getObj(id); if(!obj) return;
-  if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',opacity:80,start:0};
+  if(!obj.mask) obj.mask={on:true,type:'linear',dir:'bottom',opacity:100,start:0};
   if(dir==='radial'){ obj.mask.type='radial'; obj.mask.dir='radial'; }
   else { obj.mask.type='linear'; obj.mask.dir=dir; }
   const el=document.getElementById('o'+id); if(el) applyStyle(el,obj);
@@ -3523,10 +3647,29 @@ async function dlPoster(){
 
     if(obj.type==='shape'){
       const sw=obj.strokeWidth||0;
-      const dashArr=obj.strokeDash&&obj.strokeDash!=='solid'?obj.strokeDash.split(',').map(Number):[];
+      // Dash: support custom dashGap and dashCap
+      let dashArr=[];
+      if(obj.strokeDash&&obj.strokeDash!=='solid'){
+        const gap=obj.dashGap||4, cap=obj.dashCap||'butt';
+        ctx.lineCap=cap;
+        if(obj.strokeDash==='2,4'||obj.strokeDash==='2'){
+          dashArr= cap==='round' ? [1,gap+sw] : [2,gap];
+        } else {
+          dashArr= [8,gap];
+        }
+      } else { ctx.lineCap='butt'; }
       ctx.setLineDash(dashArr);
       ctx.lineWidth=sw;
-      ctx.fillStyle=obj.fillColor||'transparent';
+      // Gradient fill support
+      let fillStyle=obj.fillColor||'transparent';
+      if(obj.fillGradient&&obj.fillGradient.on){
+        const [gx0,gy0,gx1,gy1]=_gradCanvasCoords(obj.fillGradient.angle||90,obj.w,obj.h);
+        const grad=ctx.createLinearGradient(gx0-obj.w/2,gy0-obj.h/2,gx1-obj.w/2,gy1-obj.h/2);
+        grad.addColorStop(0,obj.fillGradient.color1||'#4A90D9');
+        grad.addColorStop(1,obj.fillGradient.color2||'#1C5FA3');
+        fillStyle=grad;
+      }
+      ctx.fillStyle=fillStyle;
       ctx.strokeStyle=obj.strokeColor||'none';
       const hw=obj.w/2, hh=obj.h/2;
       ctx.beginPath();
@@ -3545,13 +3688,13 @@ async function dlPoster(){
         const oCtx=off.getContext('2d');
         oCtx.save(); oCtx.translate(off.width/2,off.height/2);
         oCtx.fillStyle=obj.fillColor||'transparent'; oCtx.strokeStyle=obj.strokeColor||'none';
-        oCtx.lineWidth=sw; oCtx.setLineDash(dashArr); oCtx.beginPath();
+        oCtx.lineCap=ctx.lineCap||'butt'; oCtx.lineWidth=sw; oCtx.setLineDash(dashArr); oCtx.beginPath();
         if(obj.shapeType==='rect') oCtx.rect(-hw,-hh,obj.w,obj.h);
         else if(obj.shapeType==='ellipse') oCtx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2);
         else if(obj.shapeType==='line'){ oCtx.moveTo(-hw,-hh); oCtx.lineTo(hw,hh); }
         else if(obj.shapeType==='triangle'){ oCtx.moveTo(0,-hh); oCtx.lineTo(hw,hh); oCtx.lineTo(-hw,hh); oCtx.closePath(); }
         else { _drawPolyCanvas(oCtx,obj.shapeType,hw,hh); }
-        if(obj.fillColor&&obj.fillColor!=='transparent') oCtx.fill(); if(sw>0) oCtx.stroke();
+        if((obj.fillColor&&obj.fillColor!=='transparent')||obj.fillGradient?.on) oCtx.fill(); if(sw>0) oCtx.stroke();
         oCtx.globalCompositeOperation='destination-out';
         oCtx.setTransform(1,0,0,1,0,0); // 重設座標至畫布左上角，gradient 才能正確覆蓋整個 offscreen
         const mg=_maskCanvasGradOut(oCtx,obj.mask,off.width,off.height);
@@ -3560,9 +3703,9 @@ async function dlPoster(){
         ctx.drawImage(off,-hw,-hh,obj.w,obj.h);
       } else {
         // 無遮罩：直接畫到 main canvas
-        if(obj.fillColor&&obj.fillColor!=='transparent') ctx.fill();
+        if((obj.fillColor&&obj.fillColor!=='transparent')||obj.fillGradient?.on) ctx.fill();
         if(sw>0) ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.setLineDash([]); ctx.lineCap='butt';
       }
     } else if(obj.type==='img' && obj.imgEl){
       if(obj.mask&&obj.mask.on){
@@ -4475,9 +4618,26 @@ async function exportPDF(){
       ctx.rotate((obj.rot||0)*Math.PI/180);
       if(obj.type==='shape'){
         const sw=obj.strokeWidth||0;
-        const dashArr=obj.strokeDash&&obj.strokeDash!=='solid'?obj.strokeDash.split(',').map(Number):[];
+        let dashArr=[];
+        if(obj.strokeDash&&obj.strokeDash!=='solid'){
+          const gap=obj.dashGap||4, cap=obj.dashCap||'butt';
+          ctx.lineCap=cap;
+          if(obj.strokeDash==='2,4'||obj.strokeDash==='2'){
+            dashArr= cap==='round' ? [1,gap+sw] : [2,gap];
+          } else {
+            dashArr= [8,gap];
+          }
+        } else { ctx.lineCap='butt'; }
         ctx.setLineDash(dashArr); ctx.lineWidth=sw;
-        ctx.fillStyle=obj.fillColor||'transparent'; ctx.strokeStyle=obj.strokeColor||'none';
+        let fillStyle2=obj.fillColor||'transparent';
+        if(obj.fillGradient&&obj.fillGradient.on){
+          const [gx0,gy0,gx1,gy1]=_gradCanvasCoords(obj.fillGradient.angle||90,obj.w,obj.h);
+          const grad=ctx.createLinearGradient(gx0-obj.w/2,gy0-obj.h/2,gx1-obj.w/2,gy1-obj.h/2);
+          grad.addColorStop(0,obj.fillGradient.color1||'#4A90D9');
+          grad.addColorStop(1,obj.fillGradient.color2||'#1C5FA3');
+          fillStyle2=grad;
+        }
+        ctx.fillStyle=fillStyle2; ctx.strokeStyle=obj.strokeColor||'none';
         const hw=obj.w/2, hh=obj.h/2;
         ctx.beginPath();
         if(obj.shapeType==='rect'){ ctx.rect(-hw,-hh,obj.w,obj.h); }
@@ -4490,21 +4650,21 @@ async function exportPDF(){
           const oCtx=off.getContext('2d');
           oCtx.save(); oCtx.translate(off.width/2,off.height/2);
           oCtx.fillStyle=obj.fillColor||'transparent'; oCtx.strokeStyle=obj.strokeColor||'none';
-          oCtx.lineWidth=sw; oCtx.setLineDash(dashArr); oCtx.beginPath();
+          oCtx.lineCap=ctx.lineCap||'butt'; oCtx.lineWidth=sw; oCtx.setLineDash(dashArr); oCtx.beginPath();
           if(obj.shapeType==='rect') oCtx.rect(-hw,-hh,obj.w,obj.h);
           else if(obj.shapeType==='ellipse') oCtx.ellipse(0,0,Math.max(0,hw),Math.max(0,hh),0,0,Math.PI*2);
           else if(obj.shapeType==='line'){ oCtx.moveTo(-hw,-hh); oCtx.lineTo(hw,hh); }
           else if(obj.shapeType==='triangle'){ oCtx.moveTo(0,-hh); oCtx.lineTo(hw,hh); oCtx.lineTo(-hw,hh); oCtx.closePath(); }
           else { _drawPolyCanvas(oCtx,obj.shapeType,hw,hh); }
-          if(obj.fillColor&&obj.fillColor!=='transparent') oCtx.fill(); if(sw>0) oCtx.stroke();
+          if((obj.fillColor&&obj.fillColor!=='transparent')||obj.fillGradient?.on) oCtx.fill(); if(sw>0) oCtx.stroke();
           oCtx.globalCompositeOperation='destination-out';
           oCtx.setTransform(1,0,0,1,0,0); // 重設座標至畫布左上角，gradient 才能正確覆蓋整個 offscreen
           const mg=_maskCanvasGradOut(oCtx,obj.mask,off.width,off.height);
           if(mg){oCtx.fillStyle=mg; oCtx.fillRect(0,0,off.width,off.height);}
           oCtx.restore(); ctx.drawImage(off,-hw,-hh,obj.w,obj.h);
         } else {
-          if(obj.fillColor&&obj.fillColor!=='transparent') ctx.fill();
-          if(sw>0) ctx.stroke(); ctx.setLineDash([]);
+          if((obj.fillColor&&obj.fillColor!=='transparent')||obj.fillGradient?.on) ctx.fill();
+          if(sw>0) ctx.stroke(); ctx.setLineDash([]); ctx.lineCap='butt';
         }
       } else if(obj.type==='img'&&obj.imgEl){
         if(obj.mask&&obj.mask.on){
@@ -5576,8 +5736,8 @@ function addShape(shapeType){
     x:60, y:60, w:200, h:defH,
     rot:0, opacity:1,
     fillColor: (realType==='line'||isDash)?'transparent':'#4A90D9',
-    strokeColor: realType==='superellipse' ? 'transparent' : '#1C5FA3',
-    strokeWidth: realType==='superellipse' ? 0 : 3,
+    strokeColor: 'transparent',
+    strokeWidth: 0,
     strokeDash: isDash?'8,4':'solid'
   };
   S.objs.push(obj);
@@ -5587,6 +5747,23 @@ function addShape(shapeType){
   return obj;
 }
 
+// 漸層填色輔助函式 — CSS 角度 → SVG linearGradient x1/y1/x2/y2 百分比
+function _gradSvgCoords(angleDeg){
+  const rad = (angleDeg||0) * Math.PI/180;
+  const sin = Math.sin(rad), cos = Math.cos(rad);
+  return {
+    x1: (50 - sin*50).toFixed(2)+'%', y1: (50 + cos*50).toFixed(2)+'%',
+    x2: (50 + sin*50).toFixed(2)+'%', y2: (50 - cos*50).toFixed(2)+'%'
+  };
+}
+// 漸層填色輔助函式 — CSS 角度 → Canvas createLinearGradient 起終點座標
+function _gradCanvasCoords(angleDeg, w, h){
+  const rad = (angleDeg||90) * Math.PI/180;
+  const sin = Math.sin(rad), cos = Math.cos(rad);
+  const r = Math.sqrt(w*w+h*h)/2;
+  const cx=w/2, cy=h/2;
+  return [cx-sin*r, cy+cos*r, cx+sin*r, cy-cos*r];
+}
 // 多邊形形狀 - 分數座標陣列（0~1，相對於寬高）
 function _getPolyPts(t){
   if(t==='parallelogram') return [[0.2,0],[1,0],[0.8,1],[0,1]];
@@ -5611,11 +5788,39 @@ function _renderShapeSvg(el, obj){
   if(!svg) return;
   const w=obj.w, h=obj.h;
   const sw=obj.strokeWidth||0;
-  const fill=obj.fillColor||'transparent';
+  const baseFill=obj.fillColor||'transparent';
   const stroke=obj.strokeColor||'none';
-  const dashArr=obj.strokeDash&&obj.strokeDash!=='solid'?obj.strokeDash:'none';
+  // Dash array: support custom dashGap and dashCap (round dots)
+  let dashArr='none', strokeLinecap='butt';
+  if(obj.strokeDash&&obj.strokeDash!=='solid'){
+    const gap=obj.dashGap||4;
+    const cap=obj.dashCap||'butt';
+    strokeLinecap=cap;
+    if(obj.strokeDash==='2,4'||obj.strokeDash==='2'){
+      // 點線：dashCap=round→1,gap；butt→2,gap
+      dashArr= cap==='round' ? `1,${gap+sw}` : `2,${gap}`;
+    } else {
+      // 虛線
+      dashArr= `8,${gap}`;
+    }
+  }
   svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
   svg.innerHTML='';
+  // Gradient fill
+  let fill=baseFill;
+  if(obj.fillGradient&&obj.fillGradient.on){
+    const ns='http://www.w3.org/2000/svg';
+    const defs=document.createElementNS(ns,'defs');
+    const lg=document.createElementNS(ns,'linearGradient');
+    const gradId='fgrad_'+obj.id;
+    lg.setAttribute('id',gradId);
+    const {x1,y1,x2,y2}=_gradSvgCoords(obj.fillGradient.angle||90);
+    lg.setAttribute('x1',x1);lg.setAttribute('y1',y1);lg.setAttribute('x2',x2);lg.setAttribute('y2',y2);
+    const s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color',obj.fillGradient.color1||'#4A90D9'); lg.appendChild(s1);
+    const s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color',obj.fillGradient.color2||'#1C5FA3'); lg.appendChild(s2);
+    defs.appendChild(lg); svg.appendChild(defs);
+    fill=`url(#${gradId})`;
+  }
   let shape;
   if(obj.shapeType==='rect'){
     shape=document.createElementNS('http://www.w3.org/2000/svg','rect');
@@ -5674,7 +5879,10 @@ function _renderShapeSvg(el, obj){
   shape.setAttribute('fill',fill);
   shape.setAttribute('stroke',stroke);
   shape.setAttribute('stroke-width',sw);
-  if(dashArr!=='none') shape.setAttribute('stroke-dasharray',dashArr);
+  if(dashArr!=='none'){
+    shape.setAttribute('stroke-dasharray',dashArr);
+    shape.setAttribute('stroke-linecap',strokeLinecap);
+  }
   svg.appendChild(shape);
 }
 
@@ -6917,11 +7125,33 @@ function exportSVG() {
       }
     }
     else if(obj.type === 'shape'){
-      const fill = (!obj.fillColor || obj.fillColor==='transparent') ? 'none' : obj.fillColor;
-      const stroke = obj.strokeColor || '#333333';
-      const sw = obj.strokeWidth || 2;
-      const dash = (obj.strokeDash && obj.strokeDash!=='solid') ? obj.strokeDash : null;
+      let fill = (!obj.fillColor || obj.fillColor==='transparent') ? 'none' : obj.fillColor;
+      const stroke = obj.strokeColor || 'none';
+      const sw = obj.strokeWidth || 0;
+      // Dash support
+      let dash=null, linecap='butt';
+      if(obj.strokeDash&&obj.strokeDash!=='solid'){
+        const gap=obj.dashGap||4, cap=obj.dashCap||'butt';
+        linecap=cap;
+        dash= obj.strokeDash==='2,4'||obj.strokeDash==='2'
+          ? (cap==='round'?`1,${gap+sw}`:`2,${gap}`)
+          : `8,${gap}`;
+      }
       const g = document.createElementNS(ns, 'g');
+      // Gradient fill in SVG export
+      if(obj.fillGradient&&obj.fillGradient.on){
+        const gradId='fexgrad_'+obj.id;
+        let defs=root.querySelector('defs');
+        if(!defs){ defs=document.createElementNS(ns,'defs'); root.insertBefore(defs,root.firstChild); }
+        const lg=document.createElementNS(ns,'linearGradient');
+        lg.setAttribute('id',gradId);
+        const {x1,y1,x2,y2}=_gradSvgCoords(obj.fillGradient.angle||90);
+        lg.setAttribute('x1',x1);lg.setAttribute('y1',y1);lg.setAttribute('x2',x2);lg.setAttribute('y2',y2);
+        const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color',obj.fillGradient.color1||'#4A90D9');lg.appendChild(s1);
+        const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color',obj.fillGradient.color2||'#1C5FA3');lg.appendChild(s2);
+        defs.appendChild(lg);
+        fill=`url(#${gradId})`;
+      }
       if(xfm) g.setAttribute('transform', xfm);
       g.setAttribute('opacity', opacity);
       let sh = null;
@@ -6963,7 +7193,7 @@ function exportSVG() {
         sh.setAttribute('fill', fill);
         sh.setAttribute('stroke', stroke);
         sh.setAttribute('stroke-width', sw);
-        if(dash) sh.setAttribute('stroke-dasharray', dash);
+        if(dash){ sh.setAttribute('stroke-dasharray', dash); sh.setAttribute('stroke-linecap', linecap); }
         g.appendChild(sh);
       }
       root.appendChild(g);
