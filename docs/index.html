@@ -2930,6 +2930,11 @@ function showPP(id){
   pp.style.display='block';
   pp.innerHTML = renderPPHTML(obj);
   bindPPEvents(obj);
+  // ★ 自動捲動讓屬性面板可見（PP 可能在側欄捲動區下方）
+  const sbScroll = document.getElementById('sb-scroll');
+  if(sbScroll && pp.offsetTop > 0){
+    sbScroll.scrollTo({ top: pp.offsetTop - 8, behavior: 'smooth' });
+  }
 }
 
 function renderPPHTML(obj){
