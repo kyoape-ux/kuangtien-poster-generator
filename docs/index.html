@@ -2666,16 +2666,21 @@ function applyStyle(el, obj){
   }
   // Apply clip shape for images
   if(obj.type==='img' && obj.clipShape) _applyClipShape(el, obj);
-  // Gradient mask — apply CSS mask-image to _shapeWrap (for shapes) or img (for images)
+  // Gradient mask — 圖片用 CSS mask-image；形狀已在 _renderShapeSvg 用 SVG native <mask>
   {
-    const maskCss=(obj.mask&&obj.mask.on&&obj.type!=='txt')?_maskImageCss(obj.mask):'';
     const innerImg=el.querySelector('img');
-    const target = innerImg || el._shapeWrap || el.querySelector('svg');
-    if(target){
-      target.style.webkitMaskImage=maskCss;
-      target.style.maskImage=maskCss;
+    if(innerImg && obj.type==='img'){
+      const maskCss=(obj.mask&&obj.mask.on)?_maskImageCss(obj.mask):'';
+      innerImg.style.webkitMaskImage=maskCss;
+      innerImg.style.maskImage=maskCss;
+      innerImg.style.webkitMaskSize=maskCss?'100% 100%':'';
+      innerImg.style.maskSize=maskCss?'100% 100%':'';
     }
-    // 清除舊版 mask-ovr div（如有殘留）
+    // 清除 _shapeWrap 上殘留的 CSS mask（SVG 形狀不再用 CSS mask）
+    if(el._shapeWrap){
+      el._shapeWrap.style.webkitMaskImage='';
+      el._shapeWrap.style.maskImage='';
+    }
     const oldOvr=el.querySelector('.mask-ovr');
     if(oldOvr) oldOvr.remove();
   }
@@ -5748,13 +5753,30 @@ function addShape(shapeType){
 }
 
 // 漸層填色輔助函式 — CSS 角度 → SVG linearGradient x1/y1/x2/y2 百分比
-function _gradSvgCoords(angleDeg){
-  const rad = (angleDeg||0) * Math.PI/180;
-  const sin = Math.sin(rad), cos = Math.cos(rad);
-  return {
-    x1: (50 - sin*50).toFixed(2)+'%', y1: (50 + cos*50).toFixed(2)+'%',
-    x2: (50 + sin*50).toFixed(2)+'%', y2: (50 - cos*50).toFixed(2)+'%'
+// SVG linearGradient 座標（userSpaceOnUse，像素）— CSS角度慣例：0=上,90=右,180=下
+function _gradSvgCoords(angleDeg, w, h){
+  const W=w||100, H=h||100;
+  const r=Math.sqrt(W*W+H*H)/2, cx=W/2, cy=H/2;
+  const rad=(angleDeg||0)*Math.PI/180;
+  const sin=Math.sin(rad), cos=Math.cos(rad);
+  return { x1:cx-sin*r, y1:cy+cos*r, x2:cx+sin*r, y2:cy-cos*r };
+}
+// SVG mask 漸層座標（userSpaceOnUse） — 起點=實色端, 終點=透明端
+function _maskSvgPts(m, w, h){
+  if(m.angle!=null){
+    const r=Math.sqrt(w*w+h*h)/2, cx=w/2, cy=h/2;
+    const rad=m.angle*Math.PI/180;
+    return { x1:cx-Math.sin(rad)*r, y1:cy+Math.cos(rad)*r, x2:cx+Math.sin(rad)*r, y2:cy-Math.cos(rad)*r };
+  }
+  const cx=w/2, cy=h/2;
+  const map={
+    top:[cx,h,cx,0], bottom:[cx,0,cx,h],
+    left:[w,cy,0,cy], right:[0,cy,w,cy],
+    'top-left':[w,h,0,0],'top-right':[0,h,w,0],
+    'bottom-left':[w,0,0,h],'bottom-right':[0,0,w,h]
   };
+  const p=map[m.dir||'bottom']||map.bottom;
+  return { x1:p[0], y1:p[1], x2:p[2], y2:p[3] };
 }
 // 漸層填色輔助函式 — CSS 角度 → Canvas createLinearGradient 起終點座標
 function _gradCanvasCoords(angleDeg, w, h){
@@ -5786,6 +5808,7 @@ function _drawPolyCanvas(ctx, shapeType, hw, hh){
 function _renderShapeSvg(el, obj){
   const svg = el._shapeSvg;
   if(!svg) return;
+  const ns='http://www.w3.org/2000/svg';
   const w=obj.w, h=obj.h;
   const sw=obj.strokeWidth||0;
   const baseFill=obj.fillColor||'transparent';
@@ -5793,96 +5816,134 @@ function _renderShapeSvg(el, obj){
   // Dash array: support custom dashGap and dashCap (round dots)
   let dashArr='none', strokeLinecap='butt';
   if(obj.strokeDash&&obj.strokeDash!=='solid'){
-    const gap=obj.dashGap||4;
-    const cap=obj.dashCap||'butt';
+    const gap=obj.dashGap||4, cap=obj.dashCap||'butt';
     strokeLinecap=cap;
-    if(obj.strokeDash==='2,4'||obj.strokeDash==='2'){
-      // 點線：dashCap=round→1,gap；butt→2,gap
-      dashArr= cap==='round' ? `1,${gap+sw}` : `2,${gap}`;
-    } else {
-      // 虛線
-      dashArr= `8,${gap}`;
-    }
+    dashArr=(obj.strokeDash==='2,4'||obj.strokeDash==='2')
+      ?(cap==='round'?`1,${gap+sw}`:`2,${gap}`):`8,${gap}`;
   }
   svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
   svg.innerHTML='';
-  // Gradient fill
+
+  // 統一的 <defs> — 漸層填色 + 透明遮罩均放此處
+  const defs=document.createElementNS(ns,'defs');
   let fill=baseFill;
+  let maskAttr=null;
+
+  // ── 漸層填色 ──
   if(obj.fillGradient&&obj.fillGradient.on){
-    const ns='http://www.w3.org/2000/svg';
-    const defs=document.createElementNS(ns,'defs');
+    const gId='fg'+obj.id;
     const lg=document.createElementNS(ns,'linearGradient');
-    const gradId='fgrad_'+obj.id;
-    lg.setAttribute('id',gradId);
-    const {x1,y1,x2,y2}=_gradSvgCoords(obj.fillGradient.angle||90);
-    lg.setAttribute('x1',x1);lg.setAttribute('y1',y1);lg.setAttribute('x2',x2);lg.setAttribute('y2',y2);
-    const s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color',obj.fillGradient.color1||'#4A90D9'); lg.appendChild(s1);
-    const s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color',obj.fillGradient.color2||'#1C5FA3'); lg.appendChild(s2);
-    defs.appendChild(lg); svg.appendChild(defs);
-    fill=`url(#${gradId})`;
+    lg.setAttribute('id',gId); lg.setAttribute('gradientUnits','userSpaceOnUse');
+    const c=_gradSvgCoords(obj.fillGradient.angle||90,w,h);
+    lg.setAttribute('x1',c.x1);lg.setAttribute('y1',c.y1);
+    lg.setAttribute('x2',c.x2);lg.setAttribute('y2',c.y2);
+    const s1=document.createElementNS(ns,'stop');
+    s1.setAttribute('offset','0%');s1.setAttribute('stop-color',obj.fillGradient.color1||'#4A90D9');
+    const s2=document.createElementNS(ns,'stop');
+    s2.setAttribute('offset','100%');s2.setAttribute('stop-color',obj.fillGradient.color2||'#1C5FA3');
+    lg.appendChild(s1);lg.appendChild(s2); defs.appendChild(lg);
+    fill=`url(#${gId})`;
   }
+
+  // ── SVG native 透明遮罩（比 CSS mask-image 更可靠）──
+  if(obj.mask&&obj.mask.on){
+    const mId='sm'+obj.id, mgId='mg'+obj.id;
+    const frac=(obj.mask.start??0)/100;
+    const endOp=(1-(obj.mask.opacity??100)/100).toFixed(3);
+    let mgEl;
+    if(obj.mask.type==='radial'){
+      mgEl=document.createElementNS(ns,'radialGradient');
+      mgEl.setAttribute('id',mgId); mgEl.setAttribute('gradientUnits','userSpaceOnUse');
+      mgEl.setAttribute('cx',w/2); mgEl.setAttribute('cy',h/2);
+      mgEl.setAttribute('r',Math.max(w,h)/2);
+    } else {
+      mgEl=document.createElementNS(ns,'linearGradient');
+      mgEl.setAttribute('id',mgId); mgEl.setAttribute('gradientUnits','userSpaceOnUse');
+      const mp=_maskSvgPts(obj.mask,w,h);
+      mgEl.setAttribute('x1',mp.x1);mgEl.setAttribute('y1',mp.y1);
+      mgEl.setAttribute('x2',mp.x2);mgEl.setAttribute('y2',mp.y2);
+    }
+    // stops: 白=顯示, stop-opacity=0=隱藏
+    if(frac>0){
+      const ms0=document.createElementNS(ns,'stop');
+      ms0.setAttribute('offset','0%');ms0.setAttribute('stop-color','white');ms0.setAttribute('stop-opacity','1');
+      mgEl.appendChild(ms0);
+      const ms1=document.createElementNS(ns,'stop');
+      ms1.setAttribute('offset',(frac*100).toFixed(1)+'%');ms1.setAttribute('stop-color','white');ms1.setAttribute('stop-opacity','1');
+      mgEl.appendChild(ms1);
+    } else {
+      const ms0=document.createElementNS(ns,'stop');
+      ms0.setAttribute('offset','0%');ms0.setAttribute('stop-color','white');ms0.setAttribute('stop-opacity','1');
+      mgEl.appendChild(ms0);
+    }
+    const msEnd=document.createElementNS(ns,'stop');
+    msEnd.setAttribute('offset','100%');msEnd.setAttribute('stop-color','white');msEnd.setAttribute('stop-opacity',endOp);
+    mgEl.appendChild(msEnd);
+    // mask rect filled with gradient
+    const maskEl=document.createElementNS(ns,'mask');
+    maskEl.setAttribute('id',mId);
+    const mr=document.createElementNS(ns,'rect');
+    mr.setAttribute('x','0');mr.setAttribute('y','0');mr.setAttribute('width',w);mr.setAttribute('height',h);
+    mr.setAttribute('fill',`url(#${mgId})`);
+    maskEl.appendChild(mr);
+    defs.appendChild(mgEl); defs.appendChild(maskEl);
+    maskAttr=`url(#${mId})`;
+  }
+  svg.appendChild(defs);
+
+  // ── 形狀繪製 ──
   let shape;
   if(obj.shapeType==='rect'){
-    shape=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    shape=document.createElementNS(ns,'rect');
     const off=sw/2;
-    shape.setAttribute('x',off); shape.setAttribute('y',off);
-    shape.setAttribute('width',Math.max(0,w-sw)); shape.setAttribute('height',Math.max(0,h-sw));
+    shape.setAttribute('x',off);shape.setAttribute('y',off);
+    shape.setAttribute('width',Math.max(0,w-sw));shape.setAttribute('height',Math.max(0,h-sw));
   } else if(obj.shapeType==='ellipse'){
-    shape=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
-    shape.setAttribute('cx',w/2); shape.setAttribute('cy',h/2);
-    shape.setAttribute('rx',Math.max(0,w/2-sw/2)); shape.setAttribute('ry',Math.max(0,h/2-sw/2));
+    shape=document.createElementNS(ns,'ellipse');
+    shape.setAttribute('cx',w/2);shape.setAttribute('cy',h/2);
+    shape.setAttribute('rx',Math.max(0,w/2-sw/2));shape.setAttribute('ry',Math.max(0,h/2-sw/2));
   } else if(obj.shapeType==='line'){
-    shape=document.createElementNS('http://www.w3.org/2000/svg','line');
-    shape.setAttribute('x1',0); shape.setAttribute('y1',0);
-    shape.setAttribute('x2',w); shape.setAttribute('y2',h);
+    shape=document.createElementNS(ns,'line');
+    shape.setAttribute('x1',0);shape.setAttribute('y1',0);
+    shape.setAttribute('x2',w);shape.setAttribute('y2',h);
   } else if(obj.shapeType==='triangle'){
-    shape=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    shape=document.createElementNS(ns,'polygon');
     shape.setAttribute('points',`${w/2},${sw/2} ${Math.max(0,w-sw/2)},${Math.max(0,h-sw/2)} ${sw/2},${Math.max(0,h-sw/2)}`);
   } else if(_getPolyPts(obj.shapeType)){
-    // 多邊形：平行四邊形、梯形、斜切矩形、箭頭、色帶箭頭
-    const pts = _getPolyPts(obj.shapeType);
-    shape = document.createElementNS('http://www.w3.org/2000/svg','polygon');
-    shape.setAttribute('points', pts.map(([px,py])=>`${px*w},${py*h}`).join(' '));
+    const pts=_getPolyPts(obj.shapeType);
+    shape=document.createElementNS(ns,'polygon');
+    shape.setAttribute('points',pts.map(([px,py])=>`${px*w},${py*h}`).join(' '));
   } else if(obj.shapeType==='superellipse'){
-    // 光田CI超橢圓 - 從AI SVG路徑縮放至物件尺寸
     const SE_PATH='M815.68,415.68c0-72.67,0-149.44-22.79-217.77-26.71-80.08-79.38-132.75-159.42-159.46-68.37-22.79-145.13-22.79-217.81-22.79s-149.4,0-217.77,22.79C117.85,65.16,65.18,117.83,38.47,197.91c-22.79,68.33-22.79,145.1-22.79,217.77s0,149.44,22.79,217.77c26.71,80.08,79.38,132.75,159.42,159.46,68.37,22.79,145.1,22.79,217.77,22.79s149.44,0,217.81-22.79c80.05-26.71,132.72-79.38,159.42-159.46,22.79-68.33,22.79-145.1,22.79-217.77Z';
-    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    const p=document.createElementNS(ns,'path');
     p.setAttribute('d',SE_PATH);
     p.setAttribute('transform',`scale(${w/831.36},${h/831.36})`);
-    p.setAttribute('fill',fill);
-    p.setAttribute('stroke',stroke);
-    const swScaled = sw * (831.36/Math.max(w,h));
-    p.setAttribute('stroke-width',swScaled);
-    if(dashArr!=='none') p.setAttribute('stroke-dasharray',dashArr);
-    svg.appendChild(p);
-    return;
+    p.setAttribute('fill',fill);p.setAttribute('stroke',stroke);
+    p.setAttribute('stroke-width',sw*(831.36/Math.max(w,h)));
+    if(dashArr!=='none'){p.setAttribute('stroke-dasharray',dashArr);p.setAttribute('stroke-linecap',strokeLinecap);}
+    if(maskAttr) p.setAttribute('mask',maskAttr);
+    svg.appendChild(p); return;
   } else if(obj.shapeType==='custompath'){
-    // 從 SVG 匯入的自訂路徑向量形狀（可換色）
-    const pd = obj.pathData || '';
-    const pvw = obj.pathViewW || 100;
-    const pvh = obj.pathViewH || 100;
-    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-    p.setAttribute('d', pd);
-    p.setAttribute('transform', `scale(${w/pvw},${h/pvh})`);
-    p.setAttribute('fill', fill);
-    p.setAttribute('stroke', stroke);
-    p.setAttribute('stroke-width', sw > 0 ? sw * Math.max(pvw,pvh)/Math.max(w,h) : 0);
-    if(dashArr!=='none') p.setAttribute('stroke-dasharray', dashArr);
-    svg.appendChild(p);
-    return;
+    const pd=obj.pathData||'', pvw=obj.pathViewW||100, pvh=obj.pathViewH||100;
+    const p=document.createElementNS(ns,'path');
+    p.setAttribute('d',pd);
+    p.setAttribute('transform',`scale(${w/pvw},${h/pvh})`);
+    p.setAttribute('fill',fill);p.setAttribute('stroke',stroke);
+    p.setAttribute('stroke-width',sw>0?sw*Math.max(pvw,pvh)/Math.max(w,h):0);
+    if(dashArr!=='none'){p.setAttribute('stroke-dasharray',dashArr);p.setAttribute('stroke-linecap',strokeLinecap);}
+    if(maskAttr) p.setAttribute('mask',maskAttr);
+    svg.appendChild(p); return;
   } else {
-    shape=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    shape=document.createElementNS(ns,'rect');
     const off=sw/2;
-    shape.setAttribute('x',off); shape.setAttribute('y',off);
-    shape.setAttribute('width',Math.max(0,w-sw)); shape.setAttribute('height',Math.max(0,h-sw));
+    shape.setAttribute('x',off);shape.setAttribute('y',off);
+    shape.setAttribute('width',Math.max(0,w-sw));shape.setAttribute('height',Math.max(0,h-sw));
   }
   shape.setAttribute('fill',fill);
   shape.setAttribute('stroke',stroke);
   shape.setAttribute('stroke-width',sw);
-  if(dashArr!=='none'){
-    shape.setAttribute('stroke-dasharray',dashArr);
-    shape.setAttribute('stroke-linecap',strokeLinecap);
-  }
+  if(dashArr!=='none'){shape.setAttribute('stroke-dasharray',dashArr);shape.setAttribute('stroke-linecap',strokeLinecap);}
+  if(maskAttr) shape.setAttribute('mask',maskAttr);
   svg.appendChild(shape);
 }
 
@@ -7138,15 +7199,18 @@ function exportSVG() {
           : `8,${gap}`;
       }
       const g = document.createElementNS(ns, 'g');
-      // Gradient fill in SVG export
+      // Gradient fill in SVG export (userSpaceOnUse with pixel coords)
       if(obj.fillGradient&&obj.fillGradient.on){
-        const gradId='fexgrad_'+obj.id;
+        const gradId='fexg'+obj.id;
         let defs=root.querySelector('defs');
         if(!defs){ defs=document.createElementNS(ns,'defs'); root.insertBefore(defs,root.firstChild); }
         const lg=document.createElementNS(ns,'linearGradient');
         lg.setAttribute('id',gradId);
-        const {x1,y1,x2,y2}=_gradSvgCoords(obj.fillGradient.angle||90);
-        lg.setAttribute('x1',x1);lg.setAttribute('y1',y1);lg.setAttribute('x2',x2);lg.setAttribute('y2',y2);
+        lg.setAttribute('gradientUnits','userSpaceOnUse');
+        const gc=_gradSvgCoords(obj.fillGradient.angle||90,obj.w,obj.h);
+        // translate gradient coords to object position
+        lg.setAttribute('x1',obj.x+gc.x1);lg.setAttribute('y1',obj.y+gc.y1);
+        lg.setAttribute('x2',obj.x+gc.x2);lg.setAttribute('y2',obj.y+gc.y2);
         const s1=document.createElementNS(ns,'stop');s1.setAttribute('offset','0%');s1.setAttribute('stop-color',obj.fillGradient.color1||'#4A90D9');lg.appendChild(s1);
         const s2=document.createElementNS(ns,'stop');s2.setAttribute('offset','100%');s2.setAttribute('stop-color',obj.fillGradient.color2||'#1C5FA3');lg.appendChild(s2);
         defs.appendChild(lg);
