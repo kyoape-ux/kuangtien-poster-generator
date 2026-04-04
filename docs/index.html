@@ -803,6 +803,47 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   flex-shrink:0;background:#f9fafb;
 }
 .tos-footer label{display:flex;align-items:center;gap:6px;font-size:12px;color:#374151;cursor:pointer}
+/* ── 使用須知 Modal 內部頁籤 ── */
+.tos-tabs{display:flex;flex-shrink:0;border-bottom:1px solid #e5e7eb;background:#f9fafb}
+.tos-tab{
+  flex:1;padding:10px 0;font-size:12px;font-weight:600;border:none;background:transparent;
+  cursor:pointer;color:#6b7280;border-bottom:2.5px solid transparent;transition:all .18s;
+}
+.tos-tab.on{color:#1F2875;border-bottom-color:#1F2875;background:#fff}
+.tos-tab:hover:not(.on){background:#f0f2f8;color:#374151}
+/* 操作手冊 accordion */
+.guide-section{border:1px solid #e8eaf0;border-radius:10px;margin-bottom:9px;overflow:hidden}
+.guide-hd{
+  display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;
+  background:#fff;transition:background .15s;user-select:none;
+}
+.guide-hd:hover{background:#f6f8ff}
+.guide-hd .g-icon{
+  display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:8px;flex-shrink:0;
+}
+.guide-hd .g-title{font-size:13px;font-weight:700;flex:1}
+.guide-hd .g-arr{flex-shrink:0;transition:transform .2s;color:#9ca3af}
+.guide-hd.open .g-arr{transform:rotate(180deg)}
+.guide-bd{display:none;padding:10px 13px 13px 51px;background:#fafbff;border-top:1px solid #e8eaf0}
+.guide-bd.open{display:block}
+.guide-bd ol{margin:0;padding:0;list-style:none;counter-reset:gstep}
+.guide-bd ol li{
+  counter-increment:gstep;position:relative;padding:5px 0 5px 26px;
+  font-size:12px;color:#374151;line-height:1.65;
+  border-bottom:1px solid #edf0f8;
+}
+.guide-bd ol li:last-child{border-bottom:none}
+.guide-bd ol li::before{
+  content:counter(gstep);position:absolute;left:0;top:6px;
+  width:17px;height:17px;border-radius:50%;background:#1F2875;
+  color:#fff;font-size:10px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.guide-tip{
+  margin-top:8px;padding:7px 10px;background:#EEF1FF;border-radius:6px;
+  font-size:11px;color:#3D55A8;line-height:1.55;
+}
 /* 頁底 */
 #app-footer{
   position:fixed;bottom:0;left:0;right:0;height:24px;
@@ -7439,7 +7480,14 @@ window.addEventListener('load', ()=>{
       <h2 style="display:flex;align-items:center;gap:8px"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/><path d="M9 3v2h6V3"/></svg> 美編小助手 使用須知</h2>
       <p>光田綜合醫院 內部設計工具</p>
     </div>
-    <div class="tos-body">
+    <!-- 內部頁籤列 -->
+    <div class="tos-tabs">
+      <button class="tos-tab on" onclick="tosTab('notice',this)">📋 使用須知</button>
+      <button class="tos-tab" onclick="tosTab('guide',this)">📖 操作手冊</button>
+    </div>
+
+    <!-- 頁籤一：使用須知 -->
+    <div id="tos-panel-notice" class="tos-body tos-panel">
       <div class="tos-item">
         <div class="tos-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
         <div class="tos-text">
@@ -7483,6 +7531,123 @@ window.addEventListener('load', ()=>{
         </div>
       </div>
     </div>
+
+    <!-- 頁籤二：操作手冊 -->
+    <div id="tos-panel-guide" class="tos-body tos-panel" style="display:none">
+
+      <!-- 1. 海報編輯 -->
+      <div class="guide-section">
+        <div class="guide-hd" onclick="toggleGuide(this)">
+          <div class="g-icon" style="background:#E8EEFF">
+            <svg width="15" height="15" fill="none" stroke="#3D5FCC" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg>
+          </div>
+          <span class="g-title" style="color:#14286E">海報編輯</span>
+          <svg class="g-arr" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="guide-bd">
+          <ol>
+            <li>點選上方導覽列「海報編輯」分頁進入編輯畫面。</li>
+            <li>左側「尺寸」選擇預設規格（A3、A4⋯）或輸入自訂寬高（px / mm）。</li>
+            <li>點選工具列圖示新增物件：<strong>T 文字</strong>、<strong>圖片</strong>、<strong>形狀</strong>、<strong>線條</strong>。</li>
+            <li>直接拖曳物件移動位置；拖曳四角控制點縮放；頂端旋轉點旋轉。</li>
+            <li>選取物件後，右側屬性面板可設定字型、顏色、漸層、透明度、圓角等樣式。</li>
+            <li>右側「圖層」面板可調整上下順序、鎖定圖層或切換隱藏。</li>
+            <li>完成後：<strong>匯出 PDF</strong>（送印用）、<strong>下載 PNG</strong>（預覽用）或<strong>匯出 SVG</strong>（大型輸出）。</li>
+            <li>點選「儲存專案」存成 .ktposter 檔案，下次可「開啟專案」繼續編輯。</li>
+          </ol>
+          <div class="guide-tip">💡 使用 Ctrl+Z / Ctrl+Y 可隨時復原或重做操作。多物件可按住 Shift 點選後群組對齊。</div>
+        </div>
+      </div>
+
+      <!-- 2. 圖片編輯 -->
+      <div class="guide-section">
+        <div class="guide-hd" onclick="toggleGuide(this)">
+          <div class="g-icon" style="background:#DDEEFA">
+            <svg width="15" height="15" fill="none" stroke="#005878" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="#005878" stroke="none"/></svg>
+          </div>
+          <span class="g-title" style="color:#005878">圖片編輯</span>
+          <svg class="g-arr" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="guide-bd">
+          <ol>
+            <li>點選上方導覽列「圖片編輯」分頁進入。</li>
+            <li>點選「載入圖片」按鈕，或直接將圖片拖曳至中央畫布。</li>
+            <li>拖曳裁切框邊緣選取保留範圍；按住 Shift 可鎖定比例裁切。</li>
+            <li>調整右側「影像調整」滑桿：亮度、對比、飽和度、銳利度。</li>
+            <li>選擇「濾鏡」套用黑白、暖色、冷色等院內常用風格（選填）。</li>
+            <li>確認效果後點選「下載」儲存編輯後的圖片。</li>
+          </ol>
+          <div class="guide-tip">💡 編輯後的圖片可直接插入「海報編輯」使用，保持最佳解析度。</div>
+        </div>
+      </div>
+
+      <!-- 3. 批次浮水印 -->
+      <div class="guide-section">
+        <div class="guide-hd" onclick="toggleGuide(this)">
+          <div class="g-icon" style="background:#E8F7CC">
+            <svg width="15" height="15" fill="none" stroke="#3A6800" stroke-width="1.8" viewBox="0 0 16 16"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg>
+          </div>
+          <span class="g-title" style="color:#3A6800">批次浮水印</span>
+          <svg class="g-arr" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="guide-bd">
+          <ol>
+            <li>點選上方導覽列「批次浮水印」分頁進入。</li>
+            <li>點選「選取圖片」一次匯入多張圖片（支援 JPG / PNG）。</li>
+            <li>選擇浮水印類型：<strong>文字浮水印</strong>（輸入文字內容）或<strong>圖片浮水印</strong>（上傳院徽/Logo）。</li>
+            <li>使用九宮格選取浮水印位置；拖曳滑桿調整<strong>透明度</strong>與<strong>大小</strong>。</li>
+            <li>在預覽區確認每張圖片效果是否符合需求。</li>
+            <li>點選「全部下載」，系統將批次輸出所有加上浮水印的圖片壓縮包。</li>
+          </ol>
+          <div class="guide-tip">💡 建議使用院徽 PNG（背景透明）作為浮水印圖片，效果最佳。</div>
+        </div>
+      </div>
+
+      <!-- 4. QR碼產生 -->
+      <div class="guide-section">
+        <div class="guide-hd" onclick="toggleGuide(this)">
+          <div class="g-icon" style="background:#FFF4CC">
+            <svg width="15" height="15" fill="none" stroke="#7A5000" stroke-width="1.5" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="10.5" y="10.5" width="2" height="2" fill="#7A5000" stroke="none"/><rect x="13.5" y="10.5" width="2" height="2" fill="#7A5000" stroke="none"/><rect x="10.5" y="13.5" width="2" height="2" fill="#7A5000" stroke="none"/></svg>
+          </div>
+          <span class="g-title" style="color:#7A5000">QR 碼產生</span>
+          <svg class="g-arr" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="guide-bd">
+          <ol>
+            <li>點選上方導覽列「QR碼產生」分頁進入。</li>
+            <li>在「內容輸入」欄填入目標網址（URL）或任意文字內容。</li>
+            <li>選擇 QR 碼<strong>前景色</strong>與<strong>背景色</strong>（可搭配光田 CI 色系）。</li>
+            <li>如需嵌入院徽，點選「上傳 Logo」選取透明背景的院徽圖片。</li>
+            <li>調整輸出尺寸（建議至少 512px 以確保掃描準確率）。</li>
+            <li>點選「下載 PNG」或「下載 SVG」儲存 QR 碼檔案。</li>
+          </ol>
+          <div class="guide-tip">💡 嵌入 Logo 後請實際掃描測試，確認 QR 碼仍可正確辨讀。</div>
+        </div>
+      </div>
+
+      <!-- 5. 素材資源 -->
+      <div class="guide-section" style="margin-bottom:0">
+        <div class="guide-hd" onclick="toggleGuide(this)">
+          <div class="g-icon" style="background:#F4EDE8">
+            <svg width="15" height="15" fill="none" stroke="#5A3018" stroke-width="1.8" viewBox="0 0 16 16"><path d="M7 9a3 3 0 004.5.4l2-2a3 3 0 00-4.2-4.2l-1.2 1.2"/><path d="M9 7a3 3 0 00-4.5-.4l-2 2a3 3 0 004.2 4.2l1.2-1.2"/></svg>
+          </div>
+          <span class="g-title" style="color:#5A3018">素材資源</span>
+          <svg class="g-arr" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg>
+        </div>
+        <div class="guide-bd">
+          <ol>
+            <li>點選上方導覽列「素材資源」分頁進入院內圖庫。</li>
+            <li>在搜尋欄輸入關鍵字（如「活動」、「醫療」）快速篩選素材。</li>
+            <li>依分類標籤瀏覽：院徽 / Logo、活動照片、插圖、圖示⋯</li>
+            <li>點選素材縮圖可放大預覽，確認內容與解析度。</li>
+            <li>點選「插入海報」直接將素材加入目前的海報編輯畫面。</li>
+            <li>點選「下載」可將素材儲存至本機備用。</li>
+          </ol>
+          <div class="guide-tip">💡 院內公版 Logo 均已取得授權，可直接用於院內文宣。外部素材請自行確認版權。</div>
+        </div>
+      </div>
+
+    </div>
     <div class="tos-footer">
       <label>
         <input type="checkbox" id="tos-no-show">
@@ -7508,7 +7673,24 @@ window.addEventListener('load', ()=>{
 // ── 使用須知 ──
 const TOS_KEY = 'kt_tos_accepted';
 function showTos(){
+  // 每次開啟重置到「使用須知」頁籤
+  document.querySelectorAll('.tos-panel').forEach(p=>p.style.display='none');
+  const n=document.getElementById('tos-panel-notice');
+  if(n) n.style.display='';
+  document.querySelectorAll('.tos-tab').forEach(b=>b.classList.remove('on'));
+  const firstTab=document.querySelector('.tos-tab');
+  if(firstTab) firstTab.classList.add('on');
   document.getElementById('tos-overlay').style.display='flex';
+}
+function tosTab(id,btn){
+  document.querySelectorAll('.tos-panel').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.tos-tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tos-panel-'+id).style.display='';
+  btn.classList.add('on');
+}
+function toggleGuide(hd){
+  hd.classList.toggle('open');
+  hd.nextElementSibling.classList.toggle('open');
 }
 function closeTos(){
   if(document.getElementById('tos-no-show').checked){
