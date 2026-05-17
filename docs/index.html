@@ -868,6 +868,24 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .cloud-dot.error{background:#f44336;}
 .cloud-dot.off{background:#888;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* ── Size Tooltip ── */
+#size-tip{display:none;position:absolute;background:rgba(20,20,20,.82);color:#fff;font-size:11px;font-family:'Inter',sans-serif;padding:2px 7px;border-radius:4px;pointer-events:none;z-index:50;white-space:nowrap;transform:translateX(-50%)}
+/* ── Rubber-band select ── */
+#sel-rect{display:none;position:absolute;border:1.5px dashed #3b82f6;background:rgba(59,130,246,.07);pointer-events:none;z-index:25}
+/* ── Context Menu ── */
+#ctx-menu{display:none;position:fixed;background:#fff;border:1px solid var(--g200);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.14);z-index:9999;min-width:168px;padding:4px 0}
+.ctx-item{padding:7px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--g700);user-select:none}
+.ctx-item:hover{background:var(--g100)}.ctx-item.danger{color:var(--red)}
+.ctx-sep{height:1px;background:var(--g200);margin:3px 0}
+.ctx-kbd{font-size:11px;color:var(--g400)}
+/* ── Multi-select ── */
+.obj.multi-sel .obj-border{outline:2px dashed #3b82f6 !important;outline-offset:1px}
+/* ── PP Align buttons ── */
+.pp-align-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:8px}
+.pp-align-grid .btn{padding:4px;font-size:13px;justify-content:center}
+/* ── Tool mode cursor ── */
+body.tool-pan #cscroll{cursor:grab}
+body.tool-pan #cscroll:active{cursor:grabbing}
 
 </style>
 </head>
@@ -892,7 +910,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/05/17 20:21</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/05/17 20:51</span>
 </div>
 
 <div id="main">
@@ -1288,6 +1306,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 <div id="ca">
   <div id="ca-main">
     <div class="catop">
+      <button class="btn btn-blue btn-sm" id="tool-v" onclick="setToolMode('select')" title="選取 (V)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 2l16 10-7 1.5L9 22z"/></svg></button>
+      <button class="btn btn-ghost btn-sm" id="tool-h" onclick="setToolMode('pan')" title="手型平移 (H)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 11V8a2 2 0 0 0-4 0v3M14 8V6a2 2 0 0 0-4 0v5M10 7a2 2 0 0 0-4 0v6M6 13l-.4 1.6A4 4 0 0 0 9.5 20h5a4 4 0 0 0 4-4v-2a2 2 0 0 0-2-2h-1"/></svg></button>
+      <div class="sep"></div>
       <button class="btn btn-ghost btn-sm" onclick="zm(-1)">−</button>
       <span class="ztxt" id="zlbl">60%</span>
       <button class="btn btn-ghost btn-sm" onclick="zm(1)">＋</button>
@@ -1306,6 +1327,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <div id="ol"></div>
         <canvas id="fab-canvas" style="position:absolute;top:0;left:0;pointer-events:none;z-index:1;"></canvas>
         <svg id="snap-guides" style="position:absolute;top:0;left:0;pointer-events:none;z-index:30;overflow:visible;width:100%;height:100%"></svg>
+        <div id="size-tip"></div>
+        <div id="sel-rect"></div>
       </div>
     </div>
 
@@ -1955,7 +1978,7 @@ const S = {
   bgColor:'#FFFFFF', bgImgEl:null,
   bgScale:1, bgOffsetX:0, bgOffsetY:0, bgLocked:false,
   zoom:0.6,
-  objs:[], selId:null, cnt:0,
+  objs:[], selId:null, selIds:[], cnt:0, toolMode:'select',
   tab:'poster',
   wm:{
     imgs:[], logos:[], logoCnt:0,
@@ -2735,22 +2758,46 @@ function scaleObjs(){
   });
 }
 
-function selObj(id){
-  document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel'));
-  document.querySelectorAll('.layer-item').forEach(e=>e.classList.remove('sel'));
-  S.selId = id;
-  const el = document.getElementById('o'+id);
-  if(el) el.classList.add('sel');
-  const li = document.getElementById('li'+id);
-  if(li) li.classList.add('sel');
-  showPP(id);
+function selObj(id, addToSel){
+  const obj = getObj(id);
+  if(!obj) return;
+  if(addToSel){
+    // Shift+click: toggle membership
+    const idx = S.selIds.indexOf(id);
+    if(idx>=0){ S.selIds.splice(idx,1); document.getElementById('o'+id)?.classList.remove('sel','multi-sel'); }
+    else { S.selIds.push(id); S.selId=id; }
+    // refresh visual
+    document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel','multi-sel'));
+    S.selIds.forEach(sid=>{
+      document.getElementById('o'+sid)?.classList.add(S.selIds.length>1?'multi-sel':'sel');
+    });
+    if(S.selIds.length===0){ S.selId=null; document.getElementById('pp').style.display='none'; hideSizeTip(); return; }
+    S.selId = S.selIds[S.selIds.length-1];
+  } else {
+    // Normal click – if in group, select all group members
+    const gid = obj.groupId;
+    document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel','multi-sel'));
+    document.querySelectorAll('.layer-item').forEach(e=>e.classList.remove('sel'));
+    if(gid){
+      S.selIds = S.objs.filter(o=>o.groupId===gid).map(o=>o.id);
+      S.selId = id;
+      S.selIds.forEach(sid=>{ document.getElementById('o'+sid)?.classList.add(S.selIds.length>1?'multi-sel':'sel'); });
+    } else {
+      S.selIds=[id]; S.selId=id;
+      document.getElementById('o'+id)?.classList.add('sel');
+      document.getElementById('li'+id)?.classList.add('sel');
+    }
+  }
+  showPP(S.selId);
+  showSizeTip(getObj(S.selId));
 }
 
 function desel(upd){
-  document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel'));
+  document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel','multi-sel'));
   document.querySelectorAll('.layer-item').forEach(e=>e.classList.remove('sel'));
-  S.selId = null;
+  S.selId = null; S.selIds = [];
   document.getElementById('pp').style.display = 'none';
+  hideSizeTip();
   if(upd) updLayerList();
 }
 
@@ -2774,6 +2821,103 @@ function handleBgClick(e){
 // ═══════════════════════════════════════════════
 //  DRAG / RESIZE / ROTATE
 // ═══════════════════════════════════════════════
+// ── Size Tooltip ──
+function showSizeTip(obj){
+  const tip=document.getElementById('size-tip');
+  if(!tip||!obj) return;
+  tip.textContent=Math.round(obj.w)+' × '+Math.round(obj.h);
+  tip.style.left=(obj.x*S.zoom+obj.w*S.zoom/2)+'px';
+  tip.style.top=(obj.y*S.zoom+obj.h*S.zoom+7)+'px';
+  tip.style.display='block';
+}
+function hideSizeTip(){ const t=document.getElementById('size-tip'); if(t) t.style.display='none'; }
+
+// ── Context Menu ──
+let _ctxId=null;
+function showCtxMenu(e,id){
+  _ctxId=id||S.selId; if(!_ctxId) return;
+  const obj=getObj(_ctxId);
+  const isGrouped=obj&&obj.groupId;
+  const multiSel=S.selIds.length>1;
+  document.getElementById('ctx-grp-btn').style.display=(multiSel&&!isGrouped)?'flex':'none';
+  document.getElementById('ctx-ungrp-btn').style.display=isGrouped?'flex':'none';
+  const menu=document.getElementById('ctx-menu');
+  menu.style.display='block';
+  menu.style.left=Math.min(e.clientX,window.innerWidth-180)+'px';
+  menu.style.top=Math.min(e.clientY,window.innerHeight-220)+'px';
+}
+function hideCtxMenu(){ document.getElementById('ctx-menu').style.display='none'; }
+document.addEventListener('click',()=>hideCtxMenu());
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') hideCtxMenu(); });
+function ctxDup(){ hideCtxMenu(); if(_ctxId) dupObj(_ctxId); }
+function ctxToFront(){
+  hideCtxMenu(); if(!_ctxId) return; pushHistory();
+  const i=S.objs.findIndex(o=>o.id===_ctxId);
+  if(i<S.objs.length-1){ S.objs.push(S.objs.splice(i,1)[0]); renderBg(); }
+}
+function ctxToBack(){
+  hideCtxMenu(); if(!_ctxId) return; pushHistory();
+  const i=S.objs.findIndex(o=>o.id===_ctxId);
+  if(i>0){ S.objs.unshift(S.objs.splice(i,1)[0]); renderBg(); }
+}
+function ctxGroup(){ hideCtxMenu(); groupSelObjs(); }
+function ctxUngroup(){
+  hideCtxMenu(); if(!_ctxId) return;
+  const obj=getObj(_ctxId); if(!obj||!obj.groupId) return;
+  pushHistory();
+  const gid=obj.groupId;
+  S.objs.forEach(o=>{ if(o.groupId===gid) delete o.groupId; });
+  snack('已解散群組');
+}
+function ctxDel(){ hideCtxMenu(); if(_ctxId) rmObj(_ctxId); }
+
+// ── Alignment ──
+function alignObj(dir){
+  const ids=S.selIds.length>0?S.selIds:(S.selId?[S.selId]:[]);
+  if(!ids.length) return;
+  pushHistory();
+  ids.forEach(id=>{
+    const obj=getObj(id); if(!obj) return;
+    if(dir==='left')   obj.x=0;
+    else if(dir==='right')  obj.x=S.W-obj.w;
+    else if(dir==='cx')    obj.x=(S.W-obj.w)/2;
+    else if(dir==='top')   obj.y=0;
+    else if(dir==='bottom') obj.y=S.H-obj.h;
+    else if(dir==='cy')    obj.y=(S.H-obj.h)/2;
+    const el=document.getElementById('o'+obj.id);
+    if(el) applyStyle(el,obj);
+  });
+  renderBg();
+  const primary=getObj(S.selId); if(primary){ updatePPValues(primary); showSizeTip(primary); }
+}
+
+// ── Grouping ──
+function groupSelObjs(){
+  if(S.selIds.length<2){ snack('請先 Shift 點選或框選多個物件再群組'); return; }
+  pushHistory();
+  const gid='g'+mkId();
+  S.selIds.forEach(id=>{ const o=getObj(id); if(o) o.groupId=gid; });
+  snack('已群組 '+S.selIds.length+' 個物件');
+}
+function ungroupSel(){
+  if(!S.selId) return;
+  const obj=getObj(S.selId); if(!obj||!obj.groupId) return;
+  pushHistory();
+  const gid=obj.groupId;
+  S.objs.forEach(o=>{ if(o.groupId===gid) delete o.groupId; });
+  snack('已解散群組');
+}
+
+// ── Bring/Send ──
+function bringToFront(id){
+  const i=S.objs.findIndex(o=>o.id===id);
+  if(i>=0&&i<S.objs.length-1){ pushHistory(); S.objs.push(S.objs.splice(i,1)[0]); renderBg(); }
+}
+function sendToBack(id){
+  const i=S.objs.findIndex(o=>o.id===id);
+  if(i>0){ pushHistory(); S.objs.unshift(S.objs.splice(i,1)[0]); renderBg(); }
+}
+
 function drawSnapGuides(xs, ys){
   const svg = document.getElementById('snap-guides');
   if(!svg) return;
@@ -2802,17 +2946,27 @@ function clearSnapGuides(){
   if(svg) svg.innerHTML = '';
 }
 
-function attachDrag(el, obj){
+function attachDrag(elParam, objParam){
+  let el=elParam, obj=objParam;
   let mode=null, sx=0, sy=0, ox=0, oy=0, ow=0, oh=0, orot=0, cx=0, cy=0, osize=0, oar=1;
 
-  function getCenter(){
-    const z=S.zoom;
-    return { x: obj.x*z + obj.w*z/2, y: obj.y*z + obj.h*z/2 };
-  }
-
   function onDown(e){
+    if(e.button===2) return; // right-click handled by contextmenu
     e.stopPropagation();
-    selObj(obj.id);
+    selObj(obj.id, e.shiftKey);
+
+    // Alt+drag → clone object, drag the clone
+    if(e.altKey && !e.target.classList.contains('roth') && !e.target.classList.contains('rh')){
+      const newId=mkId();
+      const cloned={...obj, id:newId};
+      if(obj.type==='img') cloned.imgEl=obj.imgEl;
+      delete cloned.groupId; // clone不加入群組
+      S.objs.push(cloned);
+      mkEl(newId);
+      el=document.getElementById('o'+newId);
+      obj=cloned;
+      selObj(newId);
+    }
 
     sx=e.clientX; sy=e.clientY;
     ox=obj.x; oy=obj.y; ow=obj.w; oh=obj.h; orot=obj.rot; osize=obj.size||0; oar=oh/Math.max(1,ow);
@@ -2822,10 +2976,13 @@ function attachDrag(el, obj){
       const r=el.getBoundingClientRect();
       cx=r.left+r.width/2; cy=r.top+r.height/2;
     } else if(e.target.classList.contains('rh')){
-      mode='resize';
-      mode = 'resize-'+e.target.dataset.dir;
+      mode='resize-'+e.target.dataset.dir;
     } else {
       mode='move';
+      // store initial positions of group members
+      if(obj.groupId){
+        S.objs.forEach(o=>{ if(o.groupId===obj.groupId){ o._gox=o.x; o._goy=o.y; } });
+      }
     }
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -2864,6 +3021,15 @@ function attachDrag(el, obj){
         }
       }
       drawSnapGuides(gx, gy);
+      // group members move together
+      if(obj.groupId){
+        const ddx=obj.x-ox, ddy=obj.y-oy;
+        S.objs.forEach(o=>{
+          if(o.id===obj.id||o.groupId!==obj.groupId) return;
+          o.x=(o._gox||0)+ddx; o.y=(o._goy||0)+ddy;
+          const mel=document.getElementById('o'+o.id); if(mel) applyStyle(mel,o);
+        });
+      }
     } else if(mode==='rotate'){
       const angle = Math.atan2(e.clientY-cy, e.clientX-cx) * 180/Math.PI;
       obj.rot = Math.round((orot + (angle - Math.atan2(sy-cy,sx-cx)*180/Math.PI)) % 360);
@@ -2874,15 +3040,13 @@ function attachDrag(el, obj){
       if(dir.includes('s')) nh = Math.max(20, oh+dy);
       if(dir.includes('w')){ nw = Math.max(20, ow-dx); nx = ox+ow-nw; }
       if(dir.includes('n')){ nh = Math.max(20, oh-dy); ny = oy+oh-nh; }
-      // for img: maintain aspect on corner
       if(obj.type==='img' && (dir==='se'||dir==='sw'||dir==='ne'||dir==='nw')){
         nh = nw * obj.aspectRatio;
         if(dir.includes('n')) ny = oy+oh-nh;
       }
-      // shape: Shift 鍵鎖定長寬比（橢圓/超橢圓強制 1:1；自訂路徑不鎖）
       const _shiftLock = obj.shapeType==='custompath' ? false : e.shiftKey;
       if(obj.type==='shape' && _shiftLock && ow>0){
-        const ar = (obj.shapeType==='ellipse'||obj.shapeType==='superellipse') ? 1 : oar; // 橢圓/超橢圓→正圓
+        const ar = (obj.shapeType==='ellipse'||obj.shapeType==='superellipse') ? 1 : oar;
         if(dir==='n'||dir==='s'){
           nw=Math.max(20,nh/ar); nx=ox+(ow-nw)/2;
           if(dir==='n') ny=oy+oh-nh;
@@ -2893,7 +3057,6 @@ function attachDrag(el, obj){
         }
         nw=Math.max(20,nw); nh=Math.max(20,nh);
       }
-      // text: lock aspect ratio + scale font size
       if(obj.type==='txt' && osize>0 && ow>0 && oh>0){
         let scale;
         if(dir==='n'||dir==='s'){
@@ -2912,18 +3075,21 @@ function attachDrag(el, obj){
     applyStyle(el, obj);
     renderBg();
     if(S.selId===obj.id) updatePPValues(obj);
+    showSizeTip(obj);
   }
 
   function onUp(){
     if(!mode) return;
     mode=null;
     clearSnapGuides();
+    S.objs.forEach(o=>{ delete o._gox; delete o._goy; });
     document.removeEventListener('mousemove',onMove);
     document.removeEventListener('mouseup',onUp);
     pushHistory();
   }
 
   el.addEventListener('mousedown', onDown);
+  el.addEventListener('contextmenu', e=>{ e.preventDefault(); e.stopPropagation(); selObj(obj.id); showCtxMenu(e,obj.id); });
 }
 
 // ═══════════════════════════════════════════════
@@ -3036,6 +3202,16 @@ function renderPPHTML(obj){
   const isSh = obj.type==='shape';
   return `
   <div class="pp-title">${isT?'文字屬性':isSh?'形狀屬性':'圖片屬性'}</div>
+  <div class="pp-section-label" style="margin-bottom:4px">對齊畫布</div>
+  <div class="pp-align-grid" style="margin-bottom:8px">
+    <button class="btn btn-ghost btn-sm" onclick="alignObj('left')" title="靠左">&#9001;&#9001;</button>
+    <button class="btn btn-ghost btn-sm" onclick="alignObj('cx')" title="水平置中">⬝|</button>
+    <button class="btn btn-ghost btn-sm" onclick="alignObj('right')" title="靠右">&#9002;&#9002;</button>
+    <button class="btn btn-ghost btn-sm" onclick="alignObj('top')" title="靠上">⬝↑</button>
+    <button class="btn btn-ghost btn-sm" onclick="alignObj('cy')" title="垂直置中">⬝—</button>
+    <button class="btn btn-ghost btn-sm" onclick="alignObj('bottom')" title="靠下">⬝↓</button>
+  </div>
+  <div class="pp-sep"></div>
   <div class="pp-row">
     <span class="pp-label">X</span>
     <input class="inp" type="number" id="pp-x" value="${Math.round(obj.x)}" style="width:60px">
@@ -4968,6 +5144,27 @@ document.addEventListener('keydown', e=>{
   // Duplicate Ctrl/Cmd+D
   if((e.metaKey||e.ctrlKey) && e.key==='d' && S.selId){
     e.preventDefault(); dupObj(S.selId); return;
+  }
+  // Group Ctrl/Cmd+G
+  if((e.metaKey||e.ctrlKey) && !e.shiftKey && e.key==='g'){
+    e.preventDefault(); groupSelObjs(); return;
+  }
+  // Ungroup Ctrl/Cmd+Shift+G
+  if((e.metaKey||e.ctrlKey) && e.shiftKey && e.key==='g'){
+    e.preventDefault(); ungroupSel(); return;
+  }
+  // Bring to front Ctrl/Cmd+]
+  if((e.metaKey||e.ctrlKey) && e.key===']' && S.selId){
+    e.preventDefault(); bringToFront(S.selId); return;
+  }
+  // Send to back Ctrl/Cmd+[
+  if((e.metaKey||e.ctrlKey) && e.key==='[' && S.selId){
+    e.preventDefault(); sendToBack(S.selId); return;
+  }
+  // V → select mode, H → pan mode
+  if(!e.metaKey&&!e.ctrlKey&&!e.altKey){
+    if(e.key==='v'||e.key==='V'){ setToolMode('select'); return; }
+    if(e.key==='h'||e.key==='H'){ setToolMode('pan'); return; }
   }
   // Nudge with arrows
   if(S.selId && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
@@ -7546,6 +7743,14 @@ function exportSVG() {
 // ═══════════════════════════════════════════════
 //  CANVAS INTERACTION (zoom / pan)
 // ═══════════════════════════════════════════════
+function setToolMode(mode){
+  S.toolMode=mode;
+  document.body.classList.toggle('tool-pan', mode==='pan');
+  const vBtn=document.getElementById('tool-v'), hBtn=document.getElementById('tool-h');
+  if(vBtn) vBtn.classList.toggle('btn-blue', mode==='select');
+  if(hBtn) hBtn.classList.toggle('btn-blue', mode==='pan');
+}
+
 function initCanvasInteraction(){
   const cs = document.getElementById('cscroll');
 
@@ -7566,33 +7771,68 @@ function initCanvasInteraction(){
     cs.scrollTop  = canvasY * newZ + 24 - my;
   }, {passive: false});
 
-  // Space + drag → pan
-  let spaceDown = false, panning = false, panSX = 0, panSY = 0, panSL = 0, panST = 0;
-  document.addEventListener('keydown', e => {
-    if(e.code === 'Space' && e.target === document.body){
-      e.preventDefault();
-      spaceDown = true;
-      cs.style.cursor = 'grab';
-    }
+  // Space + drag → pan (temporary), H mode → persistent pan
+  let spaceDown=false, panning=false, panSX=0, panSY=0, panSL=0, panST=0;
+  document.addEventListener('keydown', e=>{
+    if(e.code==='Space' && e.target===document.body){ e.preventDefault(); spaceDown=true; if(S.toolMode!=='pan') cs.style.cursor='grab'; }
   });
-  document.addEventListener('keyup', e => {
-    if(e.code === 'Space'){ spaceDown = false; cs.style.cursor = ''; }
+  document.addEventListener('keyup', e=>{
+    if(e.code==='Space'){ spaceDown=false; if(S.toolMode!=='pan') cs.style.cursor=''; }
   });
-  cs.addEventListener('mousedown', e => {
-    if(!spaceDown) return;
-    panning = true;
-    panSX = e.clientX; panSY = e.clientY;
-    panSL = cs.scrollLeft; panST = cs.scrollTop;
-    cs.style.cursor = 'grabbing';
+  cs.addEventListener('mousedown', e=>{
+    if(e.button!==0) return;
+    const isPanMode = spaceDown || S.toolMode==='pan';
+    if(!isPanMode) return;
+    panning=true; panSX=e.clientX; panSY=e.clientY; panSL=cs.scrollLeft; panST=cs.scrollTop;
+    cs.style.cursor='grabbing'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', e=>{
+    if(!panning) return;
+    cs.scrollLeft=panSL-(e.clientX-panSX); cs.scrollTop=panST-(e.clientY-panSY);
+  });
+  document.addEventListener('mouseup', ()=>{
+    if(panning){ panning=false; cs.style.cursor=S.toolMode==='pan'?'grab':''; }
+  });
+
+  // ── Rubber-band multi-select ──
+  const pwEl=document.getElementById('pw');
+  const selRect=document.getElementById('sel-rect');
+  let rbanding=false, rbSX=0, rbSY=0;
+
+  cs.addEventListener('mousedown', e=>{
+    if(e.button!==0) return;
+    if(spaceDown||S.toolMode==='pan') return;
+    const bg=e.target.id==='cscroll'||e.target.id==='pw'||e.target.id==='bgc'||e.target.id==='ol';
+    if(!bg) return;
+    rbanding=true;
+    const pr=pwEl.getBoundingClientRect();
+    rbSX=e.clientX-pr.left; rbSY=e.clientY-pr.top;
+    selRect.style.cssText='display:block;left:'+rbSX+'px;top:'+rbSY+'px;width:0;height:0';
     e.preventDefault();
   });
-  document.addEventListener('mousemove', e => {
-    if(!panning) return;
-    cs.scrollLeft = panSL - (e.clientX - panSX);
-    cs.scrollTop  = panST - (e.clientY - panSY);
+  document.addEventListener('mousemove', e=>{
+    if(!rbanding) return;
+    const pr=pwEl.getBoundingClientRect();
+    const cx=e.clientX-pr.left, cy=e.clientY-pr.top;
+    const x=Math.min(rbSX,cx), y=Math.min(rbSY,cy), w=Math.abs(cx-rbSX), h=Math.abs(cy-rbSY);
+    selRect.style.cssText='display:block;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px';
   });
-  document.addEventListener('mouseup', () => {
-    if(panning){ panning = false; cs.style.cursor = spaceDown ? 'grab' : ''; }
+  document.addEventListener('mouseup', e=>{
+    if(!rbanding) return;
+    rbanding=false; selRect.style.display='none';
+    const pr=pwEl.getBoundingClientRect();
+    const cx=e.clientX-pr.left, cy=e.clientY-pr.top;
+    const rx=Math.min(rbSX,cx)/S.zoom, ry=Math.min(rbSY,cy)/S.zoom;
+    const rw=Math.abs(cx-rbSX)/S.zoom, rh=Math.abs(cy-rbSY)/S.zoom;
+    if(rw<4&&rh<4) return;
+    const hits=S.objs.filter(o=>o.x<rx+rw&&o.x+o.w>rx&&o.y<ry+rh&&o.y+o.h>ry);
+    if(!hits.length){ desel(); return; }
+    document.querySelectorAll('.obj').forEach(e=>e.classList.remove('sel','multi-sel'));
+    S.selIds=hits.map(o=>o.id); S.selId=hits[hits.length-1].id;
+    S.selIds.forEach(id=>{ document.getElementById('o'+id)?.classList.add(S.selIds.length>1?'multi-sel':'sel'); });
+    showPP(S.selId);
+    showSizeTip(getObj(S.selId));
+    if(hits.length>1) snack('已選取 '+hits.length+' 個物件（Shift 可追加）');
   });
 }
 
@@ -7854,6 +8094,19 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(!localStorage.getItem(TOS_KEY)) showTos();
 });
 </script>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="ctxDup()">複製 <span class="ctx-kbd">⌘D</span></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxToFront()">移到最前 <span class="ctx-kbd">⌘]</span></div>
+  <div class="ctx-item" onclick="ctxToBack()">移到最後 <span class="ctx-kbd">⌘[</span></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" id="ctx-grp-btn" onclick="ctxGroup()">群組 <span class="ctx-kbd">⌘G</span></div>
+  <div class="ctx-item" id="ctx-ungrp-btn" onclick="ctxUngroup()" style="display:none">解散群組 <span class="ctx-kbd">⌘⇧G</span></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="ctxDel()">刪除 <span class="ctx-kbd" style="opacity:.6">⌫</span></div>
+</div>
 
 </body>
 </html>
