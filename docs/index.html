@@ -892,7 +892,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/05/17 19:55</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/05/17 20:21</span>
 </div>
 
 <div id="main">
@@ -1305,6 +1305,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
         <canvas id="bgc"></canvas>
         <div id="ol"></div>
         <canvas id="fab-canvas" style="position:absolute;top:0;left:0;pointer-events:none;z-index:1;"></canvas>
+        <svg id="snap-guides" style="position:absolute;top:0;left:0;pointer-events:none;z-index:30;overflow:visible;width:100%;height:100%"></svg>
       </div>
     </div>
 
@@ -2773,6 +2774,34 @@ function handleBgClick(e){
 // ═══════════════════════════════════════════════
 //  DRAG / RESIZE / ROTATE
 // ═══════════════════════════════════════════════
+function drawSnapGuides(xs, ys){
+  const svg = document.getElementById('snap-guides');
+  if(!svg) return;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const W = S.W * S.zoom, H = S.H * S.zoom;
+  xs.forEach(x => {
+    const px = x * S.zoom;
+    const l = document.createElementNS(ns, 'line');
+    l.setAttribute('x1', px); l.setAttribute('y1', -9999);
+    l.setAttribute('x2', px); l.setAttribute('y2', H + 9999);
+    l.setAttribute('stroke', '#f43f5e'); l.setAttribute('stroke-width', '1');
+    svg.appendChild(l);
+  });
+  ys.forEach(y => {
+    const py = y * S.zoom;
+    const l = document.createElementNS(ns, 'line');
+    l.setAttribute('x1', -9999); l.setAttribute('y1', py);
+    l.setAttribute('x2', W + 9999); l.setAttribute('y2', py);
+    l.setAttribute('stroke', '#f43f5e'); l.setAttribute('stroke-width', '1');
+    svg.appendChild(l);
+  });
+}
+function clearSnapGuides(){
+  const svg = document.getElementById('snap-guides');
+  if(svg) svg.innerHTML = '';
+}
+
 function attachDrag(el, obj){
   let mode=null, sx=0, sy=0, ox=0, oy=0, ow=0, oh=0, orot=0, cx=0, cy=0, osize=0, oar=1;
 
@@ -2812,6 +2841,29 @@ function attachDrag(el, obj){
     if(mode==='move'){
       obj.x = ox+dx;
       obj.y = oy+dy;
+      // ── snap guides ──
+      const THRESH = 6 / S.zoom;
+      const snapXs = [0, S.W/2, S.W];
+      const snapYs = [0, S.H/2, S.H];
+      S.objs.forEach(o => {
+        if(o.id===obj.id) return;
+        snapXs.push(o.x, o.x+o.w/2, o.x+o.w);
+        snapYs.push(o.y, o.y+o.h/2, o.y+o.h);
+      });
+      const gx=[], gy=[];
+      const objXs=[obj.x, obj.x+obj.w/2, obj.x+obj.w];
+      const objYs=[obj.y, obj.y+obj.h/2, obj.y+obj.h];
+      outer_x: for(let i=0;i<objXs.length;i++){
+        for(const tx of snapXs){
+          if(Math.abs(objXs[i]-tx)<THRESH){ obj.x+=tx-objXs[i]; gx.push(tx); break outer_x; }
+        }
+      }
+      outer_y: for(let i=0;i<objYs.length;i++){
+        for(const ty of snapYs){
+          if(Math.abs(objYs[i]-ty)<THRESH){ obj.y+=ty-objYs[i]; gy.push(ty); break outer_y; }
+        }
+      }
+      drawSnapGuides(gx, gy);
     } else if(mode==='rotate'){
       const angle = Math.atan2(e.clientY-cy, e.clientX-cx) * 180/Math.PI;
       obj.rot = Math.round((orot + (angle - Math.atan2(sy-cy,sx-cx)*180/Math.PI)) % 360);
@@ -2865,6 +2917,7 @@ function attachDrag(el, obj){
   function onUp(){
     if(!mode) return;
     mode=null;
+    clearSnapGuides();
     document.removeEventListener('mousemove',onMove);
     document.removeEventListener('mouseup',onUp);
     pushHistory();
@@ -7491,6 +7544,59 @@ function exportSVG() {
 }
 
 // ═══════════════════════════════════════════════
+//  CANVAS INTERACTION (zoom / pan)
+// ═══════════════════════════════════════════════
+function initCanvasInteraction(){
+  const cs = document.getElementById('cscroll');
+
+  // Ctrl/Cmd + scroll → zoom centred on cursor
+  cs.addEventListener('wheel', e => {
+    if(!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const rect = cs.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const oldZ = S.zoom;
+    const factor = e.deltaY < 0 ? 1.12 : 1/1.12;
+    const newZ = clamp(oldZ * factor, 0.08, 3);
+    const canvasX = (mx + cs.scrollLeft - 24) / oldZ;
+    const canvasY = (my + cs.scrollTop  - 24) / oldZ;
+    setZoom(newZ);
+    cs.scrollLeft = canvasX * newZ + 24 - mx;
+    cs.scrollTop  = canvasY * newZ + 24 - my;
+  }, {passive: false});
+
+  // Space + drag → pan
+  let spaceDown = false, panning = false, panSX = 0, panSY = 0, panSL = 0, panST = 0;
+  document.addEventListener('keydown', e => {
+    if(e.code === 'Space' && e.target === document.body){
+      e.preventDefault();
+      spaceDown = true;
+      cs.style.cursor = 'grab';
+    }
+  });
+  document.addEventListener('keyup', e => {
+    if(e.code === 'Space'){ spaceDown = false; cs.style.cursor = ''; }
+  });
+  cs.addEventListener('mousedown', e => {
+    if(!spaceDown) return;
+    panning = true;
+    panSX = e.clientX; panSY = e.clientY;
+    panSL = cs.scrollLeft; panST = cs.scrollTop;
+    cs.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if(!panning) return;
+    cs.scrollLeft = panSL - (e.clientX - panSX);
+    cs.scrollTop  = panST - (e.clientY - panSY);
+  });
+  document.addEventListener('mouseup', () => {
+    if(panning){ panning = false; cs.style.cursor = spaceDown ? 'grab' : ''; }
+  });
+}
+
+// ═══════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('load', ()=>{
@@ -7503,6 +7609,7 @@ window.addEventListener('load', ()=>{
   addLogoSlot();
   updUndoButtons();
   ieInitMouseEvents();
+  initCanvasInteraction();
   // Initialize pages after everything else
   S.pages = [getCurrentPageData()];
   S.pageIdx = 0;
