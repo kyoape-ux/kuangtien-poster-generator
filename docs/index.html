@@ -1246,7 +1246,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
           <div class="inp-row" style="margin-bottom:6px">
             <span class="inp-label">強度</span>
             <input type="range" id="ie-effect-strength" min="1" max="30" value="10"
-              oninput="document.getElementById('ie-effect-lbl').textContent=this.value">
+              oninput="document.getElementById('ie-effect-lbl').textContent=this.value; iePreviewRegion();">
             <span id="ie-effect-lbl" style="font-size:11px;color:var(--g500);min-width:28px">10</span>
           </div>
           <div style="display:flex;gap:6px">
@@ -6722,6 +6722,47 @@ function ieRegionCancel(){
   document.getElementById('ie-region-mosaic-btn').classList.add('btn-ghost');
 }
 
+function iePreviewRegion(){
+  if(!IE._regRect||!IE.origCanvas||!IE.regionMode) return;
+  const{x,y,w,h}=IE._regRect;
+  if(w<2||h<2) return;
+  const ov=ieO();
+  const ctx=ov.getContext('2d');
+  ctx.clearRect(0,0,ov.width,ov.height);
+  const strength=+document.getElementById('ie-effect-strength').value;
+  const origCtx=IE.origCanvas.getContext('2d');
+  const id=origCtx.getImageData(x,y,w,h);
+  const previewId=new ImageData(new Uint8ClampedArray(id.data),w,h);
+  if(IE.regionShape==='circle'){
+    const cx=w/2,cy=h/2,rx=w/2,ry=h/2;
+    const tmp=new ImageData(new Uint8ClampedArray(previewId.data),w,h);
+    if(IE.regionMode==='blur') ieBoxBlur(tmp,Math.round(strength));
+    else ieMosaic(tmp,Math.max(2,Math.round(strength)));
+    for(let py=0;py<h;py++){
+      for(let px=0;px<w;px++){
+        const dx=(px-cx)/rx,dy=(py-cy)/ry;
+        if(dx*dx+dy*dy<=1){
+          const i=(py*w+px)*4;
+          previewId.data[i]=tmp.data[i];previewId.data[i+1]=tmp.data[i+1];previewId.data[i+2]=tmp.data[i+2];
+        }
+      }
+    }
+  } else {
+    if(IE.regionMode==='blur') ieBoxBlur(previewId,Math.round(strength));
+    else ieMosaic(previewId,Math.max(2,Math.round(strength)));
+  }
+  const tmpC=document.createElement('canvas');
+  tmpC.width=w;tmpC.height=h;
+  tmpC.getContext('2d').putImageData(previewId,0,0);
+  ctx.drawImage(tmpC,x,y);
+  ctx.strokeStyle='rgba(37,99,235,.9)';ctx.lineWidth=2;ctx.setLineDash([5,3]);
+  if(IE.regionShape==='circle'){
+    ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.stroke();
+  } else {
+    ctx.strokeRect(x,y,w,h);
+  }
+}
+
 function ieApplyRegion(){
   if(!IE._regRect||!IE.origCanvas||!IE.regionMode){snack('請先拖曳選取區域');return;}
   const{x,y,w,h}=IE._regRect;
@@ -7117,7 +7158,10 @@ function ieInitMouseEvents(){
     else if(IE.regionMode) IE._regRect={x,y,w,h};
   });
 
-  ov.addEventListener('mouseup',()=>{dragging=false;});
+  ov.addEventListener('mouseup',()=>{
+    dragging=false;
+    if(IE.regionMode) iePreviewRegion();
+  });
   ov.addEventListener('mouseleave',()=>{dragging=false;});
 }
 
