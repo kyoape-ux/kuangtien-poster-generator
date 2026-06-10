@@ -359,6 +359,15 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   width:2px;height:12px;background:var(--sel);border-radius:1px;
 }
 .obj.sel .roth{display:block}
+/* ── IMG CROP MODE ── */
+.obj-imgclip{position:absolute;inset:0;overflow:hidden}
+.obj.in-crop .obj-imgclip{overflow:visible}
+.obj.in-crop{outline:2px solid #f59e0b !important;outline-offset:1px;z-index:99 !important}
+.obj.in-crop .rh{background:#f59e0b !important;border-color:#92400e !important}
+.obj.in-crop .roth{display:none !important}
+.crop-dim{position:absolute;inset:0;box-shadow:0 0 0 3000px rgba(0,0,0,.52);pointer-events:none;z-index:3}
+.crop-img-outline{position:absolute;border:1.5px dashed rgba(255,255,255,.65);pointer-events:none;z-index:4;box-sizing:border-box}
+.crop-hint{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);background:rgba(15,15,15,.78);color:#fff;font-size:11px;font-family:'Inter',sans-serif;padding:2px 9px;border-radius:4px;white-space:nowrap;pointer-events:none;z-index:200}
 
 /* ── WATERMARK TAB ── */
 .wm-queue{
@@ -910,7 +919,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/05/17 20:51</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/10 22:17</span>
 </div>
 
 <div id="main">
@@ -1978,7 +1987,7 @@ const S = {
   bgColor:'#FFFFFF', bgImgEl:null,
   bgScale:1, bgOffsetX:0, bgOffsetY:0, bgLocked:false,
   zoom:0.6,
-  objs:[], selId:null, selIds:[], cnt:0, toolMode:'select',
+  objs:[], selId:null, selIds:[], cnt:0, toolMode:'select', cropId:null,
   tab:'poster',
   wm:{
     imgs:[], logos:[], logoCnt:0,
@@ -2628,10 +2637,13 @@ function mkEl(id){
     el._shapeSvg = svg;
     _renderShapeSvg(el, obj);
   } else {
+    const clip = document.createElement('div');
+    clip.className = 'obj-imgclip';
     const imgEl = document.createElement('img');
     imgEl.src = obj.imgEl.src;
-    imgEl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;';
-    el.appendChild(imgEl);
+    imgEl.style.cssText = 'position:absolute;pointer-events:none;object-fit:fill;';
+    clip.appendChild(imgEl);
+    el.appendChild(clip);
     const lb = document.createElement('div');
     lb.className = 'lock-badge';
     lb.textContent = '⇲';
@@ -2729,7 +2741,22 @@ function applyStyle(el, obj){
     }
     _renderShapeSvg(el, obj);
   }
-  // Apply clip shape for images
+  // Image crop positioning
+  if(obj.type==='img'){
+    const clip=el.querySelector('.obj-imgclip');
+    const innerImg=clip?.querySelector('img');
+    if(innerImg){
+      const iw=(obj.imgW!=null?obj.imgW:obj.w)*z;
+      const ih=(obj.imgH!=null?obj.imgH:obj.h)*z;
+      const ix=(obj.imgX||0)*z;
+      const iy=(obj.imgY||0)*z;
+      innerImg.style.width=iw+'px'; innerImg.style.height=ih+'px';
+      innerImg.style.left=ix+'px'; innerImg.style.top=iy+'px';
+    }
+    // update crop outline position when in crop mode
+    if(S.cropId===obj.id){ const ol2=el.querySelector('.crop-img-outline'); if(ol2) _setCropOutlineStyle(ol2,obj); }
+  }
+  // Apply clip shape for images (onto .obj-imgclip)
   if(obj.type==='img' && obj.clipShape) _applyClipShape(el, obj);
   // Gradient mask — 圖片用 CSS mask-image；形狀已在 _renderShapeSvg 用 SVG native <mask>
   {
@@ -2814,6 +2841,7 @@ function rmObj(id){
 
 function handleBgClick(e){
   if(e.target.id==='cscroll'||e.target.id==='pw'||e.target.id==='bgc'){
+    if(S.cropId){ exitCropMode(false); return; }
     desel();
   }
 }
@@ -2821,6 +2849,121 @@ function handleBgClick(e){
 // ═══════════════════════════════════════════════
 //  DRAG / RESIZE / ROTATE
 // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  CROP MODE
+// ═══════════════════════════════════════════════
+function _setCropOutlineStyle(outlineEl, obj){
+  const z=S.zoom;
+  outlineEl.style.left=(obj.imgX||0)*z+'px';
+  outlineEl.style.top=(obj.imgY||0)*z+'px';
+  outlineEl.style.width=(obj.imgW!=null?obj.imgW:obj.w)*z+'px';
+  outlineEl.style.height=(obj.imgH!=null?obj.imgH:obj.h)*z+'px';
+}
+
+function enterCropMode(id){
+  if(S.cropId) exitCropMode(true);
+  const obj=getObj(id);
+  if(!obj||obj.type!=='img') return;
+  S.cropId=id;
+  // init crop props
+  if(obj.imgW==null){ obj.imgW=obj.w; obj.imgH=obj.h; obj.imgX=0; obj.imgY=0; }
+  obj._cb={imgX:obj.imgX,imgY:obj.imgY,imgW:obj.imgW,imgH:obj.imgH}; // backup
+  const el=document.getElementById('o'+id);
+  el.classList.add('in-crop');
+  // dim overlay (box-shadow trick: dims everything outside the frame)
+  const dim=document.createElement('div');
+  dim.className='crop-dim'; el.appendChild(dim);
+  // image outline
+  const outline=document.createElement('div');
+  outline.className='crop-img-outline';
+  _setCropOutlineStyle(outline,obj);
+  el.appendChild(outline);
+  // hint
+  const hint=document.createElement('div');
+  hint.className='crop-hint';
+  hint.textContent='拖曳 移動圖片內容 · Ctrl+滾輪 縮放 · Enter/雙擊 確認 · Esc 取消';
+  el.appendChild(hint);
+  // setup content drag
+  _cropDragInit(el,obj);
+  // scroll to scale image content in crop mode
+  _cropScrollInit(el,obj);
+  snack('進入裁切模式 — 橘色框為可見區域，拖曳移動圖片');
+}
+
+function exitCropMode(cancel){
+  if(!S.cropId) return;
+  const el=document.getElementById('o'+S.cropId);
+  const obj=getObj(S.cropId);
+  if(cancel && obj && obj._cb){ Object.assign(obj,obj._cb); }
+  if(obj){ delete obj._cb;
+    // re-apply image position
+    const img=el?.querySelector('.obj-imgclip img');
+    if(img){
+      const z=S.zoom;
+      img.style.width=(obj.imgW!=null?obj.imgW:obj.w)*z+'px';
+      img.style.height=(obj.imgH!=null?obj.imgH:obj.h)*z+'px';
+      img.style.left=(obj.imgX||0)*z+'px';
+      img.style.top=(obj.imgY||0)*z+'px';
+    }
+  }
+  if(el){
+    el.classList.remove('in-crop');
+    el.querySelectorAll('.crop-dim,.crop-img-outline,.crop-hint').forEach(e=>e.remove());
+    el.querySelector('.obj-imgclip')?._cropDown && el.querySelector('.obj-imgclip').removeEventListener('mousedown', el.querySelector('.obj-imgclip')._cropDown);
+    el.querySelector('.obj-imgclip')?._cropWheel && el.querySelector('.obj-imgclip').removeEventListener('wheel', el.querySelector('.obj-imgclip')._cropWheel);
+  }
+  const prevId=S.cropId;
+  S.cropId=null;
+  if(!cancel) pushHistory();
+  selObj(prevId);
+}
+
+function _cropDragInit(el, obj){
+  const clip=el.querySelector('.obj-imgclip');
+  if(!clip) return;
+  let dragging=false,sx=0,sy=0,ox=0,oy=0;
+  clip._cropDown=function(e){
+    if(e.button!==0||e.target.classList.contains('rh')) return;
+    dragging=true; sx=e.clientX; sy=e.clientY;
+    ox=obj.imgX||0; oy=obj.imgY||0;
+    clip.style.cursor='grabbing';
+    e.preventDefault(); e.stopPropagation();
+    document.addEventListener('mousemove',onM); document.addEventListener('mouseup',onU);
+  };
+  clip.addEventListener('mousedown',clip._cropDown);
+  function onM(e){
+    if(!dragging) return;
+    obj.imgX=ox+(e.clientX-sx)/S.zoom;
+    obj.imgY=oy+(e.clientY-sy)/S.zoom;
+    const img=clip.querySelector('img');
+    if(img){ const z=S.zoom; img.style.left=obj.imgX*z+'px'; img.style.top=obj.imgY*z+'px'; }
+    const outline=el.querySelector('.crop-img-outline');
+    if(outline) _setCropOutlineStyle(outline,obj);
+  }
+  function onU(){ dragging=false; clip.style.cursor=''; document.removeEventListener('mousemove',onM); document.removeEventListener('mouseup',onU); }
+}
+
+function _cropScrollInit(el, obj){
+  const clip=el.querySelector('.obj-imgclip');
+  if(!clip) return;
+  clip._cropWheel=function(e){
+    if(!e.ctrlKey&&!e.metaKey) return;
+    e.preventDefault(); e.stopPropagation();
+    const factor=e.deltaY<0?1.1:1/1.1;
+    const oldW=obj.imgW!=null?obj.imgW:obj.w;
+    const oldH=obj.imgH!=null?obj.imgH:obj.h;
+    obj.imgW=Math.max(20,oldW*factor); obj.imgH=Math.max(20,oldH*factor);
+    // keep center fixed
+    obj.imgX=(obj.imgX||0)-((obj.imgW-oldW)/2);
+    obj.imgY=(obj.imgY||0)-((obj.imgH-oldH)/2);
+    const img=clip.querySelector('img');
+    if(img){ const z=S.zoom; img.style.width=obj.imgW*z+'px'; img.style.height=obj.imgH*z+'px'; img.style.left=obj.imgX*z+'px'; img.style.top=obj.imgY*z+'px'; }
+    const outline=el.querySelector('.crop-img-outline');
+    if(outline) _setCropOutlineStyle(outline,obj);
+  };
+  clip.addEventListener('wheel',clip._cropWheel,{passive:false});
+}
+
 // ── Size Tooltip ──
 function showSizeTip(obj){
   const tip=document.getElementById('size-tip');
@@ -3090,6 +3233,13 @@ function attachDrag(elParam, objParam){
 
   el.addEventListener('mousedown', onDown);
   el.addEventListener('contextmenu', e=>{ e.preventDefault(); e.stopPropagation(); selObj(obj.id); showCtxMenu(e,obj.id); });
+  el.addEventListener('dblclick', e=>{
+    e.stopPropagation();
+    if(obj.type==='img'){
+      if(S.cropId===obj.id) exitCropMode(false);
+      else enterCropMode(obj.id);
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════
@@ -3497,8 +3647,8 @@ function setClipShape(id, shape){
 }
 
 function _applyClipShape(el, obj){
-  const imgEl = el.querySelector('img');
-  const target = imgEl || el;
+  const clip = el.querySelector('.obj-imgclip');
+  const target = clip || el.querySelector('img') || el;
   if(!obj.clipShape || obj.clipShape === 'none'){
     target.style.clipPath = '';
     target.style.borderRadius = '';
@@ -5112,8 +5262,14 @@ document.addEventListener('keydown', e=>{
   const isCE=document.activeElement.contentEditable==='true';
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||isCE) return;
 
+  // Crop mode: Enter confirms, Escape cancels
+  if(S.cropId){
+    if(e.key==='Enter'){ e.preventDefault(); exitCropMode(false); return; }
+    if(e.key==='Escape'){ e.preventDefault(); exitCropMode(true); return; }
+  }
   // Delete
   if((e.key==='Delete'||e.key==='Backspace') && S.selId){
+    if(S.cropId){ exitCropMode(true); return; }
     rmObj(S.selId); return;
   }
   // Escape
