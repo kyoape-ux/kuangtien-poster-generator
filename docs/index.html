@@ -879,6 +879,11 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 /* ── Size Tooltip ── */
 #size-tip{display:none;position:absolute;background:rgba(20,20,20,.82);color:#fff;font-size:11px;font-family:'Inter',sans-serif;padding:2px 7px;border-radius:4px;pointer-events:none;z-index:50;white-space:nowrap;transform:translateX(-50%)}
+/* ── Text Mode Floating Bar ── */
+#txt-mode-bar{display:none;position:absolute;z-index:60;transform:translateX(-50%);background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,0.14);padding:3px;gap:2px;align-items:center;white-space:nowrap}
+.tmb-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;border:none;background:transparent;font-size:12px;font-weight:500;color:var(--text-sub);cursor:pointer;transition:background 0.12s,color 0.12s;font-family:'Noto Sans TC',sans-serif}
+.tmb-btn:hover{background:var(--brand-bg);color:var(--brand)}
+.tmb-btn.on{background:var(--brand);color:#fff}
 /* ── Rubber-band select ── */
 #sel-rect{display:none;position:absolute;border:1.5px dashed #3b82f6;background:rgba(59,130,246,.07);pointer-events:none;z-index:25}
 /* ── Context Menu ── */
@@ -919,7 +924,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:16</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:19</span>
 </div>
 
 <div id="main">
@@ -1344,6 +1349,14 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <canvas id="fab-canvas" style="position:absolute;top:0;left:0;pointer-events:none;z-index:1;"></canvas>
         <svg id="snap-guides" style="position:absolute;top:0;left:0;pointer-events:none;z-index:30;overflow:visible;width:100%;height:100%"></svg>
         <div id="size-tip"></div>
+        <div id="txt-mode-bar">
+          <button class="tmb-btn" id="tmb-wrap" onclick="setTxtResize(S.selId,'wrap')" title="拉框框只改大小，字體不變">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="12" rx="1"/><path d="M3 5h7M3 8h10M3 11h5"/></svg>換行
+          </button>
+          <button class="tmb-btn" id="tmb-scale" onclick="setTxtResize(S.selId,'scale')" title="拉框框時字體等比縮放">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M1 6V1h5M15 10v5h-5M1 1l5.5 5.5M15 15l-5.5-5.5"/></svg>縮放
+          </button>
+        </div>
         <div id="sel-rect"></div>
       </div>
     </div>
@@ -2864,6 +2877,7 @@ function desel(upd){
   S.selId = null; S.selIds = [];
   document.getElementById('pp').style.display = 'none';
   hideSizeTip();
+  hideTxtModeBar();
   if(upd) updLayerList();
 }
 
@@ -3011,8 +3025,34 @@ function showSizeTip(obj){
   tip.style.left=(obj.x*S.zoom+obj.w*S.zoom/2)+'px';
   tip.style.top=(obj.y*S.zoom+obj.h*S.zoom+7)+'px';
   tip.style.display='block';
+  // 同步更新文字模式懸浮工具列位置
+  if(obj.type==='txt') showTxtModeBar(obj);
+  else hideTxtModeBar();
 }
 function hideSizeTip(){ const t=document.getElementById('size-tip'); if(t) t.style.display='none'; }
+
+function showTxtModeBar(obj){
+  const bar = document.getElementById('txt-mode-bar');
+  if(!bar || !obj || obj.type!=='txt') { hideTxtModeBar(); return; }
+  const z = S.zoom;
+  const cx = obj.x*z + obj.w*z/2;
+  // 物件上方優先；若靠近頂端則改顯示在下方
+  const aboveY = obj.y*z - 38;
+  bar.style.left = cx + 'px';
+  bar.style.top  = (aboveY >= 4 ? aboveY : obj.y*z + obj.h*z + 8) + 'px';
+  bar.style.display = 'flex';
+  _updTxtModeBar(obj.txtResize||'wrap');
+}
+function hideTxtModeBar(){
+  const bar = document.getElementById('txt-mode-bar');
+  if(bar) bar.style.display = 'none';
+}
+function _updTxtModeBar(mode){
+  const bw = document.getElementById('tmb-wrap');
+  const bs = document.getElementById('tmb-scale');
+  if(bw) bw.className = 'tmb-btn' + (mode==='wrap'  ? ' on' : '');
+  if(bs) bs.className = 'tmb-btn' + (mode==='scale' ? ' on' : '');
+}
 
 // ── Context Menu ──
 let _ctxId=null;
@@ -3385,7 +3425,7 @@ function updLayerList(){
 function showPP(id){
   const obj = getObj(id);
   const pp = document.getElementById('pp');
-  if(!obj){ pp.style.display='none'; return; }
+  if(!obj){ pp.style.display='none'; hideTxtModeBar(); return; }
   pp.style.display='block';
   pp.innerHTML = renderPPHTML(obj);
   bindPPEvents(obj);
@@ -3394,6 +3434,9 @@ function showPP(id){
   if(sbScroll && pp.offsetTop > 0){
     sbScroll.scrollTo({ top: pp.offsetTop - 8, behavior: 'smooth' });
   }
+  // 文字物件：顯示懸浮模式工具列
+  if(obj.type==='txt') showTxtModeBar(obj);
+  else hideTxtModeBar();
 }
 
 function renderPPHTML(obj){
@@ -3741,7 +3784,9 @@ function setTxtResize(id, mode){
   const obj = getObj(id);
   if(!obj) return;
   obj.txtResize = mode;
-  // 切換縮放模式時更新按鈕外觀
+  // 同步懸浮工具列
+  _updTxtModeBar(mode);
+  // 同步屬性面板按鈕（若開啟中）
   const btnWrap  = document.getElementById('pp-resize-wrap');
   const btnScale = document.getElementById('pp-resize-scale');
   if(btnWrap)  { btnWrap.className  = 'btn btn-sm ' + (mode==='wrap'  ? 'btn-blue' : 'btn-ghost'); btnWrap.style.flex='1'; btnWrap.style.justifyContent='center'; }
