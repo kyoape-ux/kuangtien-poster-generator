@@ -924,7 +924,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:43</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:52</span>
 </div>
 
 <div id="main">
@@ -4236,7 +4236,6 @@ function upP(id, key, val){
   obj[key] = val;
   const el = document.getElementById('o'+id);
   if(el) applyStyle(el, obj);
-  if(obj.type==='shape') renderFabShapes(); // 同步 Fabric.js canvas
   updLayerList();
   // Re-render pp if align changed
   if(key==='align') showPP(id);
@@ -7767,43 +7766,10 @@ function initFabCanvas() {
 }
 
 function renderFabShapes() {
+  // 形狀統一由 SVG（_renderShapeSvg）渲染，fab-canvas 保持透明
+  // 避免 SVG + Fabric 雙重疊加造成視覺錯誤
   if(!fabCanvas || typeof fabric === 'undefined') return;
-  try {
-    fabCanvas.clear();
-    const z = S.zoom;
-    S.objs.forEach(obj => {
-      if(obj.type !== 'shape') return;
-      const fill = (obj.fillColor === 'transparent' || !obj.fillColor) ? 'transparent' : obj.fillColor;
-      const sw = (obj.strokeWidth ?? 0) * z;
-      const stroke = (sw > 0 && obj.strokeColor && obj.strokeColor !== 'transparent') ? obj.strokeColor : 'transparent';
-      const dash = (obj.strokeDash && obj.strokeDash !== 'solid')
-        ? obj.strokeDash.split(',').map(Number) : [];
-      const baseProps = {
-        fill: fill || 'transparent',
-        stroke, strokeWidth: sw,
-        strokeDashArray: dash.length ? dash : null,
-        angle: obj.rot || 0,
-        opacity: obj.opacity != null ? obj.opacity : 1,
-        selectable: false, evented: false,
-        originX: 'left', originY: 'top'
-      };
-      let fabObj = null;
-      try {
-        if(obj.shapeType === 'rect' || obj.shapeType === 'dashed-rect') {
-          const rxPx=(obj.rx||0)*z;
-          fabObj = new fabric.Rect({ ...baseProps, left: obj.x*z, top: obj.y*z, width: obj.w*z, height: obj.h*z, rx: rxPx, ry: rxPx });
-        } else if(obj.shapeType === 'ellipse') {
-          fabObj = new fabric.Ellipse({ ...baseProps, left: obj.x*z, top: obj.y*z, rx: (obj.w*z)/2, ry: (obj.h*z)/2 });
-        } else if(obj.shapeType === 'line') {
-          fabObj = new fabric.Line([0, 0, obj.w*z, obj.h*z], { ...baseProps, left: obj.x*z, top: obj.y*z });
-        } else if(obj.shapeType === 'triangle') {
-          fabObj = new fabric.Triangle({ ...baseProps, left: obj.x*z, top: obj.y*z, width: obj.w*z, height: obj.h*z });
-        }
-        if(fabObj) fabCanvas.add(fabObj);
-      } catch(e2) {}
-    });
-    fabCanvas.renderAll();
-  } catch(e) { console.warn('renderFabShapes error:', e); }
+  try { fabCanvas.clear(); fabCanvas.renderAll(); } catch(e) {}
 }
 
 function resizeFabCanvas() {
