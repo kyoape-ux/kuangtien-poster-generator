@@ -881,9 +881,9 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 #size-tip{display:none;position:absolute;background:rgba(20,20,20,.82);color:#fff;font-size:11px;font-family:'Inter',sans-serif;padding:2px 7px;border-radius:4px;pointer-events:none;z-index:50;white-space:nowrap;transform:translateX(-50%)}
 /* ── Text Mode Floating Bar ── */
 #txt-mode-bar{display:none;position:absolute;z-index:60;transform:translateX(-50%);background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,0.14);padding:3px;gap:2px;align-items:center;white-space:nowrap}
-.tmb-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;border:none;background:transparent;font-size:12px;font-weight:500;color:var(--text-sub);cursor:pointer;transition:background 0.12s,color 0.12s;font-family:'Noto Sans TC',sans-serif}
-.tmb-btn:hover{background:var(--brand-bg);color:var(--brand)}
-.tmb-btn.on{background:var(--brand);color:#fff}
+.tmb-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:14px;border:none;background:#E5E7EB;color:#6B7280;font-size:12px;font-weight:500;cursor:pointer;transition:background 0.15s,color 0.15s;font-family:'Noto Sans TC',sans-serif}
+.tmb-btn:hover{background:#D1D5DB;color:#374151}
+.tmb-btn.on{background:#006341;color:#fff}
 /* ── Rubber-band select ── */
 #sel-rect{display:none;position:absolute;border:1.5px dashed #3b82f6;background:rgba(59,130,246,.07);pointer-events:none;z-index:25}
 /* ── Context Menu ── */
@@ -924,7 +924,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:19</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:27</span>
 </div>
 
 <div id="main">
