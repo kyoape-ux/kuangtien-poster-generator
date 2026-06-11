@@ -924,7 +924,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:34</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:43</span>
 </div>
 
 <div id="main">
@@ -1703,8 +1703,11 @@ const DEPT_COLORS = [
   { dept:'其他（外科系）',     color:'#00AAC8', name:'寬廣藍' },
 ];
 
-function ciSwatchesHtml(onclickFn){
-  return '<div class="ci-swatches">' + CI_COLORS.map(c=>{
+function ciSwatchesHtml(onclickFn, withNone){
+  const noneBtn = withNone
+    ? `<button class="ci-swatch" style="background:linear-gradient(to bottom right,#fff 45%,#e44 45%,#e44 55%,#fff 55%);border-color:#ccc" title="無填色（透明）" onclick="${onclickFn}('transparent')"></button>`
+    : '';
+  return '<div class="ci-swatches">' + noneBtn + CI_COLORS.map(c=>{
     const border = c.hex==='#FFFFFF' ? 'style="background:#fff;border-color:#ccc"' : `style="background:${c.hex}"`;
     return `<button class="ci-swatch" ${border} title="${c.name}：${c.desc}" onclick="${onclickFn}('${c.hex}')"></button>`;
   }).join('') + '</div>';
@@ -1739,15 +1742,20 @@ function setCiBgColor(hex){
 }
 function setCiShapeFill(hex){
   const el=document.getElementById('pp-shape-fill');
-  if(el) el.value=hex;
   const cb=document.getElementById('pp-shape-fill-none');
-  if(cb) cb.checked=false;
-  if(S.selId) upP(S.selId,'fillColor',hex);
+  if(hex==='transparent'){
+    if(cb) cb.checked=true;
+    if(el) el.value='#ffffff';
+  } else {
+    if(el) el.value=hex;
+    if(cb) cb.checked=false;
+  }
+  if(S.selId){ upP(S.selId,'fillColor',hex); pushHistory(); }
 }
 function setCiShapeStroke(hex){
   const el=document.getElementById('pp-shape-stroke');
-  if(el) el.value=hex;
-  if(S.selId) upP(S.selId,'strokeColor',hex);
+  if(hex!=='transparent' && el) el.value=hex;
+  if(S.selId){ upP(S.selId,'strokeColor',hex); pushHistory(); }
 }
 function applyCiColor(hex){
   const obj = getObj(S.selId);
@@ -3716,12 +3724,12 @@ function renderShapePP(obj){
   </div>
   <div class="pp-row" style="align-items:flex-start">
     <span class="pp-label" style="padding-top:3px">品牌色</span>
-    ${ciSwatchesHtml('setCiShapeFill')}
+    ${ciSwatchesHtml('setCiShapeFill', true)}
   </div>
   <div class="pp-row">
     <span class="pp-label">框色</span>
-    <input type="color" id="pp-shape-stroke" value="${obj.strokeColor||'#000000'}">
-    <span style="margin-left:4px;display:flex;gap:3px">${CI_COLORS.filter(c=>c.hex!=='#FFFFFF').map(c=>`<button class="ci-swatch" style="background:${c.hex};width:16px;height:16px" title="${c.name}" onclick="setCiShapeStroke('${c.hex}')"></button>`).join('')}</span>
+    <input type="color" id="pp-shape-stroke" value="${(obj.strokeColor&&obj.strokeColor!=='transparent')?obj.strokeColor:'#000000'}">
+    <span style="margin-left:4px;display:flex;gap:3px"><button class="ci-swatch" style="background:linear-gradient(to bottom right,#fff 45%,#e44 45%,#e44 55%,#fff 55%);width:16px;height:16px;border-color:#ccc" title="無框色（透明）" onclick="setCiShapeStroke('transparent')"></button>${CI_COLORS.filter(c=>c.hex!=='#FFFFFF').map(c=>`<button class="ci-swatch" style="background:${c.hex};width:16px;height:16px" title="${c.name}" onclick="setCiShapeStroke('${c.hex}')"></button>`).join('')}</span>
   </div>
   <div class="pp-row">
     <span class="pp-label">線寬</span>
@@ -4228,6 +4236,7 @@ function upP(id, key, val){
   obj[key] = val;
   const el = document.getElementById('o'+id);
   if(el) applyStyle(el, obj);
+  if(obj.type==='shape') renderFabShapes(); // 同步 Fabric.js canvas
   updLayerList();
   // Re-render pp if align changed
   if(key==='align') showPP(id);
@@ -7764,9 +7773,9 @@ function renderFabShapes() {
     const z = S.zoom;
     S.objs.forEach(obj => {
       if(obj.type !== 'shape') return;
-      const fill = (obj.fillColor === 'transparent' || !obj.fillColor) ? '' : obj.fillColor;
-      const stroke = obj.strokeColor || '#333333';
-      const sw = (obj.strokeWidth || 2) * z;
+      const fill = (obj.fillColor === 'transparent' || !obj.fillColor) ? 'transparent' : obj.fillColor;
+      const sw = (obj.strokeWidth ?? 0) * z;
+      const stroke = (sw > 0 && obj.strokeColor && obj.strokeColor !== 'transparent') ? obj.strokeColor : 'transparent';
       const dash = (obj.strokeDash && obj.strokeDash !== 'solid')
         ? obj.strokeDash.split(',').map(Number) : [];
       const baseProps = {
