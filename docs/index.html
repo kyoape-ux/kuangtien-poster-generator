@@ -924,7 +924,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/11 22:52</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/12 13:53</span>
 </div>
 
 <div id="main">
@@ -2120,6 +2120,85 @@ function pasteObj(){
   selObj(newId);
   updLayerList();
   snack('已貼上物件');
+}
+
+// 從系統剪貼簿貼上（支援外部圖片：PPT / Canva / 截圖工具等）
+async function pasteFromClipboard(){
+  // 先嘗試讀取系統剪貼簿圖片
+  if(navigator.clipboard && navigator.clipboard.read){
+    try {
+      const items = await navigator.clipboard.read();
+      for(const item of items){
+        const imgType = item.types.find(t=>t.startsWith('image/'));
+        if(imgType){
+          const blob = await item.getType(imgType);
+          const url = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = ()=>{
+            pushHistory();
+            const id = mkId();
+            const nw = img.naturalWidth || 800;
+            const nh = img.naturalHeight || 600;
+            const ar = nh / nw;
+            // 最大寬度 = 畫布寬 80%，但不放大超過原始尺寸
+            const dw = clamp(Math.min(nw, S.W * 0.8), 80, S.W * 0.95);
+            const dh = dw * ar;
+            // 置中在目前可視區域
+            const cs = document.getElementById('cscroll');
+            const vx = cs ? cs.scrollLeft : 0;
+            const vy = cs ? cs.scrollTop  : 0;
+            const vw = cs ? cs.clientWidth  : S.W * S.zoom;
+            const vh = cs ? cs.clientHeight : S.H * S.zoom;
+            const cx = clamp((vx + vw/2) / S.zoom - dw/2, 0, Math.max(0, S.W - dw));
+            const cy = clamp((vy + vh/2) / S.zoom - dh/2, 0, Math.max(0, S.H - dh));
+            const obj = { id, type:'img', x:cx, y:cy, w:dw, h:dh, rot:0, opacity:1, imgEl:img, aspectRatio:ar };
+            S.objs.push(obj);
+            mkEl(id);
+            selObj(id);
+            updLayerList();
+            snack('已貼上剪貼簿圖片');
+            URL.revokeObjectURL(url);
+          };
+          img.onerror = ()=>{ URL.revokeObjectURL(url); snack('圖片載入失敗'); };
+          img.src = url;
+          return;
+        }
+        // 純文字 → 貼入為文字物件
+        if(item.types.includes('text/plain')){
+          const blob = await item.getType('text/plain');
+          const text = (await blob.text()).trim();
+          if(text){ _pasteAsTextObj(text); return; }
+        }
+      }
+      // 沒有圖片也沒有文字 → 回落到內部剪貼簿
+      if(S._clipboard) pasteObj();
+    } catch(err){
+      // 權限拒絕或 API 不支援 → 回落
+      if(S._clipboard) pasteObj();
+    }
+  } else {
+    if(S._clipboard) pasteObj();
+  }
+}
+
+// 把純文字建立為置中的文字物件
+function _pasteAsTextObj(text){
+  pushHistory();
+  const id = mkId();
+  const cs = document.getElementById('cscroll');
+  const vx = cs ? cs.scrollLeft : 0, vy = cs ? cs.scrollTop : 0;
+  const vw = cs ? cs.clientWidth : S.W * S.zoom, vh = cs ? cs.clientHeight : S.H * S.zoom;
+  const dw = clamp(320, 80, S.W * 0.7);
+  const cx = clamp((vx + vw/2) / S.zoom - dw/2, 0, S.W - dw);
+  const cy = clamp((vy + vh/2) / S.zoom - 30,   0, S.H - 60);
+  const obj = { id, type:'txt', x:cx, y:cy, w:dw, h:60, rot:0, opacity:1,
+                text, size:24, color:'#1A2820', weight:'700',
+                fontFamily:'Noto Sans TC', align:'left', txtResize:'wrap' };
+  S.objs.push(obj);
+  mkEl(id);
+  selObj(id);
+  updLayerList();
+  snack('已貼上文字');
 }
 
 function removeBackground(objId){
@@ -5468,10 +5547,10 @@ document.addEventListener('keydown', e=>{
     snack('已複製');
     return;
   }
-  // Paste Ctrl/Cmd+V
+  // Paste Ctrl/Cmd+V — 優先讀系統剪貼簿（外部圖片/文字），回落到內部複製
   if((e.metaKey||e.ctrlKey) && e.key==='v'){
     e.preventDefault();
-    if(S._clipboard) pasteObj();
+    pasteFromClipboard();
     return;
   }
   // Duplicate Ctrl/Cmd+D
