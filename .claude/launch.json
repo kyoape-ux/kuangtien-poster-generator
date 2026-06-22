@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "ktposter-dev",
+      "name": "poster-generator",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "3456", "--directory", "/Users/mac/Desktop/poster-generator-deploy/docs"],
-      "port": 3456
+      "runtimeArgs": ["-m", "http.server", "3464", "--directory", "docs"],
+      "port": 3464
     }
   ]
 }

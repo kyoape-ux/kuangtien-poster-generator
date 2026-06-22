@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# 設計原始檔與封存：只留本機，不上公開 repo（含 .ai / 院內 Logo / 公版範本 / 舊原型）
+src-assets/
+archive/
