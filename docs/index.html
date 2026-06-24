@@ -924,7 +924,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/24 22:12</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/24 22:45</span>
 </div>
 
 <div id="main">
@@ -1329,6 +1329,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     <div class="catop">
       <button class="btn btn-blue btn-sm" id="tool-v" onclick="setToolMode('select')" title="選取 (V)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 2l16 10-7 1.5L9 22z"/></svg></button>
       <button class="btn btn-ghost btn-sm" id="tool-h" onclick="setToolMode('pan')" title="手型平移 (H)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 11V8a2 2 0 0 0-4 0v3M14 8V6a2 2 0 0 0-4 0v5M10 7a2 2 0 0 0-4 0v6M6 13l-.4 1.6A4 4 0 0 0 9.5 20h5a4 4 0 0 0 4-4v-2a2 2 0 0 0-2-2h-1"/></svg></button>
+      <button class="btn btn-ghost btn-sm" id="tool-pen" onclick="setToolMode('pen')" title="鋼筆工具 (P)：點擊放錨點、拖曳拉曲線、點起點閉合、Esc/Enter 結束"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 19l7-7-4-4-7 7-2 6z"/><path d="M16 8l-1.5-1.5"/><path d="M6 21l2-6"/></svg></button>
       <div class="sep"></div>
       <button class="btn btn-ghost btn-sm" onclick="zm(-1)">−</button>
       <span class="ztxt" id="zlbl">60%</span>
@@ -8143,11 +8144,16 @@ function exportSVG() {
 //  CANVAS INTERACTION (zoom / pan)
 // ═══════════════════════════════════════════════
 function setToolMode(mode){
+  // 切離鋼筆模式時，先把未完成的繪製收尾/清掉
+  if(S.toolMode==='pen' && mode!=='pen' && typeof Pen!=='undefined') Pen.cancelDraw();
   S.toolMode=mode;
   document.body.classList.toggle('tool-pan', mode==='pan');
-  const vBtn=document.getElementById('tool-v'), hBtn=document.getElementById('tool-h');
+  document.body.classList.toggle('tool-pen', mode==='pen');
+  const vBtn=document.getElementById('tool-v'), hBtn=document.getElementById('tool-h'), pBtn=document.getElementById('tool-pen');
   if(vBtn) vBtn.classList.toggle('btn-blue', mode==='select');
   if(hBtn) hBtn.classList.toggle('btn-blue', mode==='pan');
+  if(pBtn) pBtn.classList.toggle('btn-blue', mode==='pen');
+  if(mode==='pen' && typeof Pen!=='undefined') Pen.startDraw();
 }
 
 function initCanvasInteraction(){
@@ -8260,6 +8266,271 @@ window.addEventListener('load', ()=>{
   // Init Fabric.js canvas for vector shapes
   setTimeout(initFabCanvas, 500);
 });
+
+// ═══════════════════════════════════════════════
+//  PEN TOOL 鋼筆工具（貝茲路徑繪製 + 節點編輯）
+//  參考 Figma / Illustrator：點擊=轉角錨點、拖曳=平滑曲線、
+//  點回起點=閉合、Esc/Enter=結束；雙擊既有路徑=進入節點編輯
+// ═══════════════════════════════════════════════
+const Pen = {
+  drawing:false,      // 繪製模式中（toolMode==='pen'）
+  anchors:[],         // 繪製中錨點（邏輯座標，絕對）{x,y,hIn,hOut}
+  cur:null,           // 目前游標邏輯座標（橡皮筋預覽）
+  drag:null,          // {idx} 正在按住拉把手的錨點
+  // 節點編輯
+  editId:null,        // 正在編輯的物件 id
+  eAnchors:null,      // 編輯中錨點（未旋轉邏輯座標）
+  eClosed:false,
+  eSel:-1,            // 選取的錨點 index
+  eDrag:null,         // {type:'anchor'|'hIn'|'hOut', idx}
+
+  startDraw(){ this.drawing=true; this.anchors=[]; this.cur=null; this.drag=null; this._render(); },
+  cancelDraw(){ this.drawing=false; this.anchors=[]; this.cur=null; this.drag=null; this._clear(); },
+
+  _pw(){ return document.getElementById('pw'); },
+  _evLogical(e){ const r=this._pw().getBoundingClientRect(); return { x:(e.clientX-r.left)/S.zoom, y:(e.clientY-r.top)/S.zoom }; },
+  _dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); },
+
+  // ── 路徑 d 字串（錨點含 hIn/hOut 絕對座標）──
+  pathD(anchors,closed){
+    if(!anchors.length) return '';
+    const R=n=>Math.round(n*100)/100, P=p=>`${R(p.x)} ${R(p.y)}`;
+    const seg=(a,b)=>(!a.hOut&&!b.hIn)?` L ${P(b)}`:` C ${P(a.hOut||a)} ${P(b.hIn||b)} ${P(b)}`;
+    let d=`M ${P(anchors[0])}`;
+    for(let i=0;i<anchors.length-1;i++) d+=seg(anchors[i],anchors[i+1]);
+    if(closed&&anchors.length>2){ d+=seg(anchors[anchors.length-1],anchors[0]); d+=' Z'; }
+    return d;
+  },
+
+  // ── overlay（螢幕像素座標，蓋在 #pw 上）──
+  _ov(){
+    const pw=this._pw(); let ov=document.getElementById('pen-overlay');
+    if(!ov){ ov=document.createElementNS('http://www.w3.org/2000/svg','svg'); ov.id='pen-overlay';
+      ov.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;z-index:45;pointer-events:none;overflow:visible'; pw.appendChild(ov); }
+    return ov;
+  },
+  _clear(){ const ov=document.getElementById('pen-overlay'); if(ov) ov.innerHTML=''; },
+  _ns:'http://www.w3.org/2000/svg',
+  _mk(tag,attrs){ const e=document.createElementNS(this._ns,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); return e; },
+
+  // ── 繪製預覽 ──
+  _render(){
+    const ov=this._ov(); ov.innerHTML=''; const z=S.zoom;
+    const A=this.anchors; if(!A.length && !this.cur) return;
+    const sc=p=>({x:p.x*z,y:p.y*z});
+    // 目前路徑
+    if(A.length){
+      const d=this.pathD(A,false);
+      const scaled=d.replace(/-?\d+(\.\d+)?/g, m=>String(+m*z)); // d 是邏輯座標，整體 ×zoom
+      ov.appendChild(this._mk('path',{d:scaled, fill:'none', stroke:'#2563EB','stroke-width':1.5}));
+    }
+    // 橡皮筋：最後錨點 → 游標
+    if(A.length && this.cur && !this.drag){
+      const last=A[A.length-1], s1=sc(last), s2=sc(this.cur);
+      const c1=last.hOut?sc(last.hOut):s1;
+      ov.appendChild(this._mk('path',{d:`M ${s1.x} ${s1.y} C ${c1.x} ${c1.y} ${s2.x} ${s2.y} ${s2.x} ${s2.y}`, fill:'none', stroke:'#93C5FD','stroke-width':1.5,'stroke-dasharray':'4 3'}));
+    }
+    // 錨點與把手
+    A.forEach((a,i)=>{
+      const s=sc(a);
+      if(a.hIn){ const h=sc(a.hIn); ov.appendChild(this._mk('line',{x1:s.x,y1:s.y,x2:h.x,y2:h.y,stroke:'#60A5FA','stroke-width':1})); ov.appendChild(this._mk('circle',{cx:h.x,cy:h.y,r:3.5,fill:'#fff',stroke:'#2563EB','stroke-width':1.5})); }
+      if(a.hOut){ const h=sc(a.hOut); ov.appendChild(this._mk('line',{x1:s.x,y1:s.y,x2:h.x,y2:h.y,stroke:'#60A5FA','stroke-width':1})); ov.appendChild(this._mk('circle',{cx:h.x,cy:h.y,r:3.5,fill:'#fff',stroke:'#2563EB','stroke-width':1.5})); }
+      const nearFirst = i===0 && A.length>=2 && this.cur && this._dist(this.cur,a)*z<8;
+      ov.appendChild(this._mk('rect',{x:s.x-4,y:s.y-4,width:8,height:8, fill: i===0?(nearFirst?'#2563EB':'#fff'):'#2563EB', stroke:'#2563EB','stroke-width':1.5, rx:a.hIn||a.hOut?4:1}));
+    });
+  },
+
+  // ── 繪製互動 ──
+  _down(e){
+    if(Pen.editId!=null){ Pen._editDown(e); return; }
+    if(!Pen.drawing) return; if(e.button!==0) return;
+    e.preventDefault(); e.stopPropagation();
+    const p=Pen._evLogical(e), A=Pen.anchors;
+    if(A.length>=2 && Pen._dist(p,A[0])*S.zoom<8){ Pen.finish(true); return; } // 點回起點→閉合
+    A.push({x:p.x,y:p.y,hIn:null,hOut:null});
+    Pen.drag={idx:A.length-1, start:{x:p.x,y:p.y}};
+    Pen.cur=p; Pen._render();
+  },
+  _move(e){
+    if(Pen.editId!=null){ Pen._editMove(e); return; }
+    if(!Pen.drawing) return;
+    const p=Pen._evLogical(e); Pen.cur=p;
+    if(Pen.drag){ const a=Pen.anchors[Pen.drag.idx];
+      if(Pen._dist(p,Pen.drag.start)>3){ a.hOut={x:p.x,y:p.y}; a.hIn={x:2*a.x-p.x,y:2*a.y-p.y}; } // 拖曳→對稱把手（平滑）
+      else { a.hOut=null; a.hIn=null; } }
+    Pen._render();
+  },
+  _up(e){
+    if(Pen.editId!=null){ Pen._editUp(e); return; }
+    if(!Pen.drawing) return; Pen.drag=null;
+  },
+  _key(e){
+    if(Pen.editId!=null){ Pen._editKey(e); return; }
+    if(!Pen.drawing) return;
+    if(e.key==='Enter'){ e.preventDefault(); Pen.finish(false); }
+    else if(e.key==='Escape'){ e.preventDefault(); if(Pen.anchors.length>=2) Pen.finish(false); else setToolMode('select'); }
+  },
+
+  // ── 完成繪製 → 建立 custompath 物件 ──
+  finish(closed){
+    const A=this.anchors;
+    if(A.length<2){ this.cancelDraw(); setToolMode('select'); return; }
+    const pad=2; let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+    A.forEach(a=>{ [a,a.hIn,a.hOut].forEach(p=>{ if(!p) return; minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y); }); });
+    minX-=pad;minY-=pad;maxX+=pad;maxY+=pad;
+    const w=Math.max(1,maxX-minX), h=Math.max(1,maxY-minY);
+    const shift=p=>p?{x:p.x-minX,y:p.y-minY}:null;
+    const va=A.map(a=>({x:a.x-minX,y:a.y-minY,hIn:shift(a.hIn),hOut:shift(a.hOut)}));
+    pushHistory();
+    const id=mkId();
+    const obj={ id, type:'shape', shapeType:'custompath',
+      pathData:this.pathD(va,closed), pathViewW:w, pathViewH:h,
+      x:Math.round(minX), y:Math.round(minY), w:Math.round(w), h:Math.round(h),
+      rot:0, opacity:1,
+      fillColor: closed?'#4A90D9':'transparent',
+      strokeColor: closed?'transparent':'#1E293B',
+      strokeWidth: closed?0:3, strokeDash:'solid',
+      anchors:va, penClosed:closed };
+    S.objs.push(obj); mkEl(id);
+    this.drawing=false; this.anchors=[]; this.cur=null; this.drag=null; this._clear();
+    setToolMode('select'); selObj(id); updLayerList();
+    snack(closed?'已建立路徑形狀（雙擊可編輯節點）':'已建立開放路徑（雙擊可編輯節點）');
+  },
+
+  // ══ 節點編輯 ══
+  enterNodeEdit(id){
+    const o=getObj(id); if(!o||o.shapeType!=='custompath'||!o.anchors) return;
+    if(this.drawing) this.cancelDraw();
+    this.editId=id; this.eClosed=!!o.penClosed; this.eSel=-1; this.eDrag=null;
+    const sx=o.w/o.pathViewW, sy=o.h/o.pathViewH;       // 烘焙縮放：view → 未旋轉邏輯座標
+    const m=p=>p?{x:o.x+p.x*sx,y:o.y+p.y*sy}:null;
+    this.eAnchors=o.anchors.map(a=>({x:o.x+a.x*sx,y:o.y+a.y*sy,hIn:m(a.hIn),hOut:m(a.hOut)}));
+    selObj(id); document.body.classList.add('node-editing');
+    const el=document.getElementById('o'+id); if(el&&el._shapeSvg) el._shapeSvg.style.overflow='visible';
+    this._renderEdit();
+    snack('節點編輯：拖曳錨點/把手、Alt 點擊切換轉角↔平滑、點線段加點、Delete 刪節點、Esc 結束');
+  },
+  exitNodeEdit(){ if(this.editId==null) return; this._commitEdit(true);
+    document.body.classList.remove('node-editing'); const el=document.getElementById('o'+this.editId);
+    if(el&&el._shapeSvg) el._shapeSvg.style.overflow='';
+    this.editId=null; this.eAnchors=null; this.eDrag=null; this.eSel=-1; this._clear(); },
+
+  _toScreen(p){ const o=getObj(this.editId),c={x:o.x+o.w/2,y:o.y+o.h/2};
+    const l=o.rot?this._rot(p,c,o.rot):p; return {x:l.x*S.zoom,y:l.y*S.zoom}; },
+  _toEdit(scr){ const o=getObj(this.editId),c={x:o.x+o.w/2,y:o.y+o.h/2},l={x:scr.x/S.zoom,y:scr.y/S.zoom};
+    return o.rot?this._rot(l,c,-o.rot):l; },
+  _rot(p,c,deg){ const r=deg*Math.PI/180,dx=p.x-c.x,dy=p.y-c.y;
+    return {x:c.x+dx*Math.cos(r)-dy*Math.sin(r), y:c.y+dx*Math.sin(r)+dy*Math.cos(r)}; },
+  _evScr(e){ const r=this._pw().getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; },
+
+  _renderEdit(){
+    const ov=this._ov(); ov.innerHTML=''; const A=this.eAnchors; if(!A) return;
+    const S2=A.map(a=>this._toScreen(a));
+    // 路徑外框
+    const sa=A.map((a,i)=>({x:S2[i].x,y:S2[i].y,hIn:a.hIn?this._toScreen(a.hIn):null,hOut:a.hOut?this._toScreen(a.hOut):null}));
+    ov.appendChild(this._mk('path',{d:this.pathD(sa,this.eClosed),fill:'none',stroke:'#2563EB','stroke-width':1.5}));
+    // 選取錨點的把手
+    if(this.eSel>=0){ const a=A[this.eSel],s=S2[this.eSel];
+      [a.hIn,a.hOut].forEach(h=>{ if(!h) return; const hs=this._toScreen(h);
+        ov.appendChild(this._mk('line',{x1:s.x,y1:s.y,x2:hs.x,y2:hs.y,stroke:'#60A5FA','stroke-width':1}));
+        ov.appendChild(this._mk('circle',{cx:hs.x,cy:hs.y,r:4,fill:'#fff',stroke:'#2563EB','stroke-width':1.5})); }); }
+    // 錨點
+    S2.forEach((s,i)=>{ const a=A[i],sm=a.hIn||a.hOut,seld=i===this.eSel;
+      ov.appendChild(this._mk('rect',{x:s.x-4.5,y:s.y-4.5,width:9,height:9,
+        fill:seld?'#2563EB':'#fff',stroke:'#2563EB','stroke-width':1.5,rx:sm?4.5:1.5})); });
+  },
+  // 用目前 box/縮放把 eAnchors(邏輯) 寫回 obj.pathData 並即時重繪
+  _liveRender(){ const o=getObj(this.editId),sx=o.w/o.pathViewW,sy=o.h/o.pathViewH;
+    const mv=p=>p?{x:(p.x-o.x)/sx,y:(p.y-o.y)/sy}:null;
+    const va=this.eAnchors.map(a=>({x:(a.x-o.x)/sx,y:(a.y-o.y)/sy,hIn:mv(a.hIn),hOut:mv(a.hOut)}));
+    o.pathData=this.pathD(va,this.eClosed);
+    const el=document.getElementById('o'+o.id); if(el) _renderShapeSvg(el,o); },
+  _commitEdit(final){ const o=getObj(this.editId); if(!o) return; const A=this.eAnchors;
+    if(o.rot===0){ let mnX=1e9,mnY=1e9,mxX=-1e9,mxY=-1e9;
+      A.forEach(a=>[a,a.hIn,a.hOut].forEach(p=>{if(!p)return;mnX=Math.min(mnX,p.x);mnY=Math.min(mnY,p.y);mxX=Math.max(mxX,p.x);mxY=Math.max(mxY,p.y);}));
+      const pad=2; mnX-=pad;mnY-=pad;mxX+=pad;mxY+=pad; const w=Math.max(1,mxX-mnX),h=Math.max(1,mxY-mnY);
+      o.x=Math.round(mnX);o.y=Math.round(mnY);o.w=Math.round(w);o.h=Math.round(h);o.pathViewW=w;o.pathViewH=h;
+      const sh=p=>p?{x:p.x-mnX,y:p.y-mnY}:null;
+      o.anchors=A.map(a=>({x:a.x-mnX,y:a.y-mnY,hIn:sh(a.hIn),hOut:sh(a.hOut)}));
+    } else { const sx=o.w/o.pathViewW,sy=o.h/o.pathViewH,mv=p=>p?{x:(p.x-o.x)/sx,y:(p.y-o.y)/sy}:null;
+      o.anchors=A.map(a=>({x:(a.x-o.x)/sx,y:(a.y-o.y)/sy,hIn:mv(a.hIn),hOut:mv(a.hOut)})); }
+    o.pathData=this.pathD(o.anchors,this.eClosed);
+    const el=document.getElementById('o'+o.id); if(el){ applyStyle(el,o); _renderShapeSvg(el,o); }
+    if(final){ updLayerList(); } },
+
+  _hit(scr){ const A=this.eAnchors;
+    if(this.eSel>=0){ const a=A[this.eSel];
+      for(const t of ['hIn','hOut']) if(a[t]){ const hs=this._toScreen(a[t]); if(Math.hypot(hs.x-scr.x,hs.y-scr.y)<=8) return {type:t,idx:this.eSel}; } }
+    for(let i=0;i<A.length;i++){ const s=this._toScreen(A[i]); if(Math.hypot(s.x-scr.x,s.y-scr.y)<=8) return {type:'anchor',idx:i}; }
+    return null; },
+  _segHit(scr){ const A=this.eAnchors,n=A.length,seg=this.eClosed?n:n-1;
+    for(let i=0;i<seg;i++){ const a=this._toScreen(A[i]),b=this._toScreen(A[(i+1)%n]);
+      const dx=b.x-a.x,dy=b.y-a.y,L2=dx*dx+dy*dy; if(L2<1) continue;
+      let t=((scr.x-a.x)*dx+(scr.y-a.y)*dy)/L2; t=Math.max(0,Math.min(1,t));
+      const px=a.x+t*dx,py=a.y+t*dy; if(Math.hypot(px-scr.x,py-scr.y)<=6 && t>0.05 && t<0.95) return {idx:i}; }
+    return null; },
+
+  _editDown(e){ if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+    const scr=this._evScr(e), hit=this._hit(scr);
+    if(hit){ pushHistory();
+      if(hit.type==='anchor'){ this.eSel=hit.idx;
+        if(e.altKey){ this._toggleSmooth(hit.idx); this._liveRender(); this._renderEdit(); return; } }
+      this.eDrag={...hit, alt:e.altKey}; this._renderEdit(); return; }
+    const sh=this._segHit(scr);
+    if(sh){ pushHistory(); const p=this._toEdit(scr);
+      this.eAnchors.splice(sh.idx+1,0,{x:p.x,y:p.y,hIn:null,hOut:null}); this.eSel=sh.idx+1;
+      this._liveRender(); this._renderEdit(); return; }
+    this.exitNodeEdit(); },        // 點空白處→結束編輯
+  _editMove(e){ if(this.editId==null||!this.eDrag) return; e.preventDefault(); e.stopPropagation();
+    const p=this._toEdit(this._evScr(e)), a=this.eAnchors[this.eDrag.idx];
+    if(this.eDrag.type==='anchor'){ const dx=p.x-a.x,dy=p.y-a.y; a.x=p.x;a.y=p.y;
+      if(a.hIn){a.hIn.x+=dx;a.hIn.y+=dy;} if(a.hOut){a.hOut.x+=dx;a.hOut.y+=dy;} }
+    else { a[this.eDrag.type]={x:p.x,y:p.y}; const opp=this.eDrag.type==='hOut'?'hIn':'hOut';
+      if(!this.eDrag.alt && a[opp]){ a[opp]={x:2*a.x-p.x,y:2*a.y-p.y}; } } // 平滑：對稱；Alt：獨立
+    this._liveRender(); this._renderEdit(); },
+  _editUp(e){ if(this.editId==null||!this.eDrag) return; this.eDrag=null; this._commitEdit(false); this._renderEdit(); },
+  _editKey(e){ if(this.editId==null) return;
+    if(e.key==='Escape'||e.key==='Enter'){ e.preventDefault(); this.exitNodeEdit(); }
+    else if((e.key==='Delete'||e.key==='Backspace') && this.eSel>=0 && this.eAnchors.length>2){
+      e.preventDefault(); pushHistory(); this.eAnchors.splice(this.eSel,1); this.eSel=-1;
+      this._liveRender(); this._commitEdit(false); this._renderEdit(); } },
+  _toggleSmooth(i){ const A=this.eAnchors,a=A[i];
+    if(a.hIn||a.hOut){ a.hIn=null;a.hOut=null; }                       // → 轉角
+    else { const n=A.length,prev=A[(i-1+n)%n],next=A[(i+1)%n];          // → 平滑（依鄰點切線）
+      const dx=next.x-prev.x,dy=next.y-prev.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
+      const hl=Math.min(this._dist(a,prev),this._dist(a,next))*0.4||30;
+      a.hOut={x:a.x+ux*hl,y:a.y+uy*hl}; a.hIn={x:a.x-ux*hl,y:a.y-uy*hl}; } },
+};
+
+// 綁定事件（capture 階段，鋼筆/編輯啟用時攔截物件拖曳）
+(function initPen(){
+  const pw=document.getElementById('pw'); if(!pw) return;
+  pw.addEventListener('mousedown', e=>Pen._down(e), true);
+  document.addEventListener('mousemove', e=>Pen._move(e), true);
+  document.addEventListener('mouseup', e=>Pen._up(e), true);
+  document.addEventListener('keydown', e=>Pen._key(e), true);
+  // P 快捷鍵
+  document.addEventListener('keydown', e=>{
+    if(e.key==='p'||e.key==='P'){ const t=e.target.tagName; if(t==='INPUT'||t==='TEXTAREA'||e.target.isContentEditable) return; if(!Pen.editId) setToolMode('pen'); }
+  });
+  // 雙擊既有鋼筆路徑 → 進入節點編輯
+  document.addEventListener('dblclick', e=>{
+    if(Pen.drawing||Pen.editId!=null) return;
+    let el=e.target;
+    while(el && el!==document.body){
+      if(el.id && /^o\d+$/.test(el.id) && el.parentElement && el.parentElement.id==='ol'){
+        const o=getObj(+el.id.slice(1));
+        if(o && o.type==='shape' && o.shapeType==='custompath' && o.anchors){ e.preventDefault(); e.stopPropagation(); Pen.enterNodeEdit(o.id); }
+        break;
+      }
+      el=el.parentElement;
+    }
+  }, true);
+  // 節點編輯時隱藏物件縮放/旋轉控點
+  const st=document.createElement('style');
+  st.textContent='.node-editing .obj.sel .rh,.node-editing .obj.sel .roth{display:none!important}#tool-pen.btn-blue{color:#fff}';
+  document.head.appendChild(st);
+})();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
