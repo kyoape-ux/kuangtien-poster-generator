@@ -924,7 +924,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/22 22:49</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/24 22:12</span>
 </div>
 
 <div id="main">
@@ -7066,10 +7066,20 @@ function confirmTblBuilder(){
   if(tblEditObjId){
     const obj=getObj(tblEditObjId);
     if(obj){
+      const oldCols=(obj.tableData[0]||[]).length;
+      const oldRows=obj.tableData.length;
       obj.tableData=data;
       obj.tableStyle=style;
+      const newCols=data[0].length, newRows=data.length;
+      // 欄/列數有變更時重算物件尺寸，避免新增欄位被擠進舊寬度而看不出來
+      if(newCols!==oldCols || newRows!==oldRows){
+        const rowH=style.fontSize*2.4+8;
+        obj.w=Math.min(S.W*0.9, newCols*120+24);
+        obj.h=newRows*rowH+24;
+      }
       const el=document.getElementById('o'+obj.id);
-      if(el) renderTableInEl(el,obj);
+      if(el){ applyStyle(el,obj); renderTableInEl(el,obj); }
+      if(S.selId===obj.id) showPP(obj.id); // 同步屬性面板的 W/H 顯示
       pushHistory();
       snack('表格已更新');
     }
