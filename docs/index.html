@@ -925,7 +925,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/29 23:21</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/29 23:25</span>
 </div>
 
 <div id="main">
@@ -8620,7 +8620,7 @@ const Collage = {
   sizeKey:'4x6', sel:-1, drag:null, _ps:1,
 
   SIZE_PRESETS:[{k:'4x6',l:'4×6 沖洗',w:1200,h:1800},{k:'4x6h',l:'4×6 橫式',w:1800,h:1200},{k:'5x7',l:'5×7',w:1500,h:2100},{k:'a4',l:'A4 直式',w:2480,h:3508},{k:'ig1',l:'IG 1:1',w:1080,h:1080},{k:'ig45',l:'IG 4:5',w:1080,h:1350}],
-  ID_SIZES:[{k:'1in',l:'1吋',w:2.8,h:3.5},{k:'2in',l:'2吋',w:3.5,h:4.5},{k:'2in2',l:'2.5吋',w:5.0,h:5.0}],
+  ID_SIZES:[{k:'1in',l:'1吋',w:2.8,h:3.5},{k:'2in',l:'2吋',w:3.5,h:4.5},{k:'2inL',l:'2吋大',w:4.2,h:4.7},{k:'5x5',l:'5×5',w:5.0,h:5.0}],
   PAPER_PRESETS:[{k:'4x6',l:'4×6',w:10.16,h:15.24},{k:'5x7',l:'5×7',w:12.7,h:17.78},{k:'a4',l:'A4',w:21.0,h:29.7}],
 
   _grid(c,r){ const o=[]; for(let y=0;y<r;y++)for(let x=0;x<c;x++)o.push({x:x/c,y:y/r,w:1/c,h:1/r}); return o; },
@@ -8675,9 +8675,13 @@ const Collage = {
   setSize(k){ const p=this.SIZE_PRESETS.find(x=>x.k===k); if(!p) return; this.sizeKey=k; this.W=p.w; this.H=p.h; this._syncBtns(); this.render(); },
   applyCustomSize(){ const w=+document.getElementById('cl-w').value,h=+document.getElementById('cl-h').value; if(w>=100&&h>=100){ this.W=Math.round(w);this.H=Math.round(h);this.sizeKey=''; this._syncBtns(); this.render(); } },
   setPaper(k){ this.paperKey=k; this._applyPaper(); this._syncBtns(); this.render(); },
-  _applyPaper(){ const p=this.PAPER_PRESETS.find(x=>x.k===this.paperKey)||this.PAPER_PRESETS[0]; this.W=Math.round(p.w/2.54*this.dpi); this.H=Math.round(p.h/2.54*this.dpi); },
-  setIdSize(p){ this.idW_cm=p.w; this.idH_cm=p.h; document.getElementById('cl-idw').value=p.w; document.getElementById('cl-idh').value=p.h; this.render(); },
-  applyIdSize(){ const w=+document.getElementById('cl-idw').value,h=+document.getElementById('cl-idh').value; if(w>0&&h>0){ this.idW_cm=w;this.idH_cm=h; this.render(); } },
+  _fitCount(W,H){ const dpi=this.dpi,cw=this.idW_cm/2.54*dpi,ch=this.idH_cm/2.54*dpi,g=Math.round(0.15/2.54*dpi),m=Math.round(0.3/2.54*dpi);
+    return Math.max(1,Math.floor((W-2*m+g)/(cw+g)))*Math.max(1,Math.floor((H-2*m+g)/(ch+g))); },
+  _applyPaper(){ const p=this.PAPER_PRESETS.find(x=>x.k===this.paperKey)||this.PAPER_PRESETS[0];
+    const a=Math.round(p.w/2.54*this.dpi),b=Math.round(p.h/2.54*this.dpi),lng=Math.max(a,b),sht=Math.min(a,b);
+    if(this._fitCount(lng,sht) >= this._fitCount(sht,lng)){ this.W=lng; this.H=sht; } else { this.W=sht; this.H=lng; } }, // 自動選能排最多張的方向
+  setIdSize(p){ this.idW_cm=p.w; this.idH_cm=p.h; document.getElementById('cl-idw').value=p.w; document.getElementById('cl-idh').value=p.h; if(this.mode==='idphoto')this._applyPaper(); this.render(); },
+  applyIdSize(){ const w=+document.getElementById('cl-idw').value,h=+document.getElementById('cl-idh').value; if(w>0&&h>0){ this.idW_cm=w;this.idH_cm=h; if(this.mode==='idphoto')this._applyPaper(); this.render(); } },
   setCount(n){ this.count=n; this.layoutIdx=0; this.layout=this._layouts(n)[0]; this._buildCells(); this._buildCount(); this._buildLayouts(); this.sel=-1; this.render(); },
   setLayout(i){ this.layoutIdx=i; this.layout=this._layouts(this.count)[i]; this._buildCells(); this._buildLayouts(); this.render(); },
   set(p,v){ this[p]=v; this.render(); },
@@ -8705,7 +8709,7 @@ const Collage = {
     cv.width=Math.max(1,Math.round(this.W*ps)); cv.height=Math.max(1,Math.round(this.H*ps));
     const ctx=cv.getContext('2d'); this._scene(ctx,ps,false);
     const di=document.getElementById('cl-dim-info'); if(di) di.textContent=`${this.W} × ${this.H}px`+(this.mode==='idphoto'?'　・300dpi':'');
-    if(this.mode==='idphoto'){ const gr=this._idGrid(); const fi=document.getElementById('cl-fit-info'); if(fi) fi.textContent=`${gr.cols}×${gr.rows}=${gr.cols*gr.rows} 張`; } },
+    if(this.mode==='idphoto'){ const gr=this._idGrid(); const fi=document.getElementById('cl-fit-info'); if(fi) fi.textContent=`${this.W>this.H?'橫式':'直式'} ${gr.cols}×${gr.rows}=${gr.cols*gr.rows} 張`; } },
   _scene(ctx,scale,exp){ ctx.save(); ctx.scale(scale,scale); ctx.fillStyle=this.bg; ctx.fillRect(0,0,this.W,this.H);
     if(this.mode==='collage') this._drawCollage(ctx,exp); else this._drawId(ctx,exp); ctx.restore(); },
   _drawCollage(ctx,exp){ const rects=this._cellRects(); rects.forEach((r,i)=>{ const c=this.cells[i];
