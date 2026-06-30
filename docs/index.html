@@ -926,7 +926,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 18:18</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 20:27</span>
 </div>
 
 <div id="main">
@@ -5607,6 +5607,8 @@ function switchTab(tab, btn){
     cscroll.style.display='';
     ieArea.style.display='none';
     if(pagesPanel) pagesPanel.style.display='';
+    // 畫布變可見後重算縮放（修正載入時畫布隱藏導致 zoom=NaN、底色未繪），無效才重算以保留使用者縮放
+    setTimeout(()=>{ if(!S.zoom||isNaN(S.zoom)||S.zoom<=0) zfit(); else applyZ(); }, 0);
     // 首次進入海報編輯時顯示使用須知（每階段一次、尊重「不再顯示」）
     if(!window._tosShownThisSession && !localStorage.getItem(TOS_KEY)){ window._tosShownThisSession=true; setTimeout(showTos,150); }
   } else if(tab==='wm'){
