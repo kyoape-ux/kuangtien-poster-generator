@@ -925,7 +925,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 14:16</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 14:27</span>
 </div>
 
 <div id="main">
@@ -1460,6 +1460,8 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <button class="btn btn-blue btn-full" style="margin-top:8px" onclick="Collage.autoAlignHead()">🤖 自動對齊頭部（依規範）</button>
         <label class="cl-rg" style="margin-top:6px">顯示參考線（頭頂/眼睛/下巴）<input type="checkbox" id="cl-guide" onchange="Collage.set('headGuide',this.checked)" style="width:auto"></label>
         <div style="font-size:11px;color:var(--g500);line-height:1.5">自動偵測臉部，把頭部高度調到規範比例並置中。<b>僅輔助對齊</b>，不保證通過審核（背景/光線/表情需自行確認）。照片不會上傳，全在本機運算。</div>
+        <button class="btn btn-amber btn-full" style="margin-top:8px" id="cl-align-btn" onclick="Collage.toggleAlignView()">🔍 單張對齊（放大對參考線）</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="Collage.exportSingle()">⤓ 下載單張證件照</button>
       </div>
 
       <button class="btn btn-green btn-full" style="margin-top:16px;font-weight:700" onclick="Collage.exportPNG()">⤓ 下載 PNG（高解析）</button>
@@ -8620,7 +8622,7 @@ const Collage = {
   W:1200, H:1800, dpi:300, bg:'#ffffff',
   count:4, layoutIdx:0, layout:null, gap:12, radius:8, margin:24, cells:[],
   idW_cm:2.8, idH_cm:3.5, paperKey:'4x6', copies:0, cutLines:true, idImg:null, idScale:1, idOx:0, idOy:0,
-  headGuide:false, HEAD_RATIO:0.72, CHIN_POS:0.88, _modelsLoaded:false,
+  headGuide:false, HEAD_RATIO:0.72, CHIN_POS:0.88, _modelsLoaded:false, idAlignView:false,
   sizeKey:'4x6', sel:-1, drag:null, _ps:1,
 
   SIZE_PRESETS:[{k:'4x6',l:'4×6 沖洗',w:1200,h:1800},{k:'4x6h',l:'4×6 橫式',w:1800,h:1200},{k:'5x7',l:'5×7',w:1500,h:2100},{k:'a4',l:'A4 直式',w:2480,h:3508},{k:'ig1',l:'IG 1:1',w:1080,h:1080},{k:'ig45',l:'IG 4:5',w:1080,h:1350}],
@@ -8669,7 +8671,7 @@ const Collage = {
   _syncBtns(){ document.querySelectorAll('#cl-size-presets .cl-chip').forEach(b=>b.classList.toggle('on',b.dataset.k===this.sizeKey));
     document.querySelectorAll('#cl-paper .cl-chip').forEach(b=>b.classList.toggle('on',b.dataset.k===this.paperKey)); },
 
-  setMode(m){ this.mode=m;
+  setMode(m){ this.mode=m; if(m!=='idphoto'){ this.idAlignView=false; const b=document.getElementById('cl-align-btn'); if(b) b.textContent='🔍 單張對齊（放大對參考線）'; }
     document.getElementById('cl-panel-collage').style.display=m==='collage'?'':'none';
     document.getElementById('cl-panel-id').style.display=m==='idphoto'?'':'none';
     document.getElementById('cl-mode-collage').className='btn btn-sm '+(m==='collage'?'btn-blue':'btn-ghost');
@@ -8740,6 +8742,7 @@ const Collage = {
     return {cw,ch,g,cols,rows,ox,oy}; },
 
   render(){ const cv=document.getElementById('cl-canvas'); if(!cv) return; const host=cv.parentElement;
+    if(this.mode==='idphoto'&&this.idAlignView){ this._renderAlign(cv,host); return; }
     const ps=Math.min((host.clientWidth-48)/this.W,(host.clientHeight-48)/this.H,1)||0.2; this._ps=ps;
     cv.width=Math.max(1,Math.round(this.W*ps)); cv.height=Math.max(1,Math.round(this.H*ps));
     const ctx=cv.getContext('2d'); this._scene(ctx,ps,false);
@@ -8774,6 +8777,31 @@ const Collage = {
     cv.addEventListener('wheel',e=>{ const f=e.deltaY<0?1.08:1/1.08;
       if(this.mode==='collage'&&this.sel>=0&&this.cells[this.sel].img){ e.preventDefault(); this.cells[this.sel].scale=Math.max(.3,Math.min(5,this.cells[this.sel].scale*f)); this.render(); }
       else if(this.mode==='idphoto'&&this.idImg){ e.preventDefault(); this.idScale=Math.max(.3,Math.min(5,this.idScale*f)); this.render(); } },{passive:false}); },
+
+  // ── 單張對齊：放大顯示一格 + 參考線，讓使用者手動對準 ──
+  _renderAlign(cv,host){ const G=this._idGrid(),cw=G.cw,ch=G.ch;
+    const ps=Math.min((host.clientWidth-80)/cw,(host.clientHeight-80)/ch,3)||1; this._ps=ps;
+    cv.width=Math.max(1,Math.round(cw*ps)); cv.height=Math.max(1,Math.round(ch*ps));
+    const ctx=cv.getContext('2d'); ctx.save(); ctx.scale(ps,ps);
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,cw,ch);
+    if(this.idImg&&this.idImg.naturalWidth) this._cover(ctx,this.idImg,0,0,cw,ch,this.idScale,this.idOx,this.idOy,0);
+    else { ctx.fillStyle='#e9edf2'; ctx.fillRect(0,0,cw,ch); ctx.fillStyle='#9aa7b8'; ctx.font=`${cw*0.07}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('請先上傳大頭照',cw/2,ch/2); }
+    const lines=[['頭頂',(this.CHIN_POS-this.HEAD_RATIO)*ch],['眼睛',(this.CHIN_POS-this.HEAD_RATIO*0.55)*ch],['下巴',this.CHIN_POS*ch]];
+    ctx.save(); ctx.strokeStyle='rgba(34,197,94,.95)'; ctx.lineWidth=Math.max(1,cw*0.007); ctx.setLineDash([cw*0.04,cw*0.025]);
+    ctx.fillStyle='rgba(22,163,74,1)'; ctx.font=`bold ${cw*0.05}px sans-serif`; ctx.textBaseline='bottom'; ctx.textAlign='left';
+    lines.forEach(([lbl,yy])=>{ ctx.beginPath(); ctx.moveTo(0,yy); ctx.lineTo(cw,yy); ctx.stroke(); ctx.fillText(lbl,cw*0.02,yy-cw*0.012); });
+    ctx.restore(); ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1; ctx.setLineDash([]); ctx.strokeRect(.5,.5,cw-1,ch-1); ctx.restore();
+    const di=document.getElementById('cl-dim-info'); if(di) di.textContent='單張對齊：拖曳移動、滾輪縮放，把頭部對準綠線'; },
+  toggleAlignView(){ if(this.mode!=='idphoto') return; this.idAlignView=!this.idAlignView;
+    if(this.idAlignView) this.headGuide=true;
+    const b=document.getElementById('cl-align-btn'); if(b) b.textContent=this.idAlignView?'← 回排版預覽（看整張）':'🔍 單張對齊（放大對參考線）';
+    this.render(); },
+  exportSingle(){ if(!this.idImg){ if(window.snack)snack('請先上傳大頭照'); return; }
+    const G=this._idGrid(); const cv=document.createElement('canvas'); cv.width=Math.round(G.cw); cv.height=Math.round(G.ch);
+    const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+    this._cover(ctx,this.idImg,0,0,cv.width,cv.height,this.idScale,this.idOx,this.idOy,0);
+    cv.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`證件照單張_${this.idW_cm}x${this.idH_cm}cm_300dpi.png`; a.click(); },'image/png');
+    if(window.snack)snack('已下載單張證件照（可用於線上上傳）'); },
 
   exportPNG(){ const cv=document.createElement('canvas'); cv.width=this.W; cv.height=this.H; const ctx=cv.getContext('2d');
     const oldSel=this.sel; this.sel=-1; this._scene(ctx,1,true); this.sel=oldSel;
