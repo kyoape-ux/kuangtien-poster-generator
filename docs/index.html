@@ -906,7 +906,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 20:35</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 21:12</span>
 </div>
 
 <div id="main">
@@ -1478,7 +1478,9 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <label class="cl-rg">外框<input type="range" id="cl-margin" min="0" max="120" value="24" oninput="Collage.set('margin',+this.value)"></label>
         <label class="cl-rg">底色<input type="color" id="cl-bg" value="#ffffff" oninput="Collage.set('bg',this.value)"></label>
         <button class="btn btn-purple btn-full" style="margin-top:8px" onclick="document.getElementById('cl-photos-inp').click()">＋ 上傳照片（可多選，依序填入）</button>
-        <div style="font-size:11px;color:var(--g500);margin-top:6px">點格子可選取，拖曳可移動照片、滑鼠滾輪縮放。</div>
+        <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="Collage.replaceSelCell()">上傳／替換選取格的照片</button>
+        <div style="font-size:11px;color:var(--g500);margin-top:6px">點空格上傳照片、<b>雙擊格子可替換</b>；拖曳移動、滾輪縮放。</div>
+        <input type="file" id="cl-cell-inp" accept="image/*" style="display:none" onchange="Collage.setCellPhoto(this.files[0]);this.value=''">
       </div>
 
       <!-- 證件照排版 -->
@@ -8757,6 +8759,11 @@ const Collage = {
   addPhotos(files){ const arr=[...files]; let idx=this.cells.findIndex(c=>!c.img); if(idx<0) idx=0;
     arr.forEach(f=>{ const url=URL.createObjectURL(f); const img=new Image(); img.onload=()=>{ this.render(); };
       img.src=url; if(idx<this.cells.length){ this.cells[idx]={img,scale:1,ox:0,oy:0}; idx++; } }); },
+  // 上傳/替換指定格子的照片（點空格、雙擊、或「替換選取格」按鈕觸發）
+  setCellPhoto(f){ if(!f||this._cellTarget==null||this._cellTarget<0) return; const i=this._cellTarget;
+    const img=new Image(); img.onload=()=>{ this.cells[i]={img,scale:1,ox:0,oy:0}; this.sel=i; this.render(); }; img.src=URL.createObjectURL(f); },
+  replaceSelCell(){ if(this.sel==null||this.sel<0){ if(window.snack)snack('請先點選一個格子'); return; }
+    this._cellTarget=this.sel; document.getElementById('cl-cell-inp').click(); },
   setIdPhoto(f){ if(!f) return; const img=new Image(); img.onload=()=>{ this.idImg=img; this.idScale=1; this.idOx=0; this.idOy=0; this.render(); }; img.src=URL.createObjectURL(f); },
 
   // ── 依偵測到的下巴/頭頂/臉中心，算出符合規範比例的 scale/位移 ──
@@ -8830,8 +8837,11 @@ const Collage = {
     const pt=e=>{ const r=cv.getBoundingClientRect(),sf=cv.width/r.width; return {x:(e.clientX-r.left)*sf/this._ps,y:(e.clientY-r.top)*sf/this._ps}; };
     cv.addEventListener('mousedown',e=>{ const p=pt(e);
       if(this.mode==='collage'){ const rects=this._cellRects(); const idx=rects.findIndex(r=>p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h);
-        this.sel=idx; this.render(); if(idx>=0){ const c=this.cells[idx]; if(c.img) this.drag={idx,sx:p.x,sy:p.y,ox0:c.ox,oy0:c.oy}; else { this._fillTarget=idx; document.getElementById('cl-photos-inp').click(); } } }
+        this.sel=idx; this.render(); if(idx>=0){ const c=this.cells[idx]; if(c.img) this.drag={idx,sx:p.x,sy:p.y,ox0:c.ox,oy0:c.oy}; else { this._cellTarget=idx; document.getElementById('cl-cell-inp').click(); } } }
       else { if(this.idImg) this.drag={id:true,sx:p.x,sy:p.y,ox0:this.idOx,oy0:this.idOy}; } });
+    cv.addEventListener('dblclick',e=>{ if(this.mode!=='collage') return; const p=pt(e);
+      const rects=this._cellRects(); const idx=rects.findIndex(r=>p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h);
+      if(idx>=0){ this.sel=idx; this._cellTarget=idx; this.drag=null; document.getElementById('cl-cell-inp').click(); } }); // 雙擊格子→替換照片
     document.addEventListener('mousemove',e=>{ if(!this.drag) return; const p=pt(e),dx=p.x-this.drag.sx,dy=p.y-this.drag.sy;
       if(this.drag.id){ this.idOx=this.drag.ox0+dx; this.idOy=this.drag.oy0+dy; } else { const c=this.cells[this.drag.idx]; c.ox=this.drag.ox0+dx; c.oy=this.drag.oy0+dy; } this.render(); });
     document.addEventListener('mouseup',()=>{ this.drag=null; });
