@@ -925,7 +925,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 14:27</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 14:32</span>
 </div>
 
 <div id="main">
@@ -1412,8 +1412,8 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <div style="display:flex;height:100%;width:100%">
     <div style="width:340px;flex-shrink:0;background:#fff;border-right:1px solid var(--g200);overflow-y:auto;padding:16px;box-sizing:border-box">
       <div style="display:flex;gap:6px;margin-bottom:14px">
-        <button id="cl-mode-collage" class="btn btn-blue btn-sm" style="flex:1" onclick="Collage.setMode('collage')">🖼 相片拼貼</button>
-        <button id="cl-mode-id" class="btn btn-ghost btn-sm" style="flex:1" onclick="Collage.setMode('idphoto')">🪪 證件照排版</button>
+        <button id="cl-mode-collage" class="btn btn-blue btn-sm" style="flex:1" onclick="Collage.setMode('collage')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0;vertical-align:-1px"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 10l4-3 3 2.5 2-1.5 5 4.5"/></svg> 相片拼貼</button>
+        <button id="cl-mode-id" class="btn btn-ghost btn-sm" style="flex:1" onclick="Collage.setMode('idphoto')"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0;vertical-align:-1px"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5" cy="7.5" r="1.8"/><path d="M9 6h4M9 9.5h4"/></svg> 證件照排版</button>
       </div>
 
       <!-- 相片拼貼 -->
@@ -1457,14 +1457,14 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <label class="cl-rg" style="margin-bottom:10px">裁切線<input type="checkbox" id="cl-cut" checked onchange="Collage.set('cutLines',this.checked)" style="width:auto"></label>
         <button class="btn btn-purple btn-full" onclick="document.getElementById('cl-id-inp').click()">＋ 上傳一張大頭照</button>
         <div style="font-size:11px;color:var(--g500);margin-top:6px">上傳後自動排滿；拖曳可調位置、滾輪縮放。</div>
-        <button class="btn btn-blue btn-full" style="margin-top:8px" onclick="Collage.autoAlignHead()">🤖 自動對齊頭部（依規範）</button>
+        <button class="btn btn-blue btn-full" style="margin-top:8px" onclick="Collage.autoAlignHead()"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0;vertical-align:-1px"><circle cx="8" cy="8" r="5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg> 自動對齊頭部（依規範）</button>
         <label class="cl-rg" style="margin-top:6px">顯示參考線（頭頂/眼睛/下巴）<input type="checkbox" id="cl-guide" onchange="Collage.set('headGuide',this.checked)" style="width:auto"></label>
         <div style="font-size:11px;color:var(--g500);line-height:1.5">自動偵測臉部，把頭部高度調到規範比例並置中。<b>僅輔助對齊</b>，不保證通過審核（背景/光線/表情需自行確認）。照片不會上傳，全在本機運算。</div>
-        <button class="btn btn-amber btn-full" style="margin-top:8px" id="cl-align-btn" onclick="Collage.toggleAlignView()">🔍 單張對齊（放大對參考線）</button>
-        <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="Collage.exportSingle()">⤓ 下載單張證件照</button>
+        <button class="btn btn-amber btn-full" style="margin-top:8px" id="cl-align-btn" onclick="Collage.toggleAlignView()">單張對齊（放大對參考線）</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:6px" onclick="Collage.exportSingle()"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0;vertical-align:-1px"><path d="M8 1v9M5 7l3 3 3-3"/><path d="M2 13h12"/></svg> 下載單張證件照</button>
       </div>
 
-      <button class="btn btn-green btn-full" style="margin-top:16px;font-weight:700" onclick="Collage.exportPNG()">⤓ 下載 PNG（高解析）</button>
+      <button class="btn btn-green btn-full" style="margin-top:16px;font-weight:700" onclick="Collage.exportPNG()"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0;vertical-align:-1px"><path d="M8 1v9M5 7l3 3 3-3"/><path d="M2 13h12"/></svg> 下載 PNG（高解析）</button>
       <div id="cl-dim-info" style="font-size:11px;color:var(--g500);text-align:center;margin-top:6px"></div>
       <input type="file" id="cl-photos-inp" accept="image/*" multiple style="display:none" onchange="Collage.addPhotos(this.files);this.value=''">
       <input type="file" id="cl-id-inp" accept="image/*" style="display:none" onchange="Collage.setIdPhoto(this.files[0]);this.value=''">
@@ -8671,7 +8671,7 @@ const Collage = {
   _syncBtns(){ document.querySelectorAll('#cl-size-presets .cl-chip').forEach(b=>b.classList.toggle('on',b.dataset.k===this.sizeKey));
     document.querySelectorAll('#cl-paper .cl-chip').forEach(b=>b.classList.toggle('on',b.dataset.k===this.paperKey)); },
 
-  setMode(m){ this.mode=m; if(m!=='idphoto'){ this.idAlignView=false; const b=document.getElementById('cl-align-btn'); if(b) b.textContent='🔍 單張對齊（放大對參考線）'; }
+  setMode(m){ this.mode=m; if(m!=='idphoto'){ this.idAlignView=false; const b=document.getElementById('cl-align-btn'); if(b) b.textContent='單張對齊（放大對參考線）'; }
     document.getElementById('cl-panel-collage').style.display=m==='collage'?'':'none';
     document.getElementById('cl-panel-id').style.display=m==='idphoto'?'':'none';
     document.getElementById('cl-mode-collage').className='btn btn-sm '+(m==='collage'?'btn-blue':'btn-ghost');
@@ -8794,7 +8794,7 @@ const Collage = {
     const di=document.getElementById('cl-dim-info'); if(di) di.textContent='單張對齊：拖曳移動、滾輪縮放，把頭部對準綠線'; },
   toggleAlignView(){ if(this.mode!=='idphoto') return; this.idAlignView=!this.idAlignView;
     if(this.idAlignView) this.headGuide=true;
-    const b=document.getElementById('cl-align-btn'); if(b) b.textContent=this.idAlignView?'← 回排版預覽（看整張）':'🔍 單張對齊（放大對參考線）';
+    const b=document.getElementById('cl-align-btn'); if(b) b.textContent=this.idAlignView?'回排版預覽（看整張）':'單張對齊（放大對參考線）';
     this.render(); },
   exportSingle(){ if(!this.idImg){ if(window.snack)snack('請先上傳大頭照'); return; }
     const G=this._idGrid(); const cv=document.createElement('canvas'); cv.width=Math.round(G.cw); cv.height=Math.round(G.ch);
