@@ -907,7 +907,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 
 <!-- NAV -->
 <div id="nav">
-  <div class="logo" style="display:flex;align-items:center;gap:8px;padding:0 4px">
+  <div class="logo" style="display:flex;align-items:center;gap:8px;padding:0 4px;cursor:pointer" onclick="switchTab('home',document.getElementById('ntab-home'))" title="回首頁">
     <img src="./logos/logo-h-white.png" style="height:28px;object-fit:contain;flex-shrink:0" onerror="this.style.display='none'">
     <span style="font-size:12px;font-weight:600;white-space:nowrap;letter-spacing:.3px">美編小助手</span>
   </div>
@@ -926,7 +926,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 18:11</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 18:18</span>
 </div>
 
 <div id="main">
@@ -1409,54 +1409,60 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 </div><!-- /ca -->
 
 <!-- ═══ 首頁 全版頁面 ═══ -->
-<div id="pg-home" style="display:none;flex:1;overflow-y:auto;background:linear-gradient(160deg,#f4f7fc,#e7edf7)">
+<div id="pg-home" style="display:none;flex:1;overflow-y:auto">
   <style>
-    .home-wrap{max-width:1000px;margin:0 auto;padding:44px 24px 48px}
-    .home-h{text-align:center;font-size:27px;font-weight:900;color:#14286E;margin-bottom:6px}
-    .home-sub{text-align:center;color:#64748B;font-size:14px;margin-bottom:30px}
-    .home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
-    .hcard{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:22px 20px;cursor:pointer;transition:transform .16s,box-shadow .16s,border-color .16s;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-    .hcard:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(20,40,110,.15);border-color:#5B7FE8}
-    .hcard-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
-    .hcard-t{font-size:17px;font-weight:700;color:#1E293B}
-    .hcard-d{font-size:12.5px;color:#64748B;line-height:1.55}
+    body.on-home .ntab{display:none!important}      /* 首頁隱藏上方分頁列 */
+    #ntab-home{display:none!important}               /* 首頁改由左上 LOGO 進入 */
+    #pg-home{background:radial-gradient(1100px 460px at 50% -8%,#e8effb 0%,transparent 62%),linear-gradient(168deg,#f7f9fd 0%,#eef2f9 100%)}
+    .home-wrap{max-width:1180px;margin:0 auto;padding:54px 28px 60px}
+    .home-h{text-align:center;font-size:30px;font-weight:900;letter-spacing:1px;color:#13245e;margin-bottom:9px}
+    .home-sub{text-align:center;color:#6b7a93;font-size:14.5px;margin-bottom:40px}
+    .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    @media(max-width:1100px){.home-grid{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:820px){.home-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:520px){.home-grid{grid-template-columns:1fr}}
+    .hcard{background:#fff;border:1px solid #eef1f6;border-radius:20px;padding:24px 22px;cursor:pointer;transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s,border-color .18s;display:flex;flex-direction:column;gap:13px;box-shadow:0 2px 7px rgba(20,40,90,.05)}
+    .hcard:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(20,40,90,.14);border-color:#dde5f2}
+    .hcard-ic{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 9px 20px var(--glow)}
+    .hcard-t{font-size:17px;font-weight:800;color:#1e293b;letter-spacing:.4px}
+    .hcard-d{font-size:12.5px;color:#7387a0;line-height:1.6}
   </style>
   <div class="home-wrap">
     <div class="home-h">美編小助手</div>
     <div class="home-sub">光田綜合醫院 內部設計工具 — 選擇下方功能開始</div>
     <div class="home-grid">
       <div class="hcard" onclick="switchTab('poster',document.getElementById('ntab-poster'))">
-        <div class="hcard-ic" style="background:#5B7FE8"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
+        <div class="hcard-ic" style="background:linear-gradient(135deg,#6366F1,#4338CA);--glow:rgba(99,102,241,.38)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
         <div class="hcard-t">海報編輯</div>
-        <div class="hcard-d">製作院內海報、活動圖卡。多版型、CI 色票、文字/圖片/形狀、匯出 PNG/PDF/SVG。</div>
+        <div class="hcard-d">製作院內海報、活動圖卡。多版型、CI 色票、文字/圖片/形狀，匯出 PNG/PDF/SVG。</div>
       </div>
       <div class="hcard" onclick="switchTab('ie',document.getElementById('ntab-ie'))">
-        <div class="hcard-ic" style="background:#2B8FC4"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg></div>
+        <div class="hcard-ic" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);--glow:rgba(14,165,233,.38)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg></div>
         <div class="hcard-t">圖片編輯</div>
         <div class="hcard-d">裁切、調色、亮度對比、一鍵去背、自動白平衡，處理好可直接插入海報。</div>
       </div>
       <div class="hcard" onclick="switchTab('collage',document.getElementById('ntab-collage'))">
-        <div class="hcard-ic" style="background:#6366F1"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="6" height="6" rx="1"/><rect x="8.5" y="1.5" width="6" height="6" rx="1"/><rect x="1.5" y="8.5" width="6" height="6" rx="1"/><rect x="8.5" y="8.5" width="6" height="6" rx="1"/></svg></div>
+        <div class="hcard-ic" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);--glow:rgba(139,92,246,.38)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="6" height="6" rx="1"/><rect x="8.5" y="1.5" width="6" height="6" rx="1"/><rect x="1.5" y="8.5" width="6" height="6" rx="1"/><rect x="8.5" y="8.5" width="6" height="6" rx="1"/></svg></div>
         <div class="hcard-t">相片拼貼</div>
         <div class="hcard-d">多格佈局拼貼照片，2–9 格多款版型，可調間距/圓角/外框，多種畫布尺寸。</div>
       </div>
       <div class="hcard" onclick="switchTab('collage',document.getElementById('ntab-collage'));Collage.setMode('idphoto')">
-        <div class="hcard-ic" style="background:#0EA5A0"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5" cy="7.5" r="1.8"/><path d="M9 6h4M9 9.5h4"/></svg></div>
+        <div class="hcard-ic" style="background:linear-gradient(135deg,#14B8A6,#0F766E);--glow:rgba(20,184,166,.38)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5" cy="7.5" r="1.8"/><path d="M9 6h4M9 9.5h4"/></svg></div>
         <div class="hcard-t">證件照排版</div>
         <div class="hcard-d">1吋/2吋大頭照自動排滿 4×6 相紙，自動選方向印最多，可對齊頭部、300dpi 沖洗。</div>
       </div>
       <div class="hcard" onclick="switchTab('wm',document.getElementById('ntab-wm'))">
-        <div class="hcard-ic" style="background:#22A06B"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg></div>
+        <div class="hcard-ic" style="background:linear-gradient(135deg,#22C55E,#15803D);--glow:rgba(34,197,94,.36)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg></div>
         <div class="hcard-t">批次浮水印</div>
         <div class="hcard-d">多張圖片一次批次加上 LOGO 浮水印，可調位置、大小、透明度，批次下載。</div>
       </div>
       <div class="hcard" onclick="switchTab('qr',document.getElementById('ntab-qr'))">
-        <div class="hcard-ic" style="background:#D9A93A"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="10.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="13.5" y="13.5" width="2" height="2" fill="currentColor" stroke="none"/></svg></div>
+        <div class="hcard-ic" style="background:linear-gradient(135deg,#F59E0B,#B45309);--glow:rgba(245,158,11,.36)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="10.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="13.5" y="13.5" width="2" height="2" fill="currentColor" stroke="none"/></svg></div>
         <div class="hcard-t">QR碼產生</div>
         <div class="hcard-d">輸入網址或文字產生 QR code，可加院方 LOGO、自訂顏色，下載高解析圖檔。</div>
       </div>
       <div class="hcard" onclick="switchTab('res',document.getElementById('ntab-res'))">
-        <div class="hcard-ic" style="background:#00AAC8"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M7 9a3 3 0 004.5.4l2-2a3 3 0 00-4.2-4.2l-1.2 1.2"/><path d="M9 7a3 3 0 00-4.5-.4l-2 2a3 3 0 004.2 4.2l1.2-1.2"/></svg></div>
+        <div class="hcard-ic" style="background:linear-gradient(135deg,#06B6D4,#0E7490);--glow:rgba(6,182,212,.36)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M7 9a3 3 0 004.5.4l2-2a3 3 0 00-4.2-4.2l-1.2 1.2"/><path d="M9 7a3 3 0 00-4.5-.4l-2 2a3 3 0 004.2 4.2l1.2-1.2"/></svg></div>
         <div class="hcard-t">素材資源</div>
         <div class="hcard-d">精選免費圖庫、字體、圖示、配色、AI 設計工具等外部資源連結，一站收齊。</div>
       </div>
@@ -5559,8 +5565,9 @@ async function exportPDF(){
 // ═══════════════════════════════════════════════
 function switchTab(tab, btn){
   S.tab=tab;
+  document.body.classList.toggle('on-home', tab==='home'); // 首頁隱藏上方分頁列
   document.querySelectorAll('.ntab').forEach(e=>e.classList.remove('on'));
-  btn.classList.add('on');
+  if(btn) btn.classList.add('on');
   document.querySelectorAll('.pg').forEach(e=>e.classList.remove('on'));
   if(tab!=='qr'&&tab!=='res'&&tab!=='collage'&&tab!=='home') document.getElementById('pg-'+tab).classList.add('on');
 
