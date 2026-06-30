@@ -925,7 +925,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/29 23:25</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 14:16</span>
 </div>
 
 <div id="main">
@@ -1457,6 +1457,9 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <label class="cl-rg" style="margin-bottom:10px">裁切線<input type="checkbox" id="cl-cut" checked onchange="Collage.set('cutLines',this.checked)" style="width:auto"></label>
         <button class="btn btn-purple btn-full" onclick="document.getElementById('cl-id-inp').click()">＋ 上傳一張大頭照</button>
         <div style="font-size:11px;color:var(--g500);margin-top:6px">上傳後自動排滿；拖曳可調位置、滾輪縮放。</div>
+        <button class="btn btn-blue btn-full" style="margin-top:8px" onclick="Collage.autoAlignHead()">🤖 自動對齊頭部（依規範）</button>
+        <label class="cl-rg" style="margin-top:6px">顯示參考線（頭頂/眼睛/下巴）<input type="checkbox" id="cl-guide" onchange="Collage.set('headGuide',this.checked)" style="width:auto"></label>
+        <div style="font-size:11px;color:var(--g500);line-height:1.5">自動偵測臉部，把頭部高度調到規範比例並置中。<b>僅輔助對齊</b>，不保證通過審核（背景/光線/表情需自行確認）。照片不會上傳，全在本機運算。</div>
       </div>
 
       <button class="btn btn-green btn-full" style="margin-top:16px;font-weight:700" onclick="Collage.exportPNG()">⤓ 下載 PNG（高解析）</button>
@@ -8617,6 +8620,7 @@ const Collage = {
   W:1200, H:1800, dpi:300, bg:'#ffffff',
   count:4, layoutIdx:0, layout:null, gap:12, radius:8, margin:24, cells:[],
   idW_cm:2.8, idH_cm:3.5, paperKey:'4x6', copies:0, cutLines:true, idImg:null, idScale:1, idOx:0, idOy:0,
+  headGuide:false, HEAD_RATIO:0.72, CHIN_POS:0.88, _modelsLoaded:false,
   sizeKey:'4x6', sel:-1, drag:null, _ps:1,
 
   SIZE_PRESETS:[{k:'4x6',l:'4×6 沖洗',w:1200,h:1800},{k:'4x6h',l:'4×6 橫式',w:1800,h:1200},{k:'5x7',l:'5×7',w:1500,h:2100},{k:'a4',l:'A4 直式',w:2480,h:3508},{k:'ig1',l:'IG 1:1',w:1080,h:1080},{k:'ig45',l:'IG 4:5',w:1080,h:1350}],
@@ -8692,6 +8696,37 @@ const Collage = {
       img.src=url; if(idx<this.cells.length){ this.cells[idx]={img,scale:1,ox:0,oy:0}; idx++; } }); },
   setIdPhoto(f){ if(!f) return; const img=new Image(); img.onload=()=>{ this.idImg=img; this.idScale=1; this.idOx=0; this.idOy=0; this.render(); }; img.src=URL.createObjectURL(f); },
 
+  // ── 依偵測到的下巴/頭頂/臉中心，算出符合規範比例的 scale/位移 ──
+  _computeAlign(chinY,crownY,faceCx,imgW,imgH){ const G=this._idGrid(),cw=G.cw,ch=G.ch;
+    const ir=imgW/imgH,cr=cw/ch; let bdw,bdh; if(ir>cr){bdh=ch;bdw=ch*ir;}else{bdw=cw;bdh=cw/ir;}
+    const headPx=Math.max(1,chinY-crownY);
+    let scale=Math.max(.3,Math.min(8, this.HEAD_RATIO*ch*imgH/(headPx*bdh)));
+    const dh=bdh*scale,dw=bdw*scale;
+    const oy=this.CHIN_POS*ch-(ch-dh)/2-chinY/imgH*dh;
+    const ox=cw/2-(cw-dw)/2-faceCx/imgW*dw;
+    return {scale,ox,oy}; },
+  async _loadFaceApi(){ if(window.faceapi&&this._modelsLoaded) return;
+    if(!window.faceapi){ await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js'; s.onload=res; s.onerror=()=>rej(new Error('lib')); document.head.appendChild(s); }); }
+    const base='https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(base);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(base);
+    this._modelsLoaded=true; },
+  async autoAlignHead(){ if(!this.idImg){ if(window.snack)snack('請先上傳大頭照'); return; }
+    if(window.snack)snack('載入人臉偵測模型中…（首次較久）');
+    try{ await this._loadFaceApi(); }catch(e){ if(window.snack)snack('人臉偵測載入失敗，請檢查網路後重試'); return; }
+    let det; try{ det=await faceapi.detectSingleFace(this.idImg,new faceapi.TinyFaceDetectorOptions({inputSize:512})).withFaceLandmarks(); }catch(e){ det=null; }
+    if(!det){ if(window.snack)snack('未偵測到清晰人臉，請改用手動調整'); return; }
+    const lm=det.landmarks.positions;
+    const chinY=lm[8].y;
+    const browY=Math.min(lm[19].y,lm[20].y,lm[23].y,lm[24].y);
+    const crownY=browY-(chinY-browY)*0.75;                // 由眉毛往上推估頭頂
+    const faceCx=lm[30].x;                                 // 鼻尖為水平中心
+    const a=this._computeAlign(chinY,crownY,faceCx,this.idImg.naturalWidth,this.idImg.naturalHeight);
+    this.idScale=a.scale; this.idOx=a.ox; this.idOy=a.oy; this.headGuide=true;
+    const gc=document.getElementById('cl-guide'); if(gc) gc.checked=true;
+    this.render(); if(window.snack)snack('已自動對齊頭部，請對照參考線確認');
+  },
+
   _roundRect(ctx,x,y,w,h,r){ r=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); },
   _cover(ctx,img,x,y,w,h,scale,ox,oy,r){ ctx.save(); this._roundRect(ctx,x,y,w,h,r); ctx.clip();
     const ir=img.naturalWidth/img.naturalHeight,cr=w/h; let dw,dh; if(ir>cr){dh=h;dw=h*ir;}else{dw=w;dh=w/ir;} dw*=scale;dh*=scale;
@@ -8721,7 +8756,11 @@ const Collage = {
     for(let r=0;r<G.rows;r++)for(let c=0;c<G.cols;c++){ if(k>=total)break; const x=G.ox+c*(G.cw+G.g),y=G.oy+r*(G.ch+G.g);
       if(this.idImg&&this.idImg.naturalWidth) this._cover(ctx,this.idImg,x,y,G.cw,G.ch,this.idScale,this.idOx,this.idOy,0);
       else { ctx.fillStyle='#e9edf2'; ctx.fillRect(x,y,G.cw,G.ch); }
-      if(this.cutLines){ ctx.strokeStyle='#c0c0c0'; ctx.lineWidth=Math.max(1,1); ctx.strokeRect(x+.5,y+.5,G.cw-1,G.ch-1); } k++; } },
+      if(this.cutLines){ ctx.strokeStyle='#c0c0c0'; ctx.lineWidth=Math.max(1,1); ctx.strokeRect(x+.5,y+.5,G.cw-1,G.ch-1); }
+      if(this.headGuide&&!exp){ const cy=y+(this.CHIN_POS-this.HEAD_RATIO)*G.ch, ey=y+(this.CHIN_POS-this.HEAD_RATIO*0.55)*G.ch, chy=y+this.CHIN_POS*G.ch;
+        ctx.save(); ctx.strokeStyle='rgba(34,197,94,.85)'; ctx.lineWidth=Math.max(1,G.cw*0.006); ctx.setLineDash([G.cw*0.04,G.cw*0.03]);
+        [cy,ey,chy].forEach(yy=>{ ctx.beginPath(); ctx.moveTo(x,yy); ctx.lineTo(x+G.cw,yy); ctx.stroke(); }); ctx.restore(); }
+      k++; } },
 
   _bind(){ const cv=document.getElementById('cl-canvas'); if(!cv||cv._bound) return; cv._bound=1;
     const pt=e=>{ const r=cv.getBoundingClientRect(),sf=cv.width/r.width; return {x:(e.clientX-r.left)*sf/this._ps,y:(e.clientY-r.top)*sf/this._ps}; };
