@@ -906,7 +906,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 21:22</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 21:57</span>
 </div>
 
 <div id="main">
@@ -1006,8 +1006,11 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 
       </div>
       <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">✕ 清除底圖</button>
-      <div class="sec-title" style="font-size:11px;margin-top:9px">漸層背景</div>
-      <div id="bg-grad-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px"></div>
+      <div onclick="toggleGradBg()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin:9px 0 6px;user-select:none">
+        <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--g500);letter-spacing:.5px"><span style="display:block;width:3px;height:11px;border-radius:2px;background:var(--g300)"></span>漸層背景</span>
+        <svg id="bg-grad-chev" width="12" height="12" fill="none" stroke="var(--g400)" stroke-width="2" viewBox="0 0 16 16" style="transition:transform .18s"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div id="bg-grad-row" style="display:none;grid-template-columns:repeat(4,1fr);gap:5px"></div>
       <div id="bg-img-controls" style="display:none;margin-top:8px;border-top:1px solid var(--g200);padding-top:8px">
         <div class="inp-row" style="margin-bottom:6px">
           <span class="inp-label">縮放</span>
@@ -1396,11 +1399,9 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     body.on-home .ntab{display:none!important}      /* 首頁隱藏上方分頁列 */
     #ntab-home{display:none!important}               /* 首頁改由左上 LOGO 進入 */
     #pg-home{background:radial-gradient(1100px 460px at 50% -8%,#d9f2ed 0%,transparent 62%),linear-gradient(168deg,#f5fbfa 0%,#eaf2f4 100%)}
-    .home-wrap{max-width:1180px;margin:0 auto;padding:40px 28px 56px}
-    .home-hero{border-radius:22px;padding:46px 28px;margin-bottom:34px;text-align:center;overflow:hidden;box-shadow:0 16px 42px rgba(11,61,74,.28);
-      background:radial-gradient(circle at 18% 26%,#2DD4BF 0%,transparent 46%),radial-gradient(circle at 83% 20%,#22D3EE 0%,transparent 42%),radial-gradient(circle at 72% 90%,#0EA5E9 0%,transparent 50%),radial-gradient(circle at 28% 92%,#5EEAD4 0%,transparent 40%),linear-gradient(135deg,#0b3d4a 0%,#0c2f4a 100%)}
-    .home-h{font-size:31px;font-weight:900;letter-spacing:1.5px;color:#fff;margin-bottom:9px;text-shadow:0 2px 12px rgba(0,0,0,.18)}
-    .home-sub{color:rgba(255,255,255,.85);font-size:14.5px;margin-bottom:0}
+    .home-wrap{max-width:1180px;margin:0 auto;padding:54px 28px 60px}
+    .home-h{text-align:center;font-size:30px;font-weight:900;letter-spacing:1px;color:#13245e;margin-bottom:9px}
+    .home-sub{text-align:center;color:#6b7a93;font-size:14.5px;margin-bottom:40px}
     .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
     @media(max-width:1100px){.home-grid{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:820px){.home-grid{grid-template-columns:repeat(2,1fr)}}
@@ -1412,10 +1413,8 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     .hcard-d{font-size:12.5px;color:#7387a0;line-height:1.6}
   </style>
   <div class="home-wrap">
-    <div class="home-hero">
-      <div class="home-h">美編小助手</div>
-      <div class="home-sub">光田綜合醫院 內部設計工具 — 選擇下方功能開始</div>
-    </div>
+    <div class="home-h">美編小助手</div>
+    <div class="home-sub">光田綜合醫院 內部設計工具 — 選擇下方功能開始</div>
     <div class="home-grid">
       <div class="hcard" onclick="switchTab('poster',document.getElementById('ntab-poster'))">
         <div class="hcard-ic" style="background:linear-gradient(135deg,#2DD4BF,#0D9488);--glow:rgba(45,212,191,.4)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
@@ -2521,6 +2520,8 @@ function buildGradBg(){ const w=document.getElementById('bg-grad-row'); if(!w) r
   GRAD_BGS.forEach((def,i)=>{ const d=document.createElement('div'); d.title=def.name;
     d.style.cssText=`height:34px;border-radius:7px;cursor:pointer;border:1px solid var(--g300);background:${_gradCss(def)}`;
     d.onclick=()=>applyGradientBg(i); w.appendChild(d); }); }
+function toggleGradBg(){ const row=document.getElementById('bg-grad-row'),chev=document.getElementById('bg-grad-chev');
+  const open=getComputedStyle(row).display==='none'; row.style.display=open?'grid':'none'; if(chev) chev.style.transform=open?'rotate(180deg)':''; }
 
 function clearCanvas(){
   if(!S.objs.length){ snack('畫布已經是空的'); return; }
