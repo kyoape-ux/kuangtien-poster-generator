@@ -906,7 +906,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/06/30 22:41</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/07/03 11:39</span>
 </div>
 
 <div id="main">
@@ -1263,8 +1263,10 @@ body.tool-pan #cscroll:active{cursor:grabbing}
           <div style="display:flex;gap:4px">
             <button class="btn btn-sm btn-indigo" id="ie-shape-rect" onclick="ieSetShape('rect')">▭ 方形</button>
             <button class="btn btn-sm btn-ghost" id="ie-shape-circle" onclick="ieSetShape('circle')">◯ 圓形</button>
+            <button class="btn btn-sm btn-ghost" id="ie-shape-pen" onclick="ieSetShape('pen')" title="自訂形狀：點擊建立不規則區域，點回起點或雙擊完成">✎ 鋼筆</button>
           </div>
         </div>
+        <div id="ie-pen-hint" style="display:none;font-size:11px;color:var(--g500);margin-bottom:6px">鋼筆：在圖上點擊建立多邊形，點回起點或雙擊完成，再按套用。</div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
           <button class="btn btn-teal btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="5.5" stroke-dasharray="2 2"/><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" opacity=".5"/></svg> 模糊</button>
           <button class="btn btn-purple btn-sm" style="flex:1" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> 馬賽克</button>
@@ -7586,11 +7588,12 @@ function ieRegionMode(effect){
   document.getElementById('ie-region-blur-btn').classList.toggle('btn-ghost',effect!=='blur');
   document.getElementById('ie-region-mosaic-btn').classList.toggle('btn-blue',effect==='mosaic');
   document.getElementById('ie-region-mosaic-btn').classList.toggle('btn-ghost',effect!=='mosaic');
-  snack('請在圖片上拖曳選取區域');
+  snack(IE.regionShape==='pen'?'鋼筆：在圖上點擊建立區域，點回起點或雙擊完成':'請在圖片上拖曳選取區域');
+  if(IE.regionShape==='pen' && IE.regionPoly && IE.regionPoly.length>=3 && IE._polyClosed) iePenClose();
 }
 
 function ieRegionCancel(){
-  IE.regionMode=null; IE._regRect=null;
+  IE.regionMode=null; IE._regRect=null; IE.regionPoly=[]; IE._polyClosed=false;
   ieClearOverlay();
   ieO().style.display='none';
   document.getElementById('ie-region-controls').style.display='none';
@@ -7625,6 +7628,11 @@ function iePreviewRegion(){
         }
       }
     }
+  } else if(IE.regionShape==='pen' && IE.regionPoly && IE.regionPoly.length>=3){
+    const mask=_iePolyMask(IE.regionPoly,x,y,w,h);
+    const tmp=new ImageData(new Uint8ClampedArray(previewId.data),w,h);
+    if(IE.regionMode==='blur') ieBoxBlur(tmp,Math.round(strength)); else ieMosaic(tmp,Math.max(2,Math.round(strength)));
+    for(let py=0;py<h;py++)for(let px=0;px<w;px++){ if(mask[(py*w+px)*4+3]>128){ const i=(py*w+px)*4; previewId.data[i]=tmp.data[i];previewId.data[i+1]=tmp.data[i+1];previewId.data[i+2]=tmp.data[i+2]; } }
   } else {
     if(IE.regionMode==='blur') ieBoxBlur(previewId,Math.round(strength));
     else ieMosaic(previewId,Math.max(2,Math.round(strength)));
@@ -7636,6 +7644,8 @@ function iePreviewRegion(){
   ctx.strokeStyle='rgba(37,99,235,.9)';ctx.lineWidth=2;ctx.setLineDash([5,3]);
   if(IE.regionShape==='circle'){
     ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.stroke();
+  } else if(IE.regionShape==='pen' && IE.regionPoly && IE.regionPoly.length>=3){
+    ctx.beginPath(); IE.regionPoly.forEach((p,i)=>{ i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); }); ctx.closePath(); ctx.stroke();
   } else {
     ctx.strokeRect(x,y,w,h);
   }
@@ -7664,6 +7674,11 @@ function ieApplyRegion(){
         }
       }
     }
+  } else if(IE.regionShape==='pen' && IE.regionPoly && IE.regionPoly.length>=3){
+    const mask=_iePolyMask(IE.regionPoly,x,y,w,h);
+    const tmp=new ImageData(new Uint8ClampedArray(id.data),w,h);
+    if(IE.regionMode==='blur') ieBoxBlur(tmp,Math.round(strength)); else ieMosaic(tmp,Math.max(2,Math.round(strength)));
+    for(let py=0;py<h;py++)for(let px=0;px<w;px++){ if(mask[(py*w+px)*4+3]>128){ const i=(py*w+px)*4; id.data[i]=tmp.data[i]; id.data[i+1]=tmp.data[i+1]; id.data[i+2]=tmp.data[i+2]; } }
   } else {
     if(IE.regionMode==='blur') ieBoxBlur(id,Math.round(strength));
     else ieMosaic(id,Math.max(2,Math.round(strength)));
@@ -7795,8 +7810,39 @@ function ieZm100(){
 
 function ieSetShape(shape){
   IE.regionShape=shape;
+  IE.regionPoly=[]; IE._polyClosed=false; IE._regRect=null;
   document.getElementById('ie-shape-rect').className='btn btn-sm '+(shape==='rect'?'btn-blue':'btn-ghost');
   document.getElementById('ie-shape-circle').className='btn btn-sm '+(shape==='circle'?'btn-blue':'btn-ghost');
+  const pb=document.getElementById('ie-shape-pen'); if(pb) pb.className='btn btn-sm '+(shape==='pen'?'btn-blue':'btn-ghost');
+  const hint=document.getElementById('ie-pen-hint'); if(hint) hint.style.display=shape==='pen'?'block':'none';
+  const ov=ieO&&ieO(); if(ov){ const c=ov.getContext('2d'); c.clearRect(0,0,ov.width,ov.height); }
+}
+// 多邊形遮罩（回傳 w×h 的 ImageData data，alpha>0 表示在區域內）
+function _iePolyMask(poly,x,y,w,h){
+  const m=document.createElement('canvas'); m.width=w; m.height=h; const mc=m.getContext('2d');
+  mc.beginPath(); poly.forEach((pt,i)=>{ const px=pt.x-x,py=pt.y-y; i?mc.lineTo(px,py):mc.moveTo(px,py); }); mc.closePath();
+  mc.fillStyle='#fff'; mc.fill(); return mc.getImageData(0,0,w,h).data;
+}
+// 繪製鋼筆多邊形（進行中/已閉合）到 overlay
+function iePenDraw(cursor){
+  const ov=ieO(); const ctx=ov.getContext('2d'); ctx.clearRect(0,0,ov.width,ov.height);
+  const poly=IE.regionPoly||[]; if(!poly.length) return;
+  ctx.strokeStyle='rgba(37,99,235,.95)'; ctx.lineWidth=2; ctx.setLineDash([5,3]);
+  ctx.beginPath(); poly.forEach((p,i)=>{ i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); });
+  if(IE._polyClosed) ctx.closePath();
+  else if(cursor) ctx.lineTo(cursor.x,cursor.y);
+  ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle='rgba(37,99,235,.10)';
+  if(IE._polyClosed){ ctx.beginPath(); poly.forEach((p,i)=>{ i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); }); ctx.closePath(); ctx.fill(); }
+  // 錨點
+  poly.forEach((p,i)=>{ ctx.beginPath(); ctx.arc(p.x,p.y,i===0?5:3.5,0,7); ctx.fillStyle=i===0?'#fff':'#2563EB'; ctx.fill(); ctx.strokeStyle='#2563EB'; ctx.lineWidth=1.5; ctx.stroke(); });
+}
+function iePenClose(){
+  const poly=IE.regionPoly||[]; if(poly.length<3){ snack('至少要 3 個點'); return; }
+  IE._polyClosed=true;
+  let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9; poly.forEach(p=>{ mnx=Math.min(mnx,p.x);mny=Math.min(mny,p.y);mxx=Math.max(mxx,p.x);mxy=Math.max(mxy,p.y); });
+  IE._regRect={x:Math.max(0,Math.round(mnx)),y:Math.max(0,Math.round(mny)),w:Math.round(mxx-mnx),h:Math.round(mxy-mny)};
+  iePenDraw(); iePreviewRegion();
 }
 
 // ── IE Batch Mode ──
@@ -8001,15 +8047,24 @@ function ieInitMouseEvents(){
   }
 
   ov.addEventListener('mousedown',e=>{
-    dragging=true;
     const p=getImgPos(e);
+    if(IE.regionMode && IE.regionShape==='pen'){
+      if(!IE.regionPoly) IE.regionPoly=[];
+      if(IE._polyClosed){ IE.regionPoly=[]; IE._polyClosed=false; IE._regRect=null; } // 已閉合再點→重新畫
+      const r=ov.getBoundingClientRect(), sc=ov.width/r.width, thr=12*sc;
+      if(IE.regionPoly.length>=3){ const f=IE.regionPoly[0]; if(Math.hypot(p.x-f.x,p.y-f.y)<thr){ iePenClose(); return; } }
+      IE.regionPoly.push({x:p.x,y:p.y}); iePenDraw({x:p.x,y:p.y}); return;
+    }
+    dragging=true;
     if(IE.cropMode) IE._cropStart={...p};
     else if(IE.regionMode) IE._regStart={...p};
   });
+  ov.addEventListener('dblclick',e=>{ if(IE.regionMode && IE.regionShape==='pen'){ e.preventDefault(); iePenClose(); } });
 
   ov.addEventListener('mousemove',e=>{
-    if(!dragging) return;
     const p=getImgPos(e);
+    if(IE.regionMode && IE.regionShape==='pen'){ if((IE.regionPoly||[]).length && !IE._polyClosed) iePenDraw(p); return; }
+    if(!dragging) return;
     const start=IE.cropMode?IE._cropStart:IE._regStart;
     if(!start) return;
     const x=Math.min(start.x,p.x),y=Math.min(start.y,p.y);
