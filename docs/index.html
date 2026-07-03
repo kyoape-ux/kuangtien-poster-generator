@@ -906,7 +906,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
   <span class="ver" style="margin-left:6px">v3.0</span>
-  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: 2026/07/03 11:39</span>
+  <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: —</span>
 </div>
 
 <div id="main">
@@ -8517,6 +8517,11 @@ window.addEventListener('load', ()=>{
   // Init Fabric.js canvas for vector shapes
   setTimeout(initFabCanvas, 500);
   buildGradBg(); // 漸層背景素材
+  // 更新時間：自動抓 HTML 檔實際最後修改時間（部署後自動反映）
+  try{ const d=new Date(document.lastModified); const bt=document.getElementById('build-ts');
+    if(bt && !isNaN(d.getTime())){ const p=n=>String(n).padStart(2,'0');
+      bt.textContent=`updated: ${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+  }catch(e){}
   // 預設進入首頁卡片頁
   switchTab('home', document.getElementById('ntab-home'));
 });
