@@ -2669,10 +2669,10 @@ function fitTxtHeight(obj){
   });
 }
 
-function addImg(inp){
-  const file = inp.files[0];
-  if(!file) return;
-  // 用 FileReader 保留原始 data URL（保留 PNG 去背透明度，不走 canvas 轉換）
+function addImg(inp){ const file=inp.files[0]; inp.value=''; if(file) addImgFromFile(file); }
+// 從 File/Blob 新增圖片物件到海報；px,py（邏輯座標）為放置中心，省略則預設 40,40
+function addImgFromFile(file, px, py){
+  if(!file || !(file.type||'').startsWith('image/')){ if(window.snack)snack('請提供圖片檔'); return; }
   const reader = new FileReader();
   reader.onload = e => {
     const dataUrl = e.target.result;
@@ -2681,19 +2681,14 @@ function addImg(inp){
       img._srcDataUrl = dataUrl; // 暫存原始 data URL，避免 canvas 轉換破壞透明度
       pushHistory();
       const id = mkId();
-      // SVG 可能沒有 naturalWidth/Height（只有 viewBox），回退到預設尺寸
       const nw = img.naturalWidth || 800;
       const nh = img.naturalHeight || 600;
       const ar = nh / nw;
       const dw = clamp(300, 100, S.W*0.6);
-      const obj = {
-        id, type:'img',
-        x: 40, y: 40,
-        w: dw, h: dw*ar,
-        rot:0, opacity:1,
-        imgEl: img,
-        aspectRatio: ar
-      };
+      const w=dw, h=dw*ar;
+      const x=(px!=null)?clamp(Math.round(px-w/2),0,Math.max(0,S.W-w)):40;
+      const y=(py!=null)?clamp(Math.round(py-h/2),0,Math.max(0,S.H-h)):40;
+      const obj = { id, type:'img', x, y, w, h, rot:0, opacity:1, imgEl:img, aspectRatio:ar };
       S.objs.push(obj);
       mkEl(id);
       selObj(id);
@@ -2703,7 +2698,6 @@ function addImg(inp){
     img.src = dataUrl;
   };
   reader.readAsDataURL(file);
-  inp.value = '';
 }
 
 function addSvgObj(inp){
@@ -7366,12 +7360,25 @@ function initIeInput(){
   area.addEventListener('drop',e=>{ stop(e); area.classList.remove('ie-dragover');
     const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(x=>(x.type||'').startsWith('image/'));
     if(f) ieLoadFile(f); else snack('請拖曳圖片檔'); });
-  // 貼上：只在「圖片編輯」分頁時攔截剪貼簿圖片
+
+  // 海報編輯：拖曳圖片到畫布 → 新增圖片物件（放在拖放點）
+  const cs=document.getElementById('cscroll');
+  if(cs){
+    ['dragenter','dragover'].forEach(t=>cs.addEventListener(t,e=>{ if(S.tab!=='poster')return; e.preventDefault(); }));
+    cs.addEventListener('drop',e=>{ if(S.tab!=='poster')return; e.preventDefault();
+      const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(x=>(x.type||'').startsWith('image/')); if(!f) return;
+      const pw=document.getElementById('pw').getBoundingClientRect();
+      addImgFromFile(f,(e.clientX-pw.left)/S.zoom,(e.clientY-pw.top)/S.zoom); });
+  }
+
+  // 貼上：圖片編輯分頁→載入編輯器；海報分頁→加到海報；其他分頁不攔截
   document.addEventListener('paste',e=>{
-    if(S.tab!=='ie') return;
+    if(S.tab!=='ie' && S.tab!=='poster') return;
     const items=e.clipboardData&&e.clipboardData.items; if(!items) return;
-    for(const it of items){ if((it.type||'').startsWith('image/')){ const f=it.getAsFile();
-      if(f){ e.preventDefault(); ieLoadFile(f); snack('已從剪貼簿貼上圖片'); return; } } }
+    let f=null; for(const it of items){ if((it.type||'').startsWith('image/')){ f=it.getAsFile(); if(f) break; } }
+    if(!f) return; e.preventDefault();
+    if(S.tab==='ie'){ ieLoadFile(f); snack('已從剪貼簿貼上圖片'); }
+    else { addImgFromFile(f); snack('已貼上圖片到海報'); }
   });
 }
 
