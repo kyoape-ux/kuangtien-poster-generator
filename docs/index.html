@@ -613,6 +613,7 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   width:100%;height:100%;
 }
 #ie-upload-hint{font-size:14px;color:var(--g400);text-align:center;padding:60px 20px}
+#ie-area.ie-dragover{outline:3px dashed #2DD4BF;outline-offset:-8px;background:rgba(45,212,191,.06)}
 #ie-size-lbl{font-size:11px;color:var(--g500);margin-top:8px;text-align:center}
 #ie-thumb-strip{
   display:none;width:100%;overflow-x:auto;padding:8px 12px;
@@ -1373,6 +1374,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
           <div id="ie-upload-hint">
             <svg width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 16 16" style="color:#CBD5E1;margin-bottom:12px"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg>
             <div>請從左側上傳圖片以開始編輯</div>
+            <div style="font-size:12px;color:var(--g400);margin-top:8px">也可以直接<b>拖曳圖片</b>到這裡，或按 <b>⌘/Ctrl + V</b> 貼上剪貼簿的圖片</div>
           </div>
         </div>
         <button class="ie-nav-btn" id="ie-next-btn" onclick="ieBatchNav(1)" style="display:none" title="下一張">▶</button>
@@ -7320,9 +7322,9 @@ const IE = {
 function ieC(){ return document.getElementById('ie-canvas'); }
 function ieO(){ return document.getElementById('ie-overlay'); }
 
-function ieLoad(inp){
-  const file=inp.files[0]; if(!file) return;
-  inp.value='';
+function ieLoad(inp){ const file=inp.files[0]; inp.value=''; if(file) ieLoadFile(file); }
+function ieLoadFile(file){
+  if(!file || !(file.type||'').startsWith('image/')){ if(window.snack)snack('請提供圖片檔'); return; }
   const reader=new FileReader();
   reader.onload=e=>{
     const img=new Image();
@@ -7353,6 +7355,24 @@ function ieLoad(inp){
     img.src=e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+// 圖片編輯：拖曳圖片到編輯區 + Cmd/Ctrl+V 貼上載入
+function initIeInput(){
+  const area=document.getElementById('ie-area'); if(!area) return;
+  const stop=e=>{ e.preventDefault(); e.stopPropagation(); };
+  ['dragenter','dragover'].forEach(t=>area.addEventListener(t,e=>{ stop(e); area.classList.add('ie-dragover'); }));
+  ['dragleave','dragend'].forEach(t=>area.addEventListener(t,e=>{ stop(e); if(e.target===area) area.classList.remove('ie-dragover'); }));
+  area.addEventListener('drop',e=>{ stop(e); area.classList.remove('ie-dragover');
+    const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(x=>(x.type||'').startsWith('image/'));
+    if(f) ieLoadFile(f); else snack('請拖曳圖片檔'); });
+  // 貼上：只在「圖片編輯」分頁時攔截剪貼簿圖片
+  document.addEventListener('paste',e=>{
+    if(S.tab!=='ie') return;
+    const items=e.clipboardData&&e.clipboardData.items; if(!items) return;
+    for(const it of items){ if((it.type||'').startsWith('image/')){ const f=it.getAsFile();
+      if(f){ e.preventDefault(); ieLoadFile(f); snack('已從剪貼簿貼上圖片'); return; } } }
+  });
 }
 
 function ieRedraw(){
@@ -8517,6 +8537,7 @@ window.addEventListener('load', ()=>{
   // Init Fabric.js canvas for vector shapes
   setTimeout(initFabCanvas, 500);
   buildGradBg(); // 漸層背景素材
+  initIeInput(); // 圖片編輯：拖曳/貼上載入
   // 更新時間：自動抓 HTML 檔實際最後修改時間（部署後自動反映）
   try{ const d=new Date(document.lastModified); const bt=document.getElementById('build-ts');
     if(bt && !isNaN(d.getTime())){ const p=n=>String(n).padStart(2,'0');
