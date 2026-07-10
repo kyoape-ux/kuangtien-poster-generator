@@ -2261,6 +2261,8 @@ async function pasteFromClipboard(){
         const imgType = item.types.find(t=>t.startsWith('image/'));
         if(imgType){
           const blob = await item.getType(imgType);
+          // 圖片編輯分頁：貼上的圖片載入到編輯器（用該圖原始大小，可直接編輯/打馬賽克）
+          if(S.tab==='ie'){ ieLoadFile(new File([blob],'paste.png',{type:blob.type||'image/png'})); snack('已貼上圖片到編輯器'); return; }
           const url = URL.createObjectURL(blob);
           const img = new Image();
           img.onload = ()=>{
@@ -2292,21 +2294,21 @@ async function pasteFromClipboard(){
           img.src = url;
           return;
         }
-        // 純文字 → 貼入為文字物件
-        if(item.types.includes('text/plain')){
+        // 純文字 → 貼入為文字物件（僅海報，圖片編輯不處理文字）
+        if(S.tab!=='ie' && item.types.includes('text/plain')){
           const blob = await item.getType('text/plain');
           const text = (await blob.text()).trim();
           if(text){ _pasteAsTextObj(text); return; }
         }
       }
       // 沒有圖片也沒有文字 → 回落到內部剪貼簿
-      if(S._clipboard) pasteObj();
+      if(S.tab!=='ie' && S._clipboard) pasteObj();
     } catch(err){
       // 權限拒絕或 API 不支援 → 回落
-      if(S._clipboard) pasteObj();
+      if(S.tab!=='ie' && S._clipboard) pasteObj();
     }
   } else {
-    if(S._clipboard) pasteObj();
+    if(S.tab!=='ie' && S._clipboard) pasteObj();
   }
 }
 
@@ -7371,15 +7373,7 @@ function initIeInput(){
       addImgFromFile(f,(e.clientX-pw.left)/S.zoom,(e.clientY-pw.top)/S.zoom); });
   }
 
-  // 貼上：圖片編輯分頁→載入編輯器；海報分頁→加到海報；其他分頁不攔截
-  document.addEventListener('paste',e=>{
-    if(S.tab!=='ie' && S.tab!=='poster') return;
-    const items=e.clipboardData&&e.clipboardData.items; if(!items) return;
-    let f=null; for(const it of items){ if((it.type||'').startsWith('image/')){ f=it.getAsFile(); if(f) break; } }
-    if(!f) return; e.preventDefault();
-    if(S.tab==='ie'){ ieLoadFile(f); snack('已從剪貼簿貼上圖片'); }
-    else { addImgFromFile(f); snack('已貼上圖片到海報'); }
-  });
+  // 貼上（Cmd/Ctrl+V）統一由 pasteFromClipboard 依分頁處理，避免重複觸發
 }
 
 function ieRedraw(){
