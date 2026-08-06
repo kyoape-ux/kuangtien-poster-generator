@@ -1199,6 +1199,11 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 
     <div id="ie-controls" style="display:none">
 
+      <div class="sec-title">色階分布圖</div>
+      <div class="sec" style="padding-top:4px">
+        <canvas id="ie-histo" width="256" height="96" style="width:100%;height:72px;background:#0f172a;border-radius:8px;display:block"></canvas>
+      </div>
+
       <div class="sec-title">白平衡</div>
       <div class="sec">
         <button class="btn btn-amber btn-full btn-sm" onclick="ieAutoWB()">自動白平衡</button>
@@ -1221,10 +1226,15 @@ body.tool-pan #cscroll:active{cursor:grabbing}
           <input type="range" id="ie-saturation" min="-100" max="100" value="0" oninput="ieSlider('saturation',this)">
           <span id="ie-saturation-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span>
         </div>
-        <div class="inp-row">
+        <div class="inp-row" style="margin-bottom:6px">
           <span class="inp-label">色相</span>
           <input type="range" id="ie-hue" min="-180" max="180" value="0" oninput="ieSlider('hue',this)">
           <span id="ie-hue-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0°</span>
+        </div>
+        <div class="inp-row">
+          <span class="inp-label">銳化</span>
+          <input type="range" id="ie-sharpen" min="0" max="100" value="0" oninput="ieSlider('sharpen',this)">
+          <span id="ie-sharpen-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span>
         </div>
       </div>
 
@@ -7330,8 +7340,8 @@ function ieLoadFile(file){
       c.getContext('2d').drawImage(img,0,0);
       IE.origCanvas=c;
       IE.undoStack=[];
-      IE.brightness=0; IE.contrast=0; IE.saturation=0; IE.hue=0;
-      ['brightness','contrast','saturation','hue'].forEach(k=>{
+      IE.brightness=0; IE.contrast=0; IE.saturation=0; IE.hue=0; IE.sharpen=0;
+      ['brightness','contrast','saturation','hue','sharpen'].forEach(k=>{
         const el=document.getElementById('ie-'+k);
         if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
       });
@@ -7382,6 +7392,26 @@ function ieRedraw(){
   const adj=ieApplyAdjust(IE.origCanvas);
   dctx.clearRect(0,0,dc.width,dc.height);
   dctx.drawImage(adj,0,0);
+  ieDrawHistogram();
+}
+// rAF 節流：大圖連續拖曳滑桿時合併重繪，避免堆積卡頓
+let _ieRaf=0;
+function ieRedrawT(){ if(_ieRaf) return; _ieRaf=requestAnimationFrame(()=>{ _ieRaf=0; ieRedraw(); }); }
+// 色階分布圖（取樣目前顯示畫布，畫 R/G/B 曲線）
+function ieDrawHistogram(){
+  const hc=document.getElementById('ie-histo'); if(!hc) return;
+  const ctx=hc.getContext('2d'), W=hc.width, H=hc.height;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,W,H);
+  const dc=ieC(); if(!IE.origCanvas||!dc.width) return;
+  const w=dc.width, h=dc.height, total=w*h, step=Math.max(1,Math.floor(total/60000));
+  const data=dc.getContext('2d').getImageData(0,0,w,h).data;
+  const R=new Float32Array(256),G=new Float32Array(256),B=new Float32Array(256);
+  for(let i=0;i<data.length;i+=4*step){ R[data[i]]++; G[data[i+1]]++; B[data[i+2]]++; }
+  let mx=1; for(let k=0;k<256;k++){ if(R[k]>mx)mx=R[k]; if(G[k]>mx)mx=G[k]; if(B[k]>mx)mx=B[k]; }
+  const draw=(arr,col)=>{ ctx.beginPath(); ctx.moveTo(0,H); for(let x=0;x<256;x++){ ctx.lineTo(x/255*W, H-(arr[x]/mx)*H); } ctx.lineTo(W,H); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); };
+  ctx.globalCompositeOperation='lighter';
+  draw(R,'rgba(239,68,68,.5)'); draw(G,'rgba(34,197,94,.5)'); draw(B,'rgba(96,165,250,.5)');
+  ctx.globalCompositeOperation='source-over';
 }
 
 function ieApplyAdjust(srcCanvas){
@@ -7389,26 +7419,37 @@ function ieApplyAdjust(srcCanvas){
   const c=document.createElement('canvas'); c.width=w; c.height=h;
   const ctx=c.getContext('2d');
   ctx.drawImage(srcCanvas,0,0);
-  if(IE.brightness===0&&IE.contrast===0&&IE.saturation===0&&IE.hue===0) return c;
+  const anyColor = IE.brightness||IE.contrast||IE.saturation||IE.hue;
+  if(!anyColor && !IE.sharpen) return c;
   const id=ctx.getImageData(0,0,w,h),d=id.data;
-  const br=IE.brightness*2.55;
-  const co=IE.contrast;
-  const cf=co!==0?(259*(co+255))/(255*(259-co)):1;
-  const sa=IE.saturation/100;
-  const hu=IE.hue/360;
-  for(let i=0;i<d.length;i+=4){
-    let r=d[i],g=d[i+1],b=d[i+2];
-    if(br!==0){r+=br;g+=br;b+=br;}
-    if(co!==0){r=cf*(r-128)+128;g=cf*(g-128)+128;b=cf*(b-128)+128;}
-    if(sa!==0||hu!==0){
-      const[hh,ss,ll]=ieRgbHsl(clamp(r,0,255),clamp(g,0,255),clamp(b,0,255));
-      const ns=clamp(sa>0?ss+(1-ss)*sa:ss+ss*sa,0,1);
-      const nh=(hh+hu+1)%1;
-      [r,g,b]=ieHslRgb(nh,ns,ll);
+  if(anyColor){
+    const br=IE.brightness*2.55;
+    const co=IE.contrast;
+    const cf=co!==0?(259*(co+255))/(255*(259-co)):1;
+    const sa=IE.saturation/100;
+    const hu=IE.hue/360;
+    for(let i=0;i<d.length;i+=4){
+      let r=d[i],g=d[i+1],b=d[i+2];
+      if(br!==0){r+=br;g+=br;b+=br;}
+      if(co!==0){r=cf*(r-128)+128;g=cf*(g-128)+128;b=cf*(b-128)+128;}
+      if(sa!==0||hu!==0){
+        const[hh,ss,ll]=ieRgbHsl(clamp(r,0,255),clamp(g,0,255),clamp(b,0,255));
+        const ns=clamp(sa>0?ss+(1-ss)*sa:ss+ss*sa,0,1);
+        const nh=(hh+hu+1)%1;
+        [r,g,b]=ieHslRgb(nh,ns,ll);
+      }
+      d[i]=clamp(Math.round(r),0,255);d[i+1]=clamp(Math.round(g),0,255);d[i+2]=clamp(Math.round(b),0,255);
     }
-    d[i]=clamp(Math.round(r),0,255);d[i+1]=clamp(Math.round(g),0,255);d[i+2]=clamp(Math.round(b),0,255);
   }
-  ctx.putImageData(id,0,0);
+  // 銳化（Laplacian 非銳化遮罩）
+  if(IE.sharpen>0){
+    const a=IE.sharpen/100, out=new Uint8ClampedArray(d), rw=w*4;
+    for(let y=1;y<h-1;y++){ const base=y*rw; for(let x=1;x<w-1;x++){ const i=base+x*4;
+      for(let ch=0;ch<3;ch++){ const p=i+ch, cen=d[p], nb=d[p-4]+d[p+4]+d[p-rw]+d[p+rw]; out[p]=cen + a*(4*cen - nb); } } }
+    ctx.putImageData(new ImageData(out,w,h),0,0);
+  } else {
+    ctx.putImageData(id,0,0);
+  }
   return c;
 }
 
@@ -7443,7 +7484,7 @@ function ieSlider(key,inp){
   IE[key]=+inp.value;
   const lbl=document.getElementById('ie-'+key+'-lbl');
   if(lbl) lbl.textContent=key==='hue'?inp.value+'°':inp.value;
-  ieRedraw();
+  ieRedrawT();
 }
 
 function ieAutoWB(){
