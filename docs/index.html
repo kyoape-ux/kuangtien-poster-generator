@@ -2583,10 +2583,15 @@ function toggleBgLock(){
 function addBgImg(inp){
   const file = inp.files[0];
   if(!file) return;
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = ()=>{ S.bgImgEl = img; showBgImgControls(); renderBg(); snack('底圖已載入'); };
-  img.src = url;
+  // 以 data URL 保存原始檔：SVG 保留向量(匯出SVG不被點陣化)、點陣圖保留原品質
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const img = new Image();
+    img.onload = ()=>{ img._srcDataUrl = dataUrl; pushHistory(); S.bgImgEl = img; S.bgScale=1; S.bgOffsetX=0; S.bgOffsetY=0; showBgImgControls(); renderBg(); snack('底圖已載入'); };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
   inp.value = '';
 }
 
