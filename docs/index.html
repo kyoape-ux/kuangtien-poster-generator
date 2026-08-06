@@ -1238,6 +1238,15 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         </div>
       </div>
 
+      <div class="sec-title">色調（可拖曳上方色階圖調整）</div>
+      <div class="sec">
+        <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">曝光</span><input type="range" id="ie-exposure" min="-100" max="100" value="0" oninput="ieSlider('exposure',this)"><span id="ie-exposure-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+        <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">亮部</span><input type="range" id="ie-highlights" min="-100" max="100" value="0" oninput="ieSlider('highlights',this)"><span id="ie-highlights-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+        <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">陰影</span><input type="range" id="ie-shadows" min="-100" max="100" value="0" oninput="ieSlider('shadows',this)"><span id="ie-shadows-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+        <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">白色</span><input type="range" id="ie-whites" min="-100" max="100" value="0" oninput="ieSlider('whites',this)"><span id="ie-whites-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+        <div class="inp-row"><span class="inp-label">黑色</span><input type="range" id="ie-blacks" min="-100" max="100" value="0" oninput="ieSlider('blacks',this)"><span id="ie-blacks-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+      </div>
+
       <div class="sec-title">裁切</div>
       <div class="sec">
         <div class="row">
@@ -7341,7 +7350,8 @@ function ieLoadFile(file){
       IE.origCanvas=c;
       IE.undoStack=[];
       IE.brightness=0; IE.contrast=0; IE.saturation=0; IE.hue=0; IE.sharpen=0;
-      ['brightness','contrast','saturation','hue','sharpen'].forEach(k=>{
+      IE.exposure=0; IE.highlights=0; IE.shadows=0; IE.whites=0; IE.blacks=0;
+      ['brightness','contrast','saturation','hue','sharpen','exposure','highlights','shadows','whites','blacks'].forEach(k=>{
         const el=document.getElementById('ie-'+k);
         if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
       });
@@ -7384,6 +7394,23 @@ function initIeInput(){
   }
 
   // 貼上（Cmd/Ctrl+V）統一由 pasteFromClipboard 依分頁處理，避免重複觸發
+
+  // 色階分布圖可拖曳：由左到右分五區 → 黑色/陰影/曝光/亮部/白色
+  const histo=document.getElementById('ie-histo');
+  if(histo){
+    const zones=['blacks','shadows','exposure','highlights','whites'];
+    let dragKey=null, startX=0, startVal=0;
+    histo.style.cursor='ew-resize';
+    histo.title='拖曳調整：黑色 / 陰影 / 曝光 / 亮部 / 白色（左→右）';
+    histo.addEventListener('mousedown',e=>{ if(!IE.origCanvas) return;
+      const r=histo.getBoundingClientRect(); const zi=Math.max(0,Math.min(4,Math.floor((e.clientX-r.left)/r.width*5)));
+      dragKey=zones[zi]; startX=e.clientX; startVal=IE[dragKey]||0; e.preventDefault(); });
+    document.addEventListener('mousemove',e=>{ if(!dragKey) return;
+      const r=histo.getBoundingClientRect(); const v=Math.round(Math.max(-100,Math.min(100,startVal+(e.clientX-startX)/r.width*200)));
+      IE[dragKey]=v; const sl=document.getElementById('ie-'+dragKey), lb=document.getElementById('ie-'+dragKey+'-lbl');
+      if(sl) sl.value=v; if(lb) lb.textContent=v; ieRedrawT(); });
+    document.addEventListener('mouseup',()=>{ dragKey=null; });
+  }
 }
 
 function ieRedraw(){
@@ -7414,12 +7441,28 @@ function ieDrawHistogram(){
   ctx.globalCompositeOperation='source-over';
 }
 
+// 色調 LUT：曝光/亮部/陰影/白色/黑色 → 0..255 對照表（快速套用）
+function _ieToneLUT(){
+  const ex=(IE.exposure||0)/100, hi=(IE.highlights||0)/100, sh=(IE.shadows||0)/100, wh=(IE.whites||0)/100, bl=(IE.blacks||0)/100;
+  const expF=Math.pow(2,ex); const lut=new Uint8ClampedArray(256);
+  for(let i=0;i<256;i++){
+    let v=i/255; v*=expF;
+    const t=v<0?0:(v>1?1:v);
+    v += sh*0.5*Math.pow(1-t,2);      // 陰影（暗部權重）
+    v += hi*0.5*Math.pow(t,2);        // 亮部（亮部權重）
+    v += bl*0.35*Math.pow(1-t,3);     // 黑色（極暗）
+    v += wh*0.35*Math.pow(t,3);       // 白色（極亮）
+    lut[i]=Math.round((v<0?0:v>1?1:v)*255);
+  }
+  return lut;
+}
+
 function ieApplyAdjust(srcCanvas){
   const w=srcCanvas.width,h=srcCanvas.height;
   const c=document.createElement('canvas'); c.width=w; c.height=h;
   const ctx=c.getContext('2d');
   ctx.drawImage(srcCanvas,0,0);
-  const anyColor = IE.brightness||IE.contrast||IE.saturation||IE.hue;
+  const anyColor = IE.brightness||IE.contrast||IE.saturation||IE.hue||IE.exposure||IE.highlights||IE.shadows||IE.whites||IE.blacks;
   if(!anyColor && !IE.sharpen) return c;
   const id=ctx.getImageData(0,0,w,h),d=id.data;
   if(anyColor){
@@ -7428,8 +7471,10 @@ function ieApplyAdjust(srcCanvas){
     const cf=co!==0?(259*(co+255))/(255*(259-co)):1;
     const sa=IE.saturation/100;
     const hu=IE.hue/360;
+    const tlut=(IE.exposure||IE.highlights||IE.shadows||IE.whites||IE.blacks)?_ieToneLUT():null;
     for(let i=0;i<d.length;i+=4){
       let r=d[i],g=d[i+1],b=d[i+2];
+      if(tlut){r=tlut[r];g=tlut[g];b=tlut[b];}
       if(br!==0){r+=br;g+=br;b+=br;}
       if(co!==0){r=cf*(r-128)+128;g=cf*(g-128)+128;b=cf*(b-128)+128;}
       if(sa!==0||hu!==0){
@@ -7823,9 +7868,8 @@ function ieUndo(){
 }
 
 function ieReset(){
-  IE.brightness=0;IE.contrast=0;IE.saturation=0;IE.hue=0;
-  ['brightness','contrast','saturation','hue'].forEach(k=>{
-    const el=document.getElementById('ie-'+k);
+  ['brightness','contrast','saturation','hue','sharpen','exposure','highlights','shadows','whites','blacks'].forEach(k=>{
+    IE[k]=0; const el=document.getElementById('ie-'+k);
     if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
   });
   ieRedraw();
