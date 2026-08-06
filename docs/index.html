@@ -1305,6 +1305,34 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         </div>
       </div>
 
+      <div class="sec-title">局部遮罩（局部調亮/暗）</div>
+      <div class="sec">
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">遮罩</span>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-sm btn-ghost" id="ie-mask-radial" onclick="ieMaskType('radial')">◎ 放射</button>
+            <button class="btn btn-sm btn-ghost" id="ie-mask-linear" onclick="ieMaskType('linear')">▤ 線性</button>
+            <button class="btn btn-sm btn-ghost" id="ie-mask-brush" onclick="ieMaskType('brush')">✎ 筆刷</button>
+          </div>
+        </div>
+        <div id="ie-mask-brush-size" class="inp-row" style="display:none;margin-bottom:6px">
+          <span class="inp-label">筆刷大小</span>
+          <input type="range" id="ie-brush-size" min="10" max="300" value="60" oninput="IE.brushSize=+this.value;document.getElementById('ie-brush-size-lbl').textContent=this.value">
+          <span id="ie-brush-size-lbl" style="font-size:11px;color:var(--g500);min-width:28px">60</span>
+        </div>
+        <div id="ie-mask-ctrls" style="display:none">
+          <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">亮度</span><input type="range" id="ie-mask-bri" min="-100" max="100" value="0" oninput="ieMaskAdjust('bri',this.value)"><span id="ie-mask-bri-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+          <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">對比</span><input type="range" id="ie-mask-con" min="-100" max="100" value="0" oninput="ieMaskAdjust('con',this.value)"><span id="ie-mask-con-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+          <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">飽和</span><input type="range" id="ie-mask-sat" min="-100" max="100" value="0" oninput="ieMaskAdjust('sat',this.value)"><span id="ie-mask-sat-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-blue btn-sm" style="flex:1" onclick="ieMaskApply()">✓ 套用</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieMaskClear()">清除遮罩</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieMaskCancel()">✕ 取消</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--g500);margin-top:6px">選類型→在圖上拖曳(放射/線性)或塗抹(筆刷)建立遮罩(紅色示意)，再調亮度/對比/飽和即時預覽，按套用。</div>
+      </div>
+
       <div class="sec-title">操作</div>
       <div class="sec">
         <div style="display:flex;gap:6px;margin-bottom:6px">
@@ -7351,6 +7379,7 @@ function ieLoadFile(file){
       IE.undoStack=[];
       IE.brightness=0; IE.contrast=0; IE.saturation=0; IE.hue=0; IE.sharpen=0;
       IE.exposure=0; IE.highlights=0; IE.shadows=0; IE.whites=0; IE.blacks=0;
+      IE.maskMode=null; IE.maskCanvas=null; IE.maskAdj={bri:0,con:0,sat:0};
       ['brightness','contrast','saturation','hue','sharpen','exposure','highlights','shadows','whites','blacks'].forEach(k=>{
         const el=document.getElementById('ie-'+k);
         if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
@@ -7687,6 +7716,7 @@ function ieClearOverlay(){
 
 function ieRegionMode(effect){
   if(!IE.origCanvas) return;
+  if(IE.maskMode) ieMaskCancel();
   IE.regionMode=effect; IE._regRect=null;
   ieClearOverlay();
   ieO().style.display='block';
@@ -7795,6 +7825,72 @@ function ieApplyRegion(){
   ieRedraw();
   snack('已套用區域效果');
 }
+
+// ══════════ 局部遮罩（放射/線性/筆刷 + 局部亮/暗/對比/飽和）══════════
+function ieMaskType(type){
+  if(!IE.origCanvas){ snack('請先載入圖片'); return; }
+  if(IE.regionMode) ieRegionCancel();
+  IE.maskMode=type;
+  if(!IE.maskCanvas || IE.maskCanvas.width!==IE.origCanvas.width || IE.maskCanvas.height!==IE.origCanvas.height){
+    IE.maskCanvas=document.createElement('canvas'); IE.maskCanvas.width=IE.origCanvas.width; IE.maskCanvas.height=IE.origCanvas.height;
+  }
+  if(!IE.maskAdj) IE.maskAdj={bri:0,con:0,sat:0};
+  if(!IE.brushSize) IE.brushSize=60;
+  document.getElementById('ie-mask-ctrls').style.display='block';
+  document.getElementById('ie-mask-brush-size').style.display=type==='brush'?'':'none';
+  ['radial','linear','brush'].forEach(t=>{ const b=document.getElementById('ie-mask-'+t); if(b) b.className='btn btn-sm '+(t===type?'btn-blue':'btn-ghost'); });
+  const ov=ieO(); ov.style.display='block';
+  iePreviewMask();
+  snack(type==='brush'?'筆刷：在圖上塗抹要調整的區域':type==='radial'?'放射：在圖上拖曳出橢圓範圍':'線性：在圖上拖曳方向');
+}
+function ieMaskGenRadial(cx,cy,rx,ry){ const m=IE.maskCanvas,mc=m.getContext('2d'); mc.clearRect(0,0,m.width,m.height);
+  mc.save(); mc.translate(cx,cy); mc.scale(Math.max(rx,1),Math.max(ry,1));
+  const g=mc.createRadialGradient(0,0,0,0,0,1); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.55,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  mc.fillStyle=g; mc.beginPath(); mc.arc(0,0,1,0,Math.PI*2); mc.fill(); mc.restore(); }
+function ieMaskGenLinear(x1,y1,x2,y2){ const m=IE.maskCanvas,mc=m.getContext('2d'); mc.clearRect(0,0,m.width,m.height);
+  const g=mc.createLinearGradient(x1,y1,x2,y2); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  mc.fillStyle=g; mc.fillRect(0,0,m.width,m.height); }
+function ieMaskBrushDab(x,y){ const m=IE.maskCanvas,mc=m.getContext('2d'), s=IE.brushSize||60;
+  mc.save(); mc.globalCompositeOperation='lighter';
+  const g=mc.createRadialGradient(x,y,0,x,y,s); g.addColorStop(0,'rgba(255,255,255,.5)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  mc.fillStyle=g; mc.beginPath(); mc.arc(x,y,s,0,Math.PI*2); mc.fill(); mc.restore(); }
+// 依遮罩(alpha 權重)套用調整，回傳調整後 canvas
+function _ieApplyMaskAdj(src,mask){ const w=src.width,h=src.height;
+  const out=document.createElement('canvas'); out.width=w; out.height=h; const octx=out.getContext('2d'); octx.drawImage(src,0,0);
+  const {bri,con,sat}=IE.maskAdj||{}; if(!bri&&!con&&!sat) return out;
+  const id=octx.getImageData(0,0,w,h),d=id.data; const md=mask.getContext('2d').getImageData(0,0,w,h).data;
+  const brA=(bri||0)*2.55, cf=(con)?(259*(con+255))/(255*(259-con)):1, sa=(sat||0)/100;
+  for(let i=0;i<d.length;i+=4){ const wgt=md[i+3]/255; if(wgt<0.004) continue;
+    const r=d[i],g=d[i+1],b=d[i+2]; let nr=r,ng=g,nb=b;
+    if(brA){nr+=brA;ng+=brA;nb+=brA;}
+    if(con){nr=cf*(nr-128)+128;ng=cf*(ng-128)+128;nb=cf*(nb-128)+128;}
+    if(sa){ const[hh,ss,ll]=ieRgbHsl(clamp(nr,0,255),clamp(ng,0,255),clamp(nb,0,255)); const ns=clamp(sa>0?ss+(1-ss)*sa:ss+ss*sa,0,1); [nr,ng,nb]=ieHslRgb(hh,ns,ll); }
+    d[i]=clamp(r+(nr-r)*wgt,0,255); d[i+1]=clamp(g+(ng-g)*wgt,0,255); d[i+2]=clamp(b+(nb-b)*wgt,0,255);
+  }
+  octx.putImageData(id,0,0); return out; }
+function iePreviewMask(){ if(!IE.origCanvas||!IE.maskCanvas) return;
+  const dc=ieC(),dctx=dc.getContext('2d'); const adj=_ieApplyMaskAdj(IE.origCanvas,IE.maskCanvas);
+  dctx.clearRect(0,0,dc.width,dc.height); dctx.drawImage(adj,0,0);
+  // 遮罩紅色示意疊在 overlay
+  const ov=ieO(),octx=ov.getContext('2d'); octx.clearRect(0,0,ov.width,ov.height);
+  const t=document.createElement('canvas'); t.width=ov.width; t.height=ov.height; const tc=t.getContext('2d'); tc.drawImage(IE.maskCanvas,0,0);
+  const mi=tc.getImageData(0,0,t.width,t.height),mdd=mi.data; for(let i=0;i<mdd.length;i+=4){ const a=mdd[i+3]; mdd[i]=255;mdd[i+1]=45;mdd[i+2]=45;mdd[i+3]=a*0.4; }
+  tc.putImageData(mi,0,0); octx.drawImage(t,0,0); ieDrawHistogram(); }
+let _ieMaskRaf=0; function iePreviewMaskT(){ if(_ieMaskRaf) return; _ieMaskRaf=requestAnimationFrame(()=>{ _ieMaskRaf=0; iePreviewMask(); }); }
+function ieMaskAdjust(key,val){ if(!IE.maskAdj) IE.maskAdj={bri:0,con:0,sat:0}; IE.maskAdj[key]=+val;
+  const lb=document.getElementById('ie-mask-'+key+'-lbl'); if(lb) lb.textContent=val; iePreviewMaskT(); }
+function ieMaskClear(){ if(IE.maskCanvas){ IE.maskCanvas.getContext('2d').clearRect(0,0,IE.maskCanvas.width,IE.maskCanvas.height); } iePreviewMask(); }
+function ieMaskApply(){ if(!IE.origCanvas||!IE.maskCanvas){ return; }
+  const {bri,con,sat}=IE.maskAdj||{}; if(!bri&&!con&&!sat){ snack('請先調整亮度/對比/飽和'); return; }
+  iePushUndo(); const adj=_ieApplyMaskAdj(IE.origCanvas,IE.maskCanvas); IE.origCanvas.getContext('2d').drawImage(adj,0,0);
+  ieMaskCancel(); ieRedraw(); snack('已套用局部遮罩'); }
+function ieMaskCancel(){ IE.maskMode=null; IE.maskAdj={bri:0,con:0,sat:0}; IE._maskStart=null; IE._maskPainting=false;
+  if(IE.maskCanvas){ IE.maskCanvas.getContext('2d').clearRect(0,0,IE.maskCanvas.width,IE.maskCanvas.height); }
+  const mc=document.getElementById('ie-mask-ctrls'); if(mc) mc.style.display='none';
+  const bs=document.getElementById('ie-mask-brush-size'); if(bs) bs.style.display='none';
+  ['radial','linear','brush'].forEach(t=>{ const b=document.getElementById('ie-mask-'+t); if(b) b.className='btn btn-sm btn-ghost'; });
+  ['bri','con','sat'].forEach(k=>{ const el=document.getElementById('ie-mask-'+k); if(el)el.value=0; const lb=document.getElementById('ie-mask-'+k+'-lbl'); if(lb)lb.textContent='0'; });
+  const ov=ieO(); ov.getContext('2d').clearRect(0,0,ov.width,ov.height); ov.style.display='none'; ieRedraw(); }
 
 function ieBoxBlur(imgData,radius){
   const w=imgData.width,h=imgData.height,d=imgData.data;
@@ -8154,6 +8250,10 @@ function ieInitMouseEvents(){
 
   ov.addEventListener('mousedown',e=>{
     const p=getImgPos(e);
+    if(IE.maskMode){ e.preventDefault();
+      if(IE.maskMode==='brush'){ IE._maskPainting=true; ieMaskBrushDab(p.x,p.y); iePreviewMask(); }
+      else { IE._maskStart={x:p.x,y:p.y}; }
+      return; }
     if(IE.regionMode && IE.regionShape==='pen'){
       if(!IE.regionPoly) IE.regionPoly=[];
       if(IE._polyClosed){ IE.regionPoly=[]; IE._polyClosed=false; IE._regRect=null; } // 已閉合再點→重新畫
@@ -8169,6 +8269,13 @@ function ieInitMouseEvents(){
 
   ov.addEventListener('mousemove',e=>{
     const p=getImgPos(e);
+    if(IE.maskMode){
+      if(IE.maskMode==='brush'){ if(IE._maskPainting){ ieMaskBrushDab(p.x,p.y); iePreviewMaskT(); } return; }
+      if(IE._maskStart){ const s=IE._maskStart;
+        if(IE.maskMode==='radial'){ ieMaskGenRadial((s.x+p.x)/2,(s.y+p.y)/2,Math.abs(p.x-s.x)/2,Math.abs(p.y-s.y)/2); }
+        else { ieMaskGenLinear(s.x,s.y,p.x,p.y); }
+        iePreviewMaskT(); }
+      return; }
     if(IE.regionMode && IE.regionShape==='pen'){ if((IE.regionPoly||[]).length && !IE._polyClosed) iePenDraw(p); return; }
     if(!dragging) return;
     const start=IE.cropMode?IE._cropStart:IE._regStart;
@@ -8198,10 +8305,11 @@ function ieInitMouseEvents(){
   });
 
   ov.addEventListener('mouseup',()=>{
+    if(IE.maskMode){ IE._maskPainting=false; IE._maskStart=null; iePreviewMask(); return; }
     dragging=false;
     if(IE.regionMode) iePreviewRegion();
   });
-  ov.addEventListener('mouseleave',()=>{dragging=false;});
+  ov.addEventListener('mouseleave',()=>{ dragging=false; if(IE.maskMode) IE._maskPainting=false; });
 }
 
 // ── Fabric.js vector canvas for shapes ──
