@@ -1333,6 +1333,40 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <div style="font-size:11px;color:var(--g500);margin-top:6px">選類型→在圖上拖曳(放射/線性)或塗抹(筆刷)建立遮罩(紅色示意)，再調亮度/對比/飽和即時預覽，按套用。</div>
       </div>
 
+      <div class="sec-title">變形校正</div>
+      <div class="sec">
+        <div style="display:flex;gap:5px;margin-bottom:8px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieRotate(-90)" title="逆時針轉 90°">↺ 左轉</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieRotate(90)" title="順時針轉 90°">↻ 右轉</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieFlip('h')" title="水平翻轉">◨ 水平</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieFlip('v')" title="垂直翻轉">⬓ 垂直</button>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">拉直</span>
+          <input type="range" id="ie-rotate" min="-45" max="45" step="0.5" value="0" oninput="ieRotatePreview(this)">
+          <span id="ie-rotate-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0°</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="btn btn-teal btn-sm" style="flex:1" onclick="ieRotateCommit()">✓ 套用拉直</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieAutoStraighten()" title="自動偵測主要水平/垂直線並拉直">自動拉直</button>
+        </div>
+        <div class="inp-row" style="margin-bottom:4px">
+          <span class="inp-label">鏡頭變形</span>
+          <input type="range" id="ie-lens" min="-100" max="100" value="0" oninput="ieLensPreview(this)">
+          <span id="ie-lens-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span>
+        </div>
+        <div style="font-size:11px;color:var(--g500);margin-bottom:6px">負值修正桶形(凸出)、正值修正枕形(凹陷)。</div>
+        <button class="btn btn-teal btn-full btn-sm" onclick="ieLensCommit()" style="margin-bottom:10px">✓ 套用鏡頭變形</button>
+        <button class="btn btn-indigo btn-full btn-sm" id="ie-persp-btn" onclick="iePerspToggle()">⧉ 透視校正（拖曳四角）</button>
+        <div id="ie-persp-ctrls" style="display:none;margin-top:6px">
+          <div style="font-size:11px;color:var(--g500);margin-bottom:6px">拖曳四個藍點對齊要拉正的矩形（例：翻拍的文件、招牌），系統會把梯形變形校正為正矩形。</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-green btn-sm" style="flex:1" onclick="iePerspConfirm()">✓ 確認校正</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="iePerspCancel()">✕ 取消</button>
+          </div>
+        </div>
+      </div>
+
       <div class="sec-title">操作</div>
       <div class="sec">
         <div style="display:flex;gap:6px;margin-bottom:6px">
@@ -7380,6 +7414,10 @@ function ieLoadFile(file){
       IE.brightness=0; IE.contrast=0; IE.saturation=0; IE.hue=0; IE.sharpen=0;
       IE.exposure=0; IE.highlights=0; IE.shadows=0; IE.whites=0; IE.blacks=0;
       IE.maskMode=null; IE.maskCanvas=null; IE.maskAdj={bri:0,con:0,sat:0};
+      IE.perspMode=false; IE.perspPts=null; IE._perspDrag=-1; IE.lens=0;
+      const lensEl=document.getElementById('ie-lens'); if(lensEl){lensEl.value=0; const ll=document.getElementById('ie-lens-lbl'); if(ll)ll.textContent='0';}
+      const pc0=document.getElementById('ie-persp-ctrls'); if(pc0)pc0.style.display='none';
+      const pb0=document.getElementById('ie-persp-btn'); if(pb0)pb0.className='btn btn-indigo btn-full btn-sm';
       ['brightness','contrast','saturation','hue','sharpen','exposure','highlights','shadows','whites','blacks'].forEach(k=>{
         const el=document.getElementById('ie-'+k);
         if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
@@ -7679,6 +7717,7 @@ function ieResizeHChange(){
 
 function ieCropToggle(){
   if(!IE.origCanvas) return;
+  if(IE.perspMode) iePerspCancel();
   IE.cropMode=true;
   const ov=ieO(); ov.style.display='block';
   document.getElementById('ie-crop-btn').style.display='none';
@@ -7717,6 +7756,7 @@ function ieClearOverlay(){
 function ieRegionMode(effect){
   if(!IE.origCanvas) return;
   if(IE.maskMode) ieMaskCancel();
+  if(IE.perspMode) iePerspCancel();
   IE.regionMode=effect; IE._regRect=null;
   ieClearOverlay();
   ieO().style.display='block';
@@ -7830,6 +7870,7 @@ function ieApplyRegion(){
 function ieMaskType(type){
   if(!IE.origCanvas){ snack('請先載入圖片'); return; }
   if(IE.regionMode) ieRegionCancel();
+  if(IE.perspMode) iePerspCancel();
   IE.maskMode=type;
   if(!IE.maskCanvas || IE.maskCanvas.width!==IE.origCanvas.width || IE.maskCanvas.height!==IE.origCanvas.height){
     IE.maskCanvas=document.createElement('canvas'); IE.maskCanvas.width=IE.origCanvas.width; IE.maskCanvas.height=IE.origCanvas.height;
@@ -7891,6 +7932,193 @@ function ieMaskCancel(){ IE.maskMode=null; IE.maskAdj={bri:0,con:0,sat:0}; IE._m
   ['radial','linear','brush'].forEach(t=>{ const b=document.getElementById('ie-mask-'+t); if(b) b.className='btn btn-sm btn-ghost'; });
   ['bri','con','sat'].forEach(k=>{ const el=document.getElementById('ie-mask-'+k); if(el)el.value=0; const lb=document.getElementById('ie-mask-'+k+'-lbl'); if(lb)lb.textContent='0'; });
   const ov=ieO(); ov.getContext('2d').clearRect(0,0,ov.width,ov.height); ov.style.display='none'; ieRedraw(); }
+
+// ══════════ 變形校正（翻轉 / 自動拉直 / 鏡頭變形 / 透視校正）══════════
+function ieFlip(dir){
+  if(!IE.origCanvas){snack('請先載入圖片');return;}
+  iePushUndo();
+  const w=IE.origCanvas.width,h=IE.origCanvas.height;
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d');
+  x.translate(dir==='h'?w:0, dir==='v'?h:0);
+  x.scale(dir==='h'?-1:1, dir==='v'?-1:1);
+  x.drawImage(IE.origCanvas,0,0);
+  IE.origCanvas=c; ieAfterDestructive(); snack(dir==='h'?'已水平翻轉':'已垂直翻轉');
+}
+
+function ieAutoStraighten(){
+  if(!IE.origCanvas){snack('請先載入圖片');return;}
+  // 投影變異數法：下採樣→取邊緣像素→掃描候選角，找讓邊緣最集中(投影梯度平方和最大)的旋轉角
+  const cap=200, s=Math.min(1,cap/Math.max(IE.origCanvas.width,IE.origCanvas.height));
+  const w=Math.max(8,Math.round(IE.origCanvas.width*s)), h=Math.max(8,Math.round(IE.origCanvas.height*s));
+  const tc=document.createElement('canvas'); tc.width=w; tc.height=h;
+  tc.getContext('2d').drawImage(IE.origCanvas,0,0,w,h);
+  const d=tc.getContext('2d').getImageData(0,0,w,h).data;
+  const lum=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++) lum[i]=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+  const ex=[],ey=[],em=[];
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){ const i=y*w+x;
+    const gx=lum[i+1]-lum[i-1], gy=lum[i+w]-lum[i-w], mag=Math.abs(gx)+Math.abs(gy);
+    if(mag>24){ ex.push(x); ey.push(y); em.push(mag); } }
+  const N=ex.length, cx=w/2, cy=h/2;
+  if(N<24){ snack('影像特徵不足，無法自動判斷'); return; }
+  function score(deg){ // 旋轉邊緣點 deg 度後，取水平與垂直投影的梯度平方和(取較大者)
+    const rad=deg*Math.PI/180, co=Math.cos(rad), si=Math.sin(rad);
+    const accY=new Float32Array(h), accX=new Float32Array(w);
+    for(let k=0;k<N;k++){ const dx=ex[k]-cx, dy=ey[k]-cy;
+      let by=Math.round(dx*si+dy*co+cy); if(by<0)by=0; else if(by>=h)by=h-1; accY[by]+=em[k];
+      let bx=Math.round(dx*co-dy*si+cx); if(bx<0)bx=0; else if(bx>=w)bx=w-1; accX[bx]+=em[k]; }
+    let sy=0,sx=0; for(let i=1;i<h;i++){const t=accY[i]-accY[i-1]; sy+=t*t;}
+    for(let i=1;i<w;i++){const t=accX[i]-accX[i-1]; sx+=t*t;}
+    return sy>sx?sy:sx;
+  }
+  let best=-1, bd=0;
+  for(let deg=-15; deg<=15; deg+=0.5){ const sc=score(deg); if(sc>best){best=sc; bd=deg;} }
+  const skew=Math.max(-45,Math.min(45,Math.round(bd*2)/2));
+  const el=document.getElementById('ie-rotate'), lb=document.getElementById('ie-rotate-lbl');
+  if(el) el.value=skew; if(lb) lb.textContent=skew+'°';
+  ieRotatePreview(el||{value:skew});
+  snack(Math.abs(skew)<0.5?'影像已接近水平/垂直，無需拉直':'偵測傾斜，建議拉直 '+skew+'°，按「套用拉直」確認');
+}
+
+// 鏡頭變形（桶形/枕形）
+function _ieLensWarp(src,k){
+  const w=src.width,h=src.height;
+  const sd=src.getContext('2d').getImageData(0,0,w,h).data;
+  const out=document.createElement('canvas'); out.width=w; out.height=h;
+  const octx=out.getContext('2d'), od=octx.createImageData(w,h), dd=od.data;
+  const cx=w/2, cy=h/2, rmax=Math.sqrt(cx*cx+cy*cy);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const dx=(x-cx)/rmax, dy=(y-cy)/rmax, r2=dx*dx+dy*dy;
+    const f=1+k*r2;
+    const sx=cx+dx*rmax*f, sy=cy+dy*rmax*f, o=(y*w+x)*4;
+    if(sx<0||sy<0||sx>=w-1||sy>=h-1){ dd[o+3]=0; continue; }
+    const x0=sx|0, y0=sy|0, fx=sx-x0, fy=sy-y0;
+    const i00=(y0*w+x0)*4, i10=i00+4, i01=i00+w*4, i11=i01+4;
+    for(let c=0;c<4;c++) dd[o+c]=(sd[i00+c]*(1-fx)+sd[i10+c]*fx)*(1-fy)+(sd[i01+c]*(1-fx)+sd[i11+c]*fx)*fy;
+  }
+  octx.putImageData(od,0,0); return out;
+}
+let _ieLensRaf=0;
+function ieLensPreview(inp){
+  const v=+inp.value; IE.lens=v; const lb=document.getElementById('ie-lens-lbl'); if(lb) lb.textContent=v;
+  if(!IE.origCanvas) return;
+  if(_ieLensRaf) return;
+  _ieLensRaf=requestAnimationFrame(()=>{ _ieLensRaf=0; _ieLensRender(); });
+}
+function _ieLensRender(){
+  const dc=ieC(), dctx=dc.getContext('2d');
+  const k=(IE.lens||0)/100*0.55;
+  const adj=ieApplyAdjust(IE.origCanvas);
+  dctx.clearRect(0,0,dc.width,dc.height);
+  if(!k){ dctx.drawImage(adj,0,0); ieDrawHistogram(); return; }
+  // 預覽以縮圖加速，套用時才全解析度
+  const capD=920, sc=Math.min(1,capD/Math.max(adj.width,adj.height));
+  let base=adj;
+  if(sc<1){ const tc=document.createElement('canvas'); tc.width=Math.round(adj.width*sc); tc.height=Math.round(adj.height*sc);
+    tc.getContext('2d').drawImage(adj,0,0,tc.width,tc.height); base=tc; }
+  const warped=_ieLensWarp(base,k);
+  dctx.drawImage(warped,0,0,dc.width,dc.height);
+  ieDrawHistogram();
+}
+function ieLensCommit(){
+  if(!IE.origCanvas){snack('請先載入圖片');return;}
+  const k=(IE.lens||0)/100*0.55;
+  if(!k){snack('變形量為 0，無需套用');return;}
+  iePushUndo();
+  IE.origCanvas=_ieLensWarp(IE.origCanvas,k);
+  IE.lens=0; const el=document.getElementById('ie-lens'); if(el) el.value=0;
+  const lb=document.getElementById('ie-lens-lbl'); if(lb) lb.textContent='0';
+  ieAfterDestructive(); snack('已套用鏡頭變形校正');
+}
+
+// 透視校正（四角拖曳 + 單應性矩陣）
+function iePerspToggle(){
+  if(!IE.origCanvas){snack('請先載入圖片');return;}
+  if(IE.perspMode){ iePerspCancel(); return; }
+  if(IE.regionMode) ieRegionCancel();
+  if(IE.maskMode) ieMaskCancel();
+  if(IE.cropMode) ieCropCancel();
+  IE.perspMode=true;
+  const w=IE.origCanvas.width, h=IE.origCanvas.height, mx=w*0.12, my=h*0.12;
+  IE.perspPts=[[mx,my],[w-mx,my],[w-mx,h-my],[mx,h-my]]; // TL,TR,BR,BL
+  IE._perspDrag=-1;
+  document.getElementById('ie-persp-ctrls').style.display='block';
+  document.getElementById('ie-persp-btn').className='btn btn-amber btn-full btn-sm';
+  const ov=ieO(); ov.style.display='block';
+  iePerspDraw();
+}
+function iePerspDraw(){
+  const ov=ieO(), ctx=ov.getContext('2d'); ctx.clearRect(0,0,ov.width,ov.height);
+  const p=IE.perspPts; if(!p) return;
+  ctx.lineWidth=2; ctx.strokeStyle='rgba(37,99,235,.95)'; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(p[0][0],p[0][1]);
+  for(let i=1;i<4;i++) ctx.lineTo(p[i][0],p[i][1]);
+  ctx.closePath(); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle='rgba(37,99,235,.12)'; ctx.fill();
+  const rr=Math.max(7,ov.width/90);
+  for(let i=0;i<4;i++){ ctx.beginPath(); ctx.arc(p[i][0],p[i][1],rr,0,Math.PI*2);
+    ctx.fillStyle='#2563eb'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke(); }
+}
+function iePerspPick(x,y){
+  const p=IE.perspPts; if(!p) return -1;
+  const ov=ieO(), thr=Math.max(18,ov.width/28);
+  let best=-1, bd=thr*thr;
+  for(let i=0;i<4;i++){ const dx=p[i][0]-x, dy=p[i][1]-y, d=dx*dx+dy*dy; if(d<bd){bd=d;best=i;} }
+  return best;
+}
+function _ieSolveLinear(A,b){ // 高斯消去，n 元
+  const n=b.length, M=A.map((r,i)=>r.concat(b[i]));
+  for(let c=0;c<n;c++){
+    let piv=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[piv][c])) piv=r;
+    [M[c],M[piv]]=[M[piv],M[c]];
+    const pv=M[c][c]||1e-9;
+    for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]/pv;
+      for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; }
+  }
+  const x=new Array(n); for(let i=0;i<n;i++) x[i]=M[i][n]/(M[i][i]||1e-9); return x;
+}
+function _ieHomography(dst,src){ // 求 H 使 H·dst ≈ src（齊次），回傳長度 9 陣列
+  const A=[],b=[];
+  for(let i=0;i<4;i++){ const X=dst[i][0],Y=dst[i][1],x=src[i][0],y=src[i][1];
+    A.push([X,Y,1,0,0,0,-X*x,-Y*x]); b.push(x);
+    A.push([0,0,0,X,Y,1,-X*y,-Y*y]); b.push(y); }
+  const hh=_ieSolveLinear(A,b);
+  return [hh[0],hh[1],hh[2],hh[3],hh[4],hh[5],hh[6],hh[7],1];
+}
+function iePerspConfirm(){
+  if(!IE.perspMode||!IE.perspPts){ iePerspCancel(); return; }
+  const p=IE.perspPts;
+  const wT=Math.hypot(p[1][0]-p[0][0],p[1][1]-p[0][1]);
+  const wB=Math.hypot(p[2][0]-p[3][0],p[2][1]-p[3][1]);
+  const hL=Math.hypot(p[3][0]-p[0][0],p[3][1]-p[0][1]);
+  const hR=Math.hypot(p[2][0]-p[1][0],p[2][1]-p[1][1]);
+  const ow=Math.max(2,Math.round((wT+wB)/2)), oh=Math.max(2,Math.round((hL+hR)/2));
+  const dst=[[0,0],[ow,0],[ow,oh],[0,oh]];
+  const H=_ieHomography(dst,p); // 由輸出座標映射回原圖
+  iePushUndo();
+  const src=IE.origCanvas, sw=src.width, sh=src.height;
+  const sd=src.getContext('2d').getImageData(0,0,sw,sh).data;
+  const out=document.createElement('canvas'); out.width=ow; out.height=oh;
+  const octx=out.getContext('2d'), od=octx.createImageData(ow,oh), dd=od.data;
+  for(let y=0;y<oh;y++)for(let x=0;x<ow;x++){
+    const wgt=H[6]*x+H[7]*y+H[8];
+    const sx=(H[0]*x+H[1]*y+H[2])/wgt, sy=(H[3]*x+H[4]*y+H[5])/wgt, o=(y*ow+x)*4;
+    if(sx<0||sy<0||sx>=sw-1||sy>=sh-1){ dd[o+3]=0; continue; }
+    const x0=sx|0, y0=sy|0, fx=sx-x0, fy=sy-y0;
+    const i00=(y0*sw+x0)*4, i10=i00+4, i01=i00+sw*4, i11=i01+4;
+    for(let c=0;c<4;c++) dd[o+c]=(sd[i00+c]*(1-fx)+sd[i10+c]*fx)*(1-fy)+(sd[i01+c]*(1-fx)+sd[i11+c]*fx)*fy;
+  }
+  octx.putImageData(od,0,0);
+  IE.origCanvas=out;
+  iePerspCancel(true); ieAfterDestructive(); snack('已套用透視校正');
+}
+function iePerspCancel(keep){
+  IE.perspMode=false; IE.perspPts=null; IE._perspDrag=-1;
+  const pc=document.getElementById('ie-persp-ctrls'); if(pc) pc.style.display='none';
+  const pb=document.getElementById('ie-persp-btn'); if(pb) pb.className='btn btn-indigo btn-full btn-sm';
+  const ov=ieO(); ov.getContext('2d').clearRect(0,0,ov.width,ov.height); ov.style.display='none';
+  if(!keep) ieRedraw();
+}
 
 function ieBoxBlur(imgData,radius){
   const w=imgData.width,h=imgData.height,d=imgData.data;
@@ -8250,6 +8478,7 @@ function ieInitMouseEvents(){
 
   ov.addEventListener('mousedown',e=>{
     const p=getImgPos(e);
+    if(IE.perspMode){ e.preventDefault(); IE._perspDrag=iePerspPick(p.x,p.y); return; }
     if(IE.maskMode){ e.preventDefault();
       if(IE.maskMode==='brush'){ IE._maskPainting=true; ieMaskBrushDab(p.x,p.y); iePreviewMask(); }
       else { IE._maskStart={x:p.x,y:p.y}; }
@@ -8269,6 +8498,9 @@ function ieInitMouseEvents(){
 
   ov.addEventListener('mousemove',e=>{
     const p=getImgPos(e);
+    if(IE.perspMode){ if(IE._perspDrag>=0 && IE.perspPts){
+        IE.perspPts[IE._perspDrag]=[Math.max(0,Math.min(IE.origCanvas.width,p.x)),Math.max(0,Math.min(IE.origCanvas.height,p.y))];
+        iePerspDraw(); } return; }
     if(IE.maskMode){
       if(IE.maskMode==='brush'){ if(IE._maskPainting){ ieMaskBrushDab(p.x,p.y); iePreviewMaskT(); } return; }
       if(IE._maskStart){ const s=IE._maskStart;
@@ -8305,11 +8537,12 @@ function ieInitMouseEvents(){
   });
 
   ov.addEventListener('mouseup',()=>{
+    if(IE.perspMode){ IE._perspDrag=-1; return; }
     if(IE.maskMode){ IE._maskPainting=false; IE._maskStart=null; iePreviewMask(); return; }
     dragging=false;
     if(IE.regionMode) iePreviewRegion();
   });
-  ov.addEventListener('mouseleave',()=>{ dragging=false; if(IE.maskMode) IE._maskPainting=false; });
+  ov.addEventListener('mouseleave',()=>{ dragging=false; if(IE.perspMode) IE._perspDrag=-1; if(IE.maskMode) IE._maskPainting=false; });
 }
 
 // ── Fabric.js vector canvas for shapes ──
