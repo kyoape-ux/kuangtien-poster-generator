@@ -1209,6 +1209,30 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <button class="btn btn-amber btn-full btn-sm" onclick="ieAutoWB()">自動白平衡</button>
       </div>
 
+      <div class="sec-title">AI 智能去背（人物／物件）</div>
+      <div class="sec">
+        <button class="btn btn-purple btn-full btn-sm" id="ie-ai-cut-btn" onclick="ieAiCutout()">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M5 5.5a2.5 2.5 0 11-1.8 4.3M11 5.5a2.5 2.5 0 101.8 4.3"/><path d="M6.8 8.6L13 3M9.2 8.6L3 3"/></svg> AI 一鍵去背
+        </button>
+        <div id="ie-ai-cut-ctrls" style="display:none;margin-top:8px">
+          <div class="inp-row" style="margin-bottom:6px">
+            <span class="inp-label">去背數值</span>
+            <input type="range" id="ie-cut-thresh" min="0" max="100" value="50" oninput="ieCutAdjust()">
+            <span id="ie-cut-thresh-lbl" style="font-size:11px;color:var(--g500);min-width:28px">50</span>
+          </div>
+          <div class="inp-row" style="margin-bottom:6px">
+            <span class="inp-label">羽化</span>
+            <input type="range" id="ie-cut-feather" min="0" max="20" value="2" oninput="ieCutAdjust()">
+            <span id="ie-cut-feather-lbl" style="font-size:11px;color:var(--g500);min-width:28px">2</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-blue btn-sm" style="flex:1" onclick="ieCutApply()">✓ 套用</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieCutCancel()">✕ 取消</button>
+          </div>
+        </div>
+        <div id="ie-ai-cut-status" style="font-size:11px;color:var(--g500);margin-top:6px;line-height:1.5">用 AI 自動去背（人像最佳）。首次使用會下載模型（約 16MB，之後快取）；圖片全程在本機處理、不會上傳。</div>
+      </div>
+
       <div class="sec-title">基礎調光調色</div>
       <div class="sec">
         <div class="inp-row" style="margin-bottom:6px">
@@ -7420,6 +7444,9 @@ function ieLoadFile(file){
       IE.exposure=0; IE.highlights=0; IE.shadows=0; IE.whites=0; IE.blacks=0;
       IE.maskMode=null; IE.maskCanvas=null; IE.maskAdj={bri:0,con:0,sat:0};
       IE.perspMode=false; IE.perspPts=null; IE._perspDrag=-1; IE.lens=0;
+      IE._cutMatteCanvas=null; IE._cutSrc=null;
+      { const cc=document.getElementById('ie-ai-cut-ctrls'); if(cc) cc.style.display='none';
+        const cs2=document.getElementById('ie-ai-cut-status'); if(cs2) cs2.textContent='用 AI 自動去背（人像最佳）。首次使用會下載模型（約 16MB，之後快取）；圖片全程在本機處理、不會上傳。'; }
       const lensEl=document.getElementById('ie-lens'); if(lensEl){lensEl.value=0; const ll=document.getElementById('ie-lens-lbl'); if(ll)ll.textContent='0';}
       const pc0=document.getElementById('ie-persp-ctrls'); if(pc0)pc0.style.display='none';
       const pb0=document.getElementById('ie-persp-btn'); if(pb0)pb0.className='btn btn-indigo btn-full btn-sm';
@@ -8123,6 +8150,132 @@ function iePerspCancel(keep){
   const pb=document.getElementById('ie-persp-btn'); if(pb) pb.className='btn btn-indigo btn-full btn-sm';
   const ov=ieO(); ov.getContext('2d').clearRect(0,0,ov.width,ov.height); ov.style.display='none';
   if(!keep) ieRedraw();
+}
+
+// ══════════ AI 智能去背（MediaPipe Selfie Segmentation・本機執行・圖片不外傳）══════════
+const _MP_VER='0.10.20';
+let _ieSeg=null, _ieSegLoading=null;
+async function _ieEnsureSeg(setStatus){
+  if(_ieSeg) return _ieSeg;
+  if(_ieSegLoading) return _ieSegLoading;
+  _ieSegLoading=(async()=>{
+    setStatus && setStatus('載入 AI 模型中…（首次約 16MB，之後快取）');
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@'+_MP_VER+'/vision_bundle.mjs');
+    const { ImageSegmenter, FilesetResolver } = vision;
+    const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@'+_MP_VER+'/wasm');
+    _ieSeg = await ImageSegmenter.createFromOptions(fileset, {
+      baseOptions:{ modelAssetPath:'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite' },
+      runningMode:'IMAGE', outputConfidenceMasks:true, outputCategoryMask:false });
+    return _ieSeg;
+  })();
+  try{ return await _ieSegLoading; } finally { _ieSegLoading=null; }
+}
+
+async function ieAiCutout(){
+  if(!IE.origCanvas){ snack('請先載入圖片'); return; }
+  const statusEl=document.getElementById('ie-ai-cut-status');
+  const setStatus=t=>{ if(statusEl) statusEl.textContent=t; };
+  const btn=document.getElementById('ie-ai-cut-btn'); if(btn){ btn.disabled=true; btn.style.opacity='.6'; }
+  try{
+    const seg=await _ieEnsureSeg(setStatus);
+    setStatus('AI 運算中…');
+    await new Promise(r=>setTimeout(r,30));
+    const src=IE.origCanvas, w=src.width, h=src.height;
+    await new Promise((resolve,reject)=>{
+      try{
+        seg.segment(src,(result)=>{
+          try{
+            const cm=result.confidenceMasks;
+            if(!cm||!cm.length){ reject(new Error('無遮罩輸出')); return; }
+            const bg=cm[0].getAsFloat32Array();       // 類別0=背景 機率
+            const mw=cm[0].width, mh=cm[0].height;
+            const mc=document.createElement('canvas'); mc.width=mw; mc.height=mh;
+            const mctx=mc.getContext('2d'), mimg=mctx.createImageData(mw,mh);
+            for(let i=0;i<mw*mh;i++){ const a=Math.round((1-bg[i])*255); mimg.data[i*4]=a; mimg.data[i*4+1]=a; mimg.data[i*4+2]=a; mimg.data[i*4+3]=255; }
+            mctx.putImageData(mimg,0,0);
+            IE._cutMatteCanvas=mc; IE._cutW=w; IE._cutH=h;
+            IE._cutSrc=document.createElement('canvas'); IE._cutSrc.width=w; IE._cutSrc.height=h; IE._cutSrc.getContext('2d').drawImage(src,0,0);
+            resolve();
+          }catch(err){ reject(err); }
+        });
+      }catch(err){ reject(err); }
+    });
+    document.getElementById('ie-ai-cut-ctrls').style.display='block';
+    setStatus('去背完成。可調「去背數值 / 羽化」即時預覽，滿意後按套用。棋盤格＝透明。');
+    _ieRenderCut();
+  }catch(e){
+    console.error('AI去背失敗',e);
+    setStatus('AI 去背失敗：'+((e&&e.message)||e)+'。可能是網路無法連到 CDN 下載模型。');
+    snack('AI 去背失敗，請檢查網路連線');
+  }finally{ if(btn){ btn.disabled=false; btn.style.opacity='1'; } }
+}
+
+function _ieBoxBlurAlpha(a,w,h,r){
+  if(r<1) return a;
+  const win=r*2+1, tmp=new Float32Array(a.length);
+  for(let y=0;y<h;y++){ const base=y*w; let sum=0;
+    for(let k=-r;k<=r;k++) sum+=a[base+Math.max(0,Math.min(w-1,k))];
+    for(let x=0;x<w;x++){ tmp[base+x]=sum/win; sum+=a[base+Math.min(w-1,x+r+1)]-a[base+Math.max(0,x-r)]; } }
+  for(let x=0;x<w;x++){ let sum=0;
+    for(let k=-r;k<=r;k++) sum+=tmp[Math.max(0,Math.min(h-1,k))*w+x];
+    for(let y=0;y<h;y++){ a[y*w+x]=sum/win; sum+=tmp[Math.min(h-1,y+r+1)*w+x]-tmp[Math.max(0,y-r)*w+x]; } }
+  return a;
+}
+
+function _ieComposeCut(){
+  const th=(+document.getElementById('ie-cut-thresh').value)/100;
+  const fe=+document.getElementById('ie-cut-feather').value;
+  const w=IE._cutW, h=IE._cutH;
+  const sc=document.createElement('canvas'); sc.width=w; sc.height=h;
+  const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=true; sctx.drawImage(IE._cutMatteCanvas,0,0,w,h);
+  const sd=sctx.getImageData(0,0,w,h).data;
+  const a=new Float32Array(w*h);
+  for(let i=0;i<w*h;i++){ const v=sd[i*4]/255; a[i]= v<th?0:v; }   // 去背數值：低於門檻的低信心邊緣消除
+  if(fe>0) _ieBoxBlurAlpha(a,w,h,Math.round(fe));                   // 羽化
+  const out=document.createElement('canvas'); out.width=w; out.height=h;
+  const ox=out.getContext('2d'); ox.drawImage(IE._cutSrc,0,0);
+  const od=ox.getImageData(0,0,w,h);
+  for(let i=0;i<w*h;i++) od.data[i*4+3]=Math.round(Math.max(0,Math.min(1,a[i]))*255);
+  ox.putImageData(od,0,0);
+  return out;
+}
+
+function _ieRenderCut(){
+  if(!IE._cutMatteCanvas) return;
+  const dc=ieC(), dctx=dc.getContext('2d'); const w=IE._cutW, h=IE._cutH;
+  dc.width=w; dc.height=h;
+  const cs=Math.max(8,Math.round(Math.max(w,h)/60));               // 棋盤格示意透明
+  dctx.fillStyle='#ffffff'; dctx.fillRect(0,0,w,h);
+  dctx.fillStyle='#dbe2ea';
+  for(let y=0;y<h;y+=cs) for(let x=0;x<w;x+=cs){ if(((x/cs|0)+(y/cs|0))%2===0) dctx.fillRect(x,y,cs,cs); }
+  dctx.drawImage(_ieComposeCut(),0,0);
+  ieApplyZoom();
+}
+
+let _ieCutRaf=0;
+function ieCutAdjust(){
+  const t=document.getElementById('ie-cut-thresh'), f=document.getElementById('ie-cut-feather');
+  document.getElementById('ie-cut-thresh-lbl').textContent=t.value;
+  document.getElementById('ie-cut-feather-lbl').textContent=f.value;
+  if(!IE._cutMatteCanvas) return;
+  if(_ieCutRaf) return; _ieCutRaf=requestAnimationFrame(()=>{ _ieCutRaf=0; _ieRenderCut(); });
+}
+
+function ieCutApply(){
+  if(!IE._cutMatteCanvas) return;
+  iePushUndo();
+  IE.origCanvas=_ieComposeCut();
+  IE._cutMatteCanvas=null; IE._cutSrc=null;
+  document.getElementById('ie-ai-cut-ctrls').style.display='none';
+  ieAfterDestructive();
+  snack('已套用 AI 去背（透明背景，請以 PNG 下載保留透明）');
+}
+
+function ieCutCancel(){
+  IE._cutMatteCanvas=null; IE._cutSrc=null;
+  const c=document.getElementById('ie-ai-cut-ctrls'); if(c) c.style.display='none';
+  const s=document.getElementById('ie-ai-cut-status'); if(s) s.textContent='用 AI 自動去背（人像最佳）。首次使用會下載模型（約 16MB，之後快取）；圖片全程在本機處理、不會上傳。';
+  ieRedraw();
 }
 
 function ieBoxBlur(imgData,radius){
