@@ -8226,16 +8226,20 @@ function _ieComposeCut(){
   const th=(+document.getElementById('ie-cut-thresh').value)/100;
   const fe=+document.getElementById('ie-cut-feather').value;
   const w=IE._cutW, h=IE._cutH;
+  // 高品質雙線性放大遮罩(避免階梯)
   const sc=document.createElement('canvas'); sc.width=w; sc.height=h;
-  const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=true; sctx.drawImage(IE._cutMatteCanvas,0,0,w,h);
+  const sctx=sc.getContext('2d'); sctx.imageSmoothingEnabled=true; sctx.imageSmoothingQuality='high';
+  sctx.drawImage(IE._cutMatteCanvas,0,0,w,h);
   const sd=sctx.getImageData(0,0,w,h).data;
   const a=new Float32Array(w*h);
-  for(let i=0;i<w*h;i++){ const v=sd[i*4]/255; a[i]= v<th?0:v; }   // 去背數值：低於門檻的低信心邊緣消除
-  if(fe>0) _ieBoxBlurAlpha(a,w,h,Math.round(fe));                   // 羽化
+  // smoothstep 平滑過渡取代硬門檻 → 邊緣抗鋸齒；內部維持全不透明
+  const band=0.10, lo=Math.max(0,th-band), hi=Math.min(1,th+band), inv=1/Math.max(1e-4,hi-lo);
+  for(let i=0;i<w*h;i++){ let t=(sd[i*4]/255-lo)*inv; t=t<0?0:t>1?1:t; a[i]=t*t*(3-2*t); }
+  if(fe>0){ const r=Math.round(fe); _ieBoxBlurAlpha(a,w,h,r); _ieBoxBlurAlpha(a,w,h,r); } // 兩次box≈高斯,更柔順
   const out=document.createElement('canvas'); out.width=w; out.height=h;
   const ox=out.getContext('2d'); ox.drawImage(IE._cutSrc,0,0);
   const od=ox.getImageData(0,0,w,h);
-  for(let i=0;i<w*h;i++) od.data[i*4+3]=Math.round(Math.max(0,Math.min(1,a[i]))*255);
+  for(let i=0;i<w*h;i++) od.data[i*4+3]=Math.round((a[i]<0?0:a[i]>1?1:a[i])*255);
   ox.putImageData(od,0,0);
   return out;
 }
