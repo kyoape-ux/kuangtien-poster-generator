@@ -1221,11 +1221,23 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 
       <div class="sec-title">裁切</div>
       <div class="sec">
+        <div id="ie-crop-ratios" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+          <button class="btn btn-sm btn-indigo ie-ratio" data-r="free" onclick="ieSetCropRatio('free',this)">自訂</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="orig" onclick="ieSetCropRatio('orig',this)">原比例</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="1:1" onclick="ieSetCropRatio('1:1',this)">1:1</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="4:3" onclick="ieSetCropRatio('4:3',this)">4:3</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="3:2" onclick="ieSetCropRatio('3:2',this)">3:2</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="16:9" onclick="ieSetCropRatio('16:9',this)">16:9</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="3:4" onclick="ieSetCropRatio('3:4',this)">3:4</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="2:3" onclick="ieSetCropRatio('2:3',this)">2:3</button>
+          <button class="btn btn-sm btn-ghost ie-ratio" data-r="9:16" onclick="ieSetCropRatio('9:16',this)">9:16</button>
+        </div>
         <div class="row">
           <button class="btn btn-indigo btn-full btn-sm" id="ie-crop-btn" onclick="ieCropToggle()">✂ 選取裁切區域</button>
           <button class="btn btn-green btn-sm" id="ie-crop-confirm" onclick="ieCropConfirm()" style="display:none">✓ 確認</button>
           <button class="btn btn-ghost btn-sm" id="ie-crop-cancel" onclick="ieCropCancel()" style="display:none">✕ 取消</button>
         </div>
+        <div style="font-size:11px;color:var(--g500);margin-top:6px">選比例後在圖上拖曳（鎖定該比例）；「自訂」為自由框選、「原比例」維持原圖比例。</div>
       </div>
 
       <div class="sec-title">調整尺寸</div>
@@ -7850,6 +7862,20 @@ function ieResizeHChange(){
   document.getElementById('ie-resize-w').value=Math.round(h*IE.origCanvas.width/IE.origCanvas.height);
 }
 
+function _ieCropRatioVal(){
+  const r=IE.cropRatio;
+  if(!r||r==='free') return null;
+  if(r==='orig') return IE.origCanvas ? IE.origCanvas.width/IE.origCanvas.height : null;
+  const m=/^(\d+):(\d+)$/.exec(r); return m ? (+m[1])/(+m[2]) : null;
+}
+function ieSetCropRatio(r, btn){
+  if(!IE.origCanvas){ snack('請先載入圖片'); return; }
+  IE.cropRatio=r;
+  document.querySelectorAll('#ie-crop-ratios .ie-ratio').forEach(b=>{ b.className='btn btn-sm btn-ghost ie-ratio'; });
+  if(btn) btn.className='btn btn-sm btn-indigo ie-ratio';
+  if(!IE.cropMode) ieCropToggle();
+  else { const ov=ieO(); ov.getContext('2d').clearRect(0,0,ov.width,ov.height); IE._cropRect=null; }
+}
 function ieCropToggle(){
   if(!IE.origCanvas) return;
   if(IE.perspMode) iePerspCancel();
@@ -8777,8 +8803,20 @@ function ieInitMouseEvents(){
     if(!dragging) return;
     const start=IE.cropMode?IE._cropStart:IE._regStart;
     if(!start) return;
-    const x=Math.min(start.x,p.x),y=Math.min(start.y,p.y);
-    const w=Math.abs(p.x-start.x),h=Math.abs(p.y-start.y);
+    let x,y,w,h;
+    const _rr = IE.cropMode ? _ieCropRatioVal() : null;
+    if(_rr){
+      const sx=start.x, sy=start.y, dirX=p.x>=sx?1:-1, dirY=p.y>=sy?1:-1;
+      const W=IE.origCanvas.width, H=IE.origCanvas.height;
+      w=Math.abs(p.x-sx); h=w/_rr;
+      const maxW=dirX>0?W-sx:sx, maxH=dirY>0?H-sy:sy;
+      if(w>maxW){ w=maxW; h=w/_rr; }
+      if(h>maxH){ h=maxH; w=h*_rr; }
+      x=dirX>0?sx:sx-w; y=dirY>0?sy:sy-h;
+    } else {
+      x=Math.min(start.x,p.x); y=Math.min(start.y,p.y);
+      w=Math.abs(p.x-start.x); h=Math.abs(p.y-start.y);
+    }
     const ctx=ov.getContext('2d');
     ctx.clearRect(0,0,ov.width,ov.height);
     ctx.strokeStyle='rgba(37,99,235,.9)';ctx.lineWidth=2;
