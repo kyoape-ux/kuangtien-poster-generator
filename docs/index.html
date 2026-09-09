@@ -233,6 +233,19 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 input[type=range]{width:100%;accent-color:var(--blue);height:4px}
 input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:pointer;padding:0;background:none}
 
+/* ══════════ 圖片編輯左側面板 · 精練化 UI (scoped #pg-ie) ══════════ */
+#pg-ie .sec-title{font-size:10.5px;font-weight:800;letter-spacing:1.2px;color:#64748b;padding:13px 14px 6px}
+#pg-ie .sec-title::before{width:3px;height:12px;border-radius:2px;background:#0D9488}
+#pg-ie .sec{padding:0 14px 12px}
+#pg-ie .btn{border-radius:9px;font-weight:600;letter-spacing:.2px;padding:7px 11px;font-size:11.5px;gap:6px}
+#pg-ie .btn-sm{padding:6px 9px;font-size:11px;border-radius:8px}
+#pg-ie .btn-full{border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600}
+#pg-ie .btn svg{width:14px;height:14px;flex-shrink:0}
+#pg-ie .btn-sm svg{width:12px;height:12px}
+#pg-ie input[type=range]{accent-color:#0D9488;height:5px;border-radius:4px}
+#pg-ie .inp-label{min-width:44px;font-size:11.5px;color:#64748b;font-weight:500}
+#pg-ie #ie-histo{border-radius:10px}
+
 /* ── LAYER LIST ── */
 #layer-list{display:flex;flex-direction:column;gap:3px}
 .layer-item{
@@ -1184,17 +1197,17 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     <div class="sec-title">批次圖片</div>
     <div class="sec">
       <div style="display:flex;gap:6px;margin-bottom:6px">
-        <button class="btn btn-purple btn-sm" style="flex:1" onclick="document.getElementById('ie-batch-inp').click()">＋ 載入</button>
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieBatchClear()"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 4h10M6 4V3h4v1M5 6l.5 7h5L11 6"/></svg> 清除</button>
+        <button class="btn btn-purple btn-sm" style="flex:1" onclick="document.getElementById('ie-batch-inp').click()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 13h10"/></svg> 載入</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieBatchClear()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M3 4h10M6 4V3h4v1M5 6l.5 7h5L11 6"/></svg> 清除</button>
       </div>
       <input type="file" id="ie-batch-inp" accept="image/*" multiple style="display:none" onchange="ieBatchLoad(this)">
       <div id="ie-batch-list" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;max-height:120px;overflow-y:auto"></div>
       <div id="ie-batch-count" style="font-size:11px;color:var(--g500);margin:2px 0 6px"></div>
       <div style="display:flex;gap:6px;margin-bottom:4px">
-        <button class="btn btn-amber btn-sm" style="flex:1" onclick="ieBatchApply()">✓ 套用調整</button>
-        <button class="btn btn-teal btn-sm" style="flex:1" onclick="ieBatchToWM()">→ 浮水印</button>
+        <button class="btn btn-amber btn-sm" style="flex:1" onclick="ieBatchApply()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M3 8.5l3.5 3.5L13 4"/></svg> 套用調整</button>
+        <button class="btn btn-teal btn-sm" style="flex:1" onclick="ieBatchToWM()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" style="flex-shrink:0"><path d="M8 2C8 2 3.5 7 3.5 10a4.5 4.5 0 009 0C12.5 7 8 2 8 2z"/></svg> 浮水印</button>
       </div>
-      <button class="btn btn-blue btn-full btn-sm" onclick="ieBatchToPoster()">→ 導入海報編輯</button>
+      <button class="btn btn-blue btn-full btn-sm" onclick="ieBatchToPoster()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M6 8h4M8 6l2 2-2 2"/></svg> 導入海報編輯</button>
     </div>
 
     <div id="ie-controls" style="display:none">
@@ -1206,13 +1219,13 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 
       <div class="sec-title">白平衡</div>
       <div class="sec">
-        <button class="btn btn-amber btn-full btn-sm" onclick="ieAutoWB()">自動白平衡</button>
+        <button class="btn btn-amber btn-full" onclick="ieAutoWB()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 2a6 6 0 010 12z" fill="currentColor" stroke="none"/></svg> 自動白平衡</button>
       </div>
 
       <div class="sec-title">AI 智能去背（人物／物件）</div>
       <div class="sec">
-        <button class="btn btn-purple btn-full btn-sm" id="ie-ai-cut-btn" onclick="ieAiCutout()">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M5 5.5a2.5 2.5 0 11-1.8 4.3M11 5.5a2.5 2.5 0 101.8 4.3"/><path d="M6.8 8.6L13 3M9.2 8.6L3 3"/></svg> AI 一鍵去背
+        <button class="btn btn-purple btn-full" id="ie-ai-cut-btn" onclick="ieAiCutout()">
+          <svg viewBox="0 0 16 16" fill="currentColor" stroke="none" style="flex-shrink:0"><path d="M7 1.5l1.15 3.1 3.1 1.15-3.1 1.15L7 10 5.85 6.9 2.75 5.75l3.1-1.15z"/><path d="M12 9.2l.62 1.68 1.68.62-1.68.62L12 14.4l-.62-1.68-1.68-.62 1.68-.62z"/></svg> AI 一鍵去背
         </button>
         <div id="ie-ai-cut-ctrls" style="display:none;margin-top:8px">
           <div class="inp-row" style="margin-bottom:6px">
