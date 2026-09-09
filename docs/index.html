@@ -233,18 +233,21 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 input[type=range]{width:100%;accent-color:var(--blue);height:4px}
 input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:pointer;padding:0;background:none}
 
-/* ══════════ 圖片編輯左側面板 · 精練化 UI (scoped #pg-ie) ══════════ */
-#pg-ie .sec-title{font-size:10.5px;font-weight:800;letter-spacing:1.2px;color:#64748b;padding:13px 14px 6px}
-#pg-ie .sec-title::before{width:3px;height:12px;border-radius:2px;background:#0D9488}
-#pg-ie .sec{padding:0 14px 12px}
-#pg-ie .btn{border-radius:9px;font-weight:600;letter-spacing:.2px;padding:7px 11px;font-size:11.5px;gap:6px}
-#pg-ie .btn-sm{padding:6px 9px;font-size:11px;border-radius:8px}
-#pg-ie .btn-full{border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600}
-#pg-ie .btn svg{width:14px;height:14px;flex-shrink:0}
-#pg-ie .btn-sm svg{width:12px;height:12px}
-#pg-ie input[type=range]{accent-color:#0D9488;height:5px;border-radius:4px}
+/* ══════════ 左側面板 · 精練化 UI（圖片編輯／海報／浮水印／QR 共用）══════════ */
+#pg-poster .sec-title,#pg-wm .sec-title,#pg-ie .sec-title{font-size:10.5px;font-weight:800;letter-spacing:1.2px;color:#64748b;padding:13px 14px 6px}
+#pg-poster .sec-title::before,#pg-wm .sec-title::before,#pg-ie .sec-title::before{width:3px;height:12px;border-radius:2px;background:#0D9488}
+#pg-poster .sec,#pg-wm .sec,#pg-ie .sec{padding:0 14px 12px}
+#pg-poster .btn,#pg-wm .btn,#pg-ie .btn,#qr-left .btn{border-radius:9px;font-weight:600;letter-spacing:.2px;padding:7px 11px;font-size:11.5px;gap:6px}
+#pg-poster .btn-sm,#pg-wm .btn-sm,#pg-ie .btn-sm,#qr-left .btn-sm{padding:6px 9px;font-size:11px;border-radius:8px}
+#pg-poster .btn-full,#pg-wm .btn-full,#pg-ie .btn-full,#qr-left .btn-full{border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600}
+#pg-poster .btn svg,#pg-wm .btn svg,#pg-ie .btn svg,#qr-left .btn svg{width:14px;height:14px;flex-shrink:0}
+#pg-poster .btn-sm svg,#pg-wm .btn-sm svg,#pg-ie .btn-sm svg,#qr-left .btn-sm svg{width:12px;height:12px}
+#pg-poster input[type=range],#pg-wm input[type=range],#pg-ie input[type=range],#qr-left input[type=range]{accent-color:#0D9488;height:5px;border-radius:4px}
 #pg-ie .inp-label{min-width:44px;font-size:11.5px;color:#64748b;font-weight:500}
 #pg-ie #ie-histo{border-radius:10px}
+/* QR 左欄標題加 teal 強調條，風格一致 */
+#qr-left .qr-sec-title{color:#64748b;letter-spacing:1.2px}
+#qr-left .qr-sec-title::before{content:'';display:block;width:3px;height:11px;border-radius:2px;background:#0D9488;flex-shrink:0}
 
 /* ── LAYER LIST ── */
 #layer-list{display:flex;flex-direction:column;gap:3px}
