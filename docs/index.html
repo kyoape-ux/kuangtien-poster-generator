@@ -906,7 +906,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 5a1 1 0 011-1h3l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V5z"/></svg> 開啟專案</button>
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
   <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
-  <span class="ver" style="margin-left:6px">v3.0</span>
+  <span class="ver" style="margin-left:6px">v3.1</span>
   <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: —</span>
 </div>
 
@@ -1520,10 +1520,62 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     .hcard-ic{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 9px 20px var(--glow)}
     .hcard-t{font-size:17px;font-weight:800;color:#1e293b;letter-spacing:.4px}
     .hcard-d{font-size:12.5px;color:#7387a0;line-height:1.6}
+    .q-label{font-size:12px;font-weight:800;letter-spacing:2px;color:#0f766e;margin:0 3px 12px}
+    .home-sec{font-size:12px;font-weight:800;letter-spacing:2px;color:#94a3b8;margin:2px 3px 14px}
+    .q-recent{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #d6ece6;border-radius:16px;padding:13px 18px;margin-bottom:22px;cursor:pointer;box-shadow:0 2px 7px rgba(20,40,90,.05);transition:transform .18s,box-shadow .18s}
+    .q-recent:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(13,148,136,.14)}
+    .q-main{display:flex;align-items:center;gap:18px;background:#fff;border:2px solid #0d9488;border-radius:20px;padding:22px 24px;cursor:pointer;box-shadow:0 2px 10px rgba(13,148,136,.09);transition:transform .18s,box-shadow .18s}
+    .q-main:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(13,148,136,.18)}
+    .q-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+    @media(max-width:640px){.q-row{grid-template-columns:1fr}}
+    .qcard{display:flex;align-items:center;gap:15px;background:#fff;border:1px solid #eef1f6;border-radius:18px;padding:18px 20px;cursor:pointer;box-shadow:0 2px 7px rgba(20,40,90,.05);transition:transform .18s,box-shadow .18s,border-color .18s}
+    .qcard:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(13,148,136,.14);border-color:#bfe6df}
+    .q-ttl{font-size:16px;font-weight:800;color:#1e293b}
+    .q-desc{font-size:12.5px;color:#7387a0;line-height:1.55;margin-top:2px}
+    .q-pill{font-size:11px;font-weight:700;color:#0f766e;background:#d8f3ec;padding:2px 9px;border-radius:7px;margin-left:8px;vertical-align:middle}
+    .q-hint{display:flex;align-items:flex-start;gap:8px;background:#eef6f4;border-radius:12px;padding:11px 14px;margin:18px 0 36px;font-size:12.5px;color:#5a7085;line-height:1.6}
+    .q-hint b{color:#13245e;font-weight:700}
   </style>
   <div class="home-wrap">
-    <div class="home-h">美編小助手</div>
-    <div class="home-sub">光田綜合醫院 內部設計工具 — 選擇下方功能開始</div>
+    <div class="home-h">今天要完成什麼？</div>
+    <div class="home-sub">光田綜合醫院 美編小助手 — 選一個開始</div>
+
+    <div id="home-recent" class="q-recent" style="display:none" onclick="homeOpenRecent()">
+      <div class="hcard-ic" style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#2DD4BF,#0D9488);--glow:rgba(45,212,191,.35)"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 105.5-5.5"/><path d="M2.5 4.5V8H6"/></svg></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;color:#94a3b8;letter-spacing:1px">接續上次</div>
+        <div id="home-recent-name" style="font-size:15px;font-weight:800;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="home-recent-time" style="font-size:12px;color:#7387a0"></div>
+      </div>
+      <span style="padding:8px 18px;border-radius:9px;background:#0d9488;color:#fff;font-size:13px;font-weight:700;flex-shrink:0">開啟</span>
+    </div>
+
+    <div class="q-label">快速常用</div>
+    <div class="q-main" onclick="switchTab('poster',document.getElementById('ntab-poster'))">
+      <div class="hcard-ic" style="background:linear-gradient(135deg,#2DD4BF,#0D9488);--glow:rgba(45,212,191,.4)"><svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
+      <div style="flex:1">
+        <div class="q-ttl">製作一張海報<span class="q-pill">最常用</span></div>
+        <div class="q-desc">挑範本 → 改字 → 匯出 PNG / PDF / SVG</div>
+      </div>
+      <svg width="22" height="22" fill="none" stroke="#0d9488" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+    </div>
+    <div class="q-row">
+      <div class="qcard" onclick="switchTab('ie',document.getElementById('ntab-ie'))">
+        <div class="hcard-ic" style="width:44px;height:44px;background:linear-gradient(135deg,#22D3EE,#0891B2);--glow:rgba(34,211,238,.4)"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg></div>
+        <div><div class="q-ttl" style="font-size:15px">修圖／去背</div><div class="q-desc">AI 去背、調色、馬賽克，存 PNG</div></div>
+      </div>
+      <div class="qcard" onclick="switchTab('wm',document.getElementById('ntab-wm'))">
+        <div class="hcard-ic" style="width:44px;height:44px;background:linear-gradient(135deg,#60A5FA,#2563EB);--glow:rgba(96,165,250,.4)"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg></div>
+        <div><div class="q-ttl" style="font-size:15px">批次浮水印</div><div class="q-desc">多張圖一次加院方浮水印</div></div>
+      </div>
+    </div>
+
+    <div class="q-hint">
+      <svg width="15" height="15" fill="none" stroke="#0d9488" stroke-width="1.6" viewBox="0 0 16 16" style="flex-shrink:0;margin-top:1px"><circle cx="8" cy="8" r="6.5"/><path d="M6.2 6.4a1.8 1.8 0 113 1.4c-.8.5-1.2.9-1.2 1.7"/><circle cx="8" cy="11.4" r=".55" fill="#0d9488" stroke="none"/></svg>
+      <div>分不清？整張排版、加字用 <b>海報編輯</b>；只處理單張照片（去背、調色）用 <b>圖片編輯</b>。</div>
+    </div>
+
+    <div class="home-sec">全部功能</div>
     <div class="home-grid">
       <div class="hcard" onclick="switchTab('poster',document.getElementById('ntab-poster'))">
         <div class="hcard-ic" style="background:linear-gradient(135deg,#2DD4BF,#0D9488);--glow:rgba(45,212,191,.4)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
@@ -5720,6 +5772,7 @@ function switchTab(tab, btn){
   pgRes.style.display  = isRes ? 'flex' : 'none';
   if(pgCollage) pgCollage.style.display = isCol ? 'flex' : 'none';
   if(pgHome) pgHome.style.display = isHome ? 'flex' : 'none';
+  if(isHome && typeof renderHomeRecent==='function') renderHomeRecent();
   if(sbEl)  sbEl.style.display  = (isQr||isRes||isCol||isHome) ? 'none' : '';
   if(caEl)  caEl.style.display  = (isQr||isRes||isCol||isHome) ? 'none' : '';
   tplPanel.style.display         = (isQr||isRes||isCol||isHome) ? 'none' : '';
@@ -7024,6 +7077,33 @@ function doAutoSave(){
     };
     localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
   } catch(e){}
+}
+
+function renderHomeRecent(){
+  try{
+    const el=document.getElementById('home-recent'); if(!el) return;
+    const raw=localStorage.getItem(AUTOSAVE_KEY);
+    const d=raw?JSON.parse(raw):null;
+    if(!d||!d.objs||!d.objs.length){ el.style.display='none'; return; }
+    document.getElementById('home-recent-name').textContent = d.name || '未命名海報';
+    let ts='';
+    if(d.savedAt){ const t=new Date(d.savedAt); const p=n=>String(n).padStart(2,'0');
+      ts='上次編輯 '+(t.getMonth()+1)+'/'+t.getDate()+' '+p(t.getHours())+':'+p(t.getMinutes()); }
+    document.getElementById('home-recent-time').textContent = ts;
+    el.style.display='flex';
+  }catch(e){ const el=document.getElementById('home-recent'); if(el) el.style.display='none'; }
+}
+
+async function homeOpenRecent(){
+  try{
+    const raw=localStorage.getItem(AUTOSAVE_KEY);
+    const d=raw?JSON.parse(raw):null;
+    if(!d||!d.objs||!d.objs.length){ snack('沒有可接續的專案'); return; }
+    switchTab('poster', document.getElementById('ntab-poster'));
+    await restoreAutoSave(d);
+    if(typeof zfit==='function') setTimeout(zfit, 60);
+    snack('已接續上次的專案');
+  }catch(e){ snack('接續失敗'); }
 }
 
 async function checkAutoSave(){
