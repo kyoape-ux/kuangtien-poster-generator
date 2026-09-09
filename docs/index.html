@@ -248,6 +248,13 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 /* QR 左欄標題加 teal 強調條，風格一致 */
 #qr-left .qr-sec-title{color:#64748b;letter-spacing:1.2px}
 #qr-left .qr-sec-title::before{content:'';display:block;width:3px;height:11px;border-radius:2px;background:#0D9488;flex-shrink:0}
+/* 下載列收斂：PNG 綠色主要，PDF/SVG 淺色次要，統一圓角 */
+#dlbar .btn-full{border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600;gap:6px}
+#dlbar .btn-full svg{width:15px;height:15px;flex-shrink:0}
+#dlbar .btn-full.btn-amber{background:#FBF3DA;color:#8A6200;border-color:#EAD79A}
+#dlbar .btn-full.btn-amber:hover{background:#F6E9C2;border-color:#D9BE6E}
+#dlbar .btn-full.btn-teal{background:#E4F4F0;color:#0F6E56;border-color:#BCE2D9}
+#dlbar .btn-full.btn-teal:hover{background:#D4ECE5;border-color:#8FCFC0}
 
 /* ── LAYER LIST ── */
 #layer-list{display:flex;flex-direction:column;gap:3px}
