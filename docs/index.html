@@ -1212,14 +1212,69 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 
     <div id="ie-controls" style="display:none">
 
-      <div class="sec-title">色階分布圖</div>
-      <div class="sec" style="padding-top:4px">
-        <canvas id="ie-histo" width="256" height="96" style="width:100%;height:72px;background:#0f172a;border-radius:8px;display:block"></canvas>
+      <div class="sec" style="padding-top:12px;padding-bottom:8px">
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieUndo()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M2 6h8a4 4 0 010 8"/><path d="M5 3L2 6l3 3"/></svg> 復原</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieReset()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M2.5 9A5.5 5.5 0 1014 8"/><path d="M14 5v4h-4"/></svg> 重置</button>
+        </div>
       </div>
 
-      <div class="sec-title">白平衡</div>
+      <div class="sec-title">裁切</div>
       <div class="sec">
-        <button class="btn btn-amber btn-full" onclick="ieAutoWB()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 2a6 6 0 010 12z" fill="currentColor" stroke="none"/></svg> 自動白平衡</button>
+        <div class="row">
+          <button class="btn btn-indigo btn-full btn-sm" id="ie-crop-btn" onclick="ieCropToggle()">✂ 選取裁切區域</button>
+          <button class="btn btn-green btn-sm" id="ie-crop-confirm" onclick="ieCropConfirm()" style="display:none">✓ 確認</button>
+          <button class="btn btn-ghost btn-sm" id="ie-crop-cancel" onclick="ieCropCancel()" style="display:none">✕ 取消</button>
+        </div>
+      </div>
+
+      <div class="sec-title">調整尺寸</div>
+      <div class="sec">
+        <div class="inp-row" style="margin-bottom:5px">
+          <span class="inp-label">寬 W</span>
+          <input class="inp" type="number" id="ie-resize-w" value="" min="1" style="width:70px" oninput="ieResizeWChange()">
+          <span class="inp-unit">px</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:5px">
+          <span class="inp-label">高 H</span>
+          <input class="inp" type="number" id="ie-resize-h" value="" min="1" style="width:70px" oninput="ieResizeHChange()">
+          <span class="inp-unit">px</span>
+        </div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <label style="font-size:11px;color:var(--g500);display:flex;gap:4px;align-items:center;cursor:pointer">
+            <input type="checkbox" id="ie-lock" checked>鎖定比例
+          </label>
+        </div>
+        <button class="btn btn-indigo btn-full btn-sm" onclick="ieResize()">套用尺寸</button>
+      </div>
+
+      <div class="sec-title">區域效果（局部模糊／馬賽克）</div>
+      <div class="sec">
+        <div class="inp-row" style="margin-bottom:6px">
+          <span class="inp-label">形狀</span>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-sm btn-indigo" id="ie-shape-rect" onclick="ieSetShape('rect')">▭ 方形</button>
+            <button class="btn btn-sm btn-ghost" id="ie-shape-circle" onclick="ieSetShape('circle')">◯ 圓形</button>
+            <button class="btn btn-sm btn-ghost" id="ie-shape-pen" onclick="ieSetShape('pen')" title="自訂形狀：點擊建立不規則區域，點回起點或雙擊完成">✎ 鋼筆</button>
+          </div>
+        </div>
+        <div id="ie-pen-hint" style="display:none;font-size:11px;color:var(--g500);margin-bottom:6px">鋼筆：在圖上點擊建立多邊形，點回起點或雙擊完成，再按套用。</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button class="btn btn-teal btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="5.5" stroke-dasharray="2 2"/><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" opacity=".5"/></svg> 模糊</button>
+          <button class="btn btn-purple btn-sm" style="flex:1" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> 馬賽克</button>
+        </div>
+        <div id="ie-region-controls" style="display:none">
+          <div class="inp-row" style="margin-bottom:6px">
+            <span class="inp-label">強度</span>
+            <input type="range" id="ie-effect-strength" min="1" max="30" value="10"
+              oninput="document.getElementById('ie-effect-lbl').textContent=this.value; iePreviewRegion();">
+            <span id="ie-effect-lbl" style="font-size:11px;color:var(--g500);min-width:28px">10</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-blue btn-sm" style="flex:1" onclick="ieApplyRegion()">✓ 套用</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieRegionCancel()">✕ 取消</button>
+          </div>
+        </div>
       </div>
 
       <div class="sec-title">AI 智能去背（人物／物件）</div>
@@ -1275,7 +1330,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         </div>
       </div>
 
-      <div class="sec-title">色調（可拖曳上方色階圖調整）</div>
+      <div class="sec-title">色調（展開下方色階圖可拖曳調整）</div>
       <div class="sec">
         <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">曝光</span><input type="range" id="ie-exposure" min="-100" max="100" value="0" oninput="ieSlider('exposure',this)"><span id="ie-exposure-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
         <div class="inp-row" style="margin-bottom:6px"><span class="inp-label">亮部</span><input type="range" id="ie-highlights" min="-100" max="100" value="0" oninput="ieSlider('highlights',this)"><span id="ie-highlights-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
@@ -1284,62 +1339,13 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <div class="inp-row"><span class="inp-label">黑色</span><input type="range" id="ie-blacks" min="-100" max="100" value="0" oninput="ieSlider('blacks',this)"><span id="ie-blacks-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span></div>
       </div>
 
-      <div class="sec-title">裁切</div>
-      <div class="sec">
-        <div class="row">
-          <button class="btn btn-indigo btn-full btn-sm" id="ie-crop-btn" onclick="ieCropToggle()">✂ 選取裁切區域</button>
-          <button class="btn btn-green btn-sm" id="ie-crop-confirm" onclick="ieCropConfirm()" style="display:none">✓ 確認</button>
-          <button class="btn btn-ghost btn-sm" id="ie-crop-cancel" onclick="ieCropCancel()" style="display:none">✕ 取消</button>
-        </div>
+      <div class="sec-title" style="cursor:pointer;user-select:none" onclick="ieToggleHisto()">
+        色階分布圖 / 白平衡
+        <svg id="ie-histo-chev" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="margin-left:auto;transition:transform .2s;transform:rotate(-90deg)"><path d="M4 6l4 4 4-4"/></svg>
       </div>
-
-      <div class="sec-title">調整尺寸</div>
-      <div class="sec">
-        <div class="inp-row" style="margin-bottom:5px">
-          <span class="inp-label">寬 W</span>
-          <input class="inp" type="number" id="ie-resize-w" value="" min="1" style="width:70px" oninput="ieResizeWChange()">
-          <span class="inp-unit">px</span>
-        </div>
-        <div class="inp-row" style="margin-bottom:5px">
-          <span class="inp-label">高 H</span>
-          <input class="inp" type="number" id="ie-resize-h" value="" min="1" style="width:70px" oninput="ieResizeHChange()">
-          <span class="inp-unit">px</span>
-        </div>
-        <div class="inp-row" style="margin-bottom:6px">
-          <label style="font-size:11px;color:var(--g500);display:flex;gap:4px;align-items:center;cursor:pointer">
-            <input type="checkbox" id="ie-lock" checked>鎖定比例
-          </label>
-        </div>
-        <button class="btn btn-indigo btn-full btn-sm" onclick="ieResize()">套用尺寸</button>
-      </div>
-
-      <div class="sec-title">區域效果</div>
-      <div class="sec">
-        <div class="inp-row" style="margin-bottom:6px">
-          <span class="inp-label">形狀</span>
-          <div style="display:flex;gap:4px">
-            <button class="btn btn-sm btn-indigo" id="ie-shape-rect" onclick="ieSetShape('rect')">▭ 方形</button>
-            <button class="btn btn-sm btn-ghost" id="ie-shape-circle" onclick="ieSetShape('circle')">◯ 圓形</button>
-            <button class="btn btn-sm btn-ghost" id="ie-shape-pen" onclick="ieSetShape('pen')" title="自訂形狀：點擊建立不規則區域，點回起點或雙擊完成">✎ 鋼筆</button>
-          </div>
-        </div>
-        <div id="ie-pen-hint" style="display:none;font-size:11px;color:var(--g500);margin-bottom:6px">鋼筆：在圖上點擊建立多邊形，點回起點或雙擊完成，再按套用。</div>
-        <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button class="btn btn-teal btn-sm" style="flex:1" id="ie-region-blur-btn" onclick="ieRegionMode('blur')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="5.5" stroke-dasharray="2 2"/><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" opacity=".5"/></svg> 模糊</button>
-          <button class="btn btn-purple btn-sm" style="flex:1" id="ie-region-mosaic-btn" onclick="ieRegionMode('mosaic')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> 馬賽克</button>
-        </div>
-        <div id="ie-region-controls" style="display:none">
-          <div class="inp-row" style="margin-bottom:6px">
-            <span class="inp-label">強度</span>
-            <input type="range" id="ie-effect-strength" min="1" max="30" value="10"
-              oninput="document.getElementById('ie-effect-lbl').textContent=this.value; iePreviewRegion();">
-            <span id="ie-effect-lbl" style="font-size:11px;color:var(--g500);min-width:28px">10</span>
-          </div>
-          <div style="display:flex;gap:6px">
-            <button class="btn btn-blue btn-sm" style="flex:1" onclick="ieApplyRegion()">✓ 套用</button>
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieRegionCancel()">✕ 取消</button>
-          </div>
-        </div>
+      <div class="sec" id="ie-histo-wb" style="display:none;padding-top:2px">
+        <canvas id="ie-histo" width="256" height="96" style="width:100%;height:64px;background:#0f172a;border-radius:10px;display:block;margin-bottom:8px"></canvas>
+        <button class="btn btn-amber btn-full" onclick="ieAutoWB()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="flex-shrink:0"><circle cx="8" cy="8" r="6"/><path d="M8 2a6 6 0 010 12z" fill="currentColor" stroke="none"/></svg> 自動白平衡</button>
       </div>
 
       <div class="sec-title">局部遮罩（局部調亮/暗）</div>
@@ -1404,15 +1410,11 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         </div>
       </div>
 
-      <div class="sec-title">操作</div>
+      <div class="sec-title">匯出圖片</div>
       <div class="sec">
-        <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieUndo()"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 6h8a4 4 0 010 8"/><path d="M5 3L2 6l3 3"/></svg> 復原</button>
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieReset()"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2.5 9A5.5 5.5 0 1014 8"/><path d="M14 5v4h-4"/></svg> 重置</button>
-        </div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-green btn-sm" style="flex:1" onclick="ieDownload('png')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> PNG</button>
-          <button class="btn btn-green btn-sm" style="flex:1;opacity:.85" onclick="ieDownload('jpeg')"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> JPG</button>
+          <button class="btn btn-green btn-full btn-sm" style="flex:1" onclick="ieDownload('png')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 下載 PNG</button>
+          <button class="btn btn-green btn-full btn-sm" style="flex:1" onclick="ieDownload('jpeg')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 下載 JPG</button>
         </div>
       </div>
     </div>
@@ -7117,6 +7119,14 @@ async function homeOpenRecent(){
     if(typeof zfit==='function') setTimeout(zfit, 60);
     snack('已接續上次的專案');
   }catch(e){ snack('接續失敗'); }
+}
+
+function ieToggleHisto(){
+  const el=document.getElementById('ie-histo-wb'); if(!el) return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  const chev=document.getElementById('ie-histo-chev'); if(chev) chev.style.transform=open?'rotate(0deg)':'rotate(-90deg)';
+  if(open && typeof ieDrawHistogram==='function' && IE.origCanvas) ieDrawHistogram();
 }
 
 async function checkAutoSave(){
