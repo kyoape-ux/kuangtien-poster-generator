@@ -1561,8 +1561,8 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     .home-sec{font-size:12px;font-weight:800;letter-spacing:2px;color:#94a3b8;margin:2px 3px 14px}
     .q-recent{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #d6ece6;border-radius:16px;padding:13px 18px;margin-bottom:22px;cursor:pointer;box-shadow:0 2px 7px rgba(20,40,90,.05);transition:transform .18s,box-shadow .18s}
     .q-recent:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(13,148,136,.14)}
-    .q-main{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;background:linear-gradient(115deg,#047857 0%,#059669 30%,#10B981 62%,#34D8B4 100%);border:none;border-radius:20px;padding:22px 24px;cursor:pointer;box-shadow:0 14px 34px rgba(16,150,110,.32);transition:transform .18s,box-shadow .18s}
-    .q-main:hover{transform:translateY(-4px);box-shadow:0 22px 46px rgba(16,150,110,.42)}
+    .q-main{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;background:linear-gradient(115deg,#4338CA 0%,#5B54E8 44%,#818CF8 100%);border:none;border-radius:20px;padding:22px 24px;cursor:pointer;box-shadow:0 14px 34px rgba(79,70,229,.30);transition:transform .18s,box-shadow .18s}
+    .q-main:hover{transform:translateY(-4px);box-shadow:0 22px 46px rgba(79,70,229,.40)}
     .q-main::after{content:'';position:absolute;top:-45%;right:-8%;width:230px;height:230px;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 68%);pointer-events:none}
     .q-main>*{position:relative;z-index:1}
     .q-main .q-ttl{color:#fff}
@@ -1572,6 +1572,12 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     @media(max-width:640px){.q-row{grid-template-columns:1fr}}
     .qcard{display:flex;align-items:center;gap:15px;background:#fff;border:1px solid #eef1f6;border-radius:18px;padding:18px 20px;cursor:pointer;box-shadow:0 6px 18px rgba(20,40,90,.09);transition:transform .18s,box-shadow .18s,border-color .18s}
     .qcard:hover{transform:translateY(-4px);box-shadow:0 18px 36px rgba(13,148,136,.18);border-color:#bfe6df}
+    .qcard.grad{position:relative;overflow:hidden;border:none;box-shadow:0 10px 26px rgba(20,60,120,.20)}
+    .qcard.grad:hover{transform:translateY(-4px);box-shadow:0 18px 38px rgba(20,60,120,.30);border-color:transparent}
+    .qcard.grad::after{content:'';position:absolute;top:-50%;right:-12%;width:150px;height:150px;background:radial-gradient(circle,rgba(255,255,255,.15),transparent 68%);pointer-events:none}
+    .qcard.grad>*{position:relative;z-index:1}
+    .qcard.grad .q-ttl{color:#fff}
+    .qcard.grad .q-desc{color:rgba(255,255,255,.86)}
     .q-ttl{font-size:16px;font-weight:800;color:#1e293b}
     .q-desc{font-size:12.5px;color:#7387a0;line-height:1.55;margin-top:2px}
     .q-pill{font-size:11px;font-weight:700;color:#0f766e;background:#d8f3ec;padding:2px 9px;border-radius:7px;margin-left:8px;vertical-align:middle}
@@ -1602,12 +1608,12 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       <svg width="22" height="22" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
     </div>
     <div class="q-row">
-      <div class="qcard" onclick="switchTab('ie',document.getElementById('ntab-ie'))">
-        <div class="hcard-ic" style="width:44px;height:44px;background:linear-gradient(135deg,#22D3EE,#0891B2);--glow:rgba(34,211,238,.4)"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg></div>
+      <div class="qcard grad" style="background:linear-gradient(120deg,#0E7490 0%,#22B8D6 100%)" onclick="switchTab('ie',document.getElementById('ntab-ie'))">
+        <div class="hcard-ic" style="width:44px;height:44px;background:rgba(255,255,255,.2);box-shadow:none"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="#fff" stroke="none"/></svg></div>
         <div><div class="q-ttl" style="font-size:15px">修圖／去背</div><div class="q-desc">AI 去背、調色、馬賽克，存 PNG</div></div>
       </div>
-      <div class="qcard" onclick="switchTab('wm',document.getElementById('ntab-wm'))">
-        <div class="hcard-ic" style="width:44px;height:44px;background:linear-gradient(135deg,#60A5FA,#2563EB);--glow:rgba(96,165,250,.4)"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg></div>
+      <div class="qcard grad" style="background:linear-gradient(120deg,#1D4ED8 0%,#5B9DF6 100%)" onclick="switchTab('wm',document.getElementById('ntab-wm'))">
+        <div class="hcard-ic" style="width:44px;height:44px;background:rgba(255,255,255,.2);box-shadow:none"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 16 16"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg></div>
         <div><div class="q-ttl" style="font-size:15px">批次浮水印</div><div class="q-desc">多張圖一次加院方浮水印</div></div>
       </div>
     </div>
