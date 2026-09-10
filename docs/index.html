@@ -234,7 +234,7 @@ input[type=range]{width:100%;accent-color:var(--blue);height:4px}
 input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:pointer;padding:0;background:none}
 
 /* ══════════ 左側面板 · 精練化 UI（圖片編輯／海報／浮水印／QR 共用）══════════ */
-#pg-poster .sec-title,#pg-wm .sec-title,#pg-ie .sec-title{font-size:10.5px;font-weight:800;letter-spacing:1.2px;color:#64748b;padding:13px 14px 6px}
+#pg-poster .sec-title,#pg-wm .sec-title,#pg-ie .sec-title{font-size:10.5px;font-weight:700;letter-spacing:1.2px;color:#64748b;padding:13px 14px 6px}
 #pg-poster .sec-title::before,#pg-wm .sec-title::before,#pg-ie .sec-title::before{width:3px;height:12px;border-radius:2px;background:#0D9488}
 #pg-poster .sec,#pg-wm .sec,#pg-ie .sec{padding:0 14px 12px}
 #pg-poster .btn,#pg-wm .btn,#pg-ie .btn,#qr-left .btn{border-radius:9px;font-weight:600;letter-spacing:.2px;padding:7px 11px;font-size:11.5px;gap:6px}
@@ -1561,12 +1561,17 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     .home-sec{font-size:12px;font-weight:800;letter-spacing:2px;color:#94a3b8;margin:2px 3px 14px}
     .q-recent{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #d6ece6;border-radius:16px;padding:13px 18px;margin-bottom:22px;cursor:pointer;box-shadow:0 2px 7px rgba(20,40,90,.05);transition:transform .18s,box-shadow .18s}
     .q-recent:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(13,148,136,.14)}
-    .q-main{display:flex;align-items:center;gap:18px;background:#fff;border:2px solid #0d9488;border-radius:20px;padding:22px 24px;cursor:pointer;box-shadow:0 2px 10px rgba(13,148,136,.09);transition:transform .18s,box-shadow .18s}
-    .q-main:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(13,148,136,.18)}
+    .q-main{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;background:linear-gradient(115deg,#047857 0%,#059669 30%,#10B981 62%,#34D8B4 100%);border:none;border-radius:20px;padding:22px 24px;cursor:pointer;box-shadow:0 14px 34px rgba(16,150,110,.32);transition:transform .18s,box-shadow .18s}
+    .q-main:hover{transform:translateY(-4px);box-shadow:0 22px 46px rgba(16,150,110,.42)}
+    .q-main::after{content:'';position:absolute;top:-45%;right:-8%;width:230px;height:230px;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 68%);pointer-events:none}
+    .q-main>*{position:relative;z-index:1}
+    .q-main .q-ttl{color:#fff}
+    .q-main .q-desc{color:rgba(255,255,255,.86)}
+    .q-main .q-pill{background:rgba(255,255,255,.22);color:#fff}
     .q-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
     @media(max-width:640px){.q-row{grid-template-columns:1fr}}
-    .qcard{display:flex;align-items:center;gap:15px;background:#fff;border:1px solid #eef1f6;border-radius:18px;padding:18px 20px;cursor:pointer;box-shadow:0 2px 7px rgba(20,40,90,.05);transition:transform .18s,box-shadow .18s,border-color .18s}
-    .qcard:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(13,148,136,.14);border-color:#bfe6df}
+    .qcard{display:flex;align-items:center;gap:15px;background:#fff;border:1px solid #eef1f6;border-radius:18px;padding:18px 20px;cursor:pointer;box-shadow:0 6px 18px rgba(20,40,90,.09);transition:transform .18s,box-shadow .18s,border-color .18s}
+    .qcard:hover{transform:translateY(-4px);box-shadow:0 18px 36px rgba(13,148,136,.18);border-color:#bfe6df}
     .q-ttl{font-size:16px;font-weight:800;color:#1e293b}
     .q-desc{font-size:12.5px;color:#7387a0;line-height:1.55;margin-top:2px}
     .q-pill{font-size:11px;font-weight:700;color:#0f766e;background:#d8f3ec;padding:2px 9px;border-radius:7px;margin-left:8px;vertical-align:middle}
@@ -1589,12 +1594,12 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 
     <div class="q-label">快速常用</div>
     <div class="q-main" onclick="switchTab('poster',document.getElementById('ntab-poster'))">
-      <div class="hcard-ic" style="background:linear-gradient(135deg,#2DD4BF,#0D9488);--glow:rgba(45,212,191,.4)"><svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
+      <div class="hcard-ic" style="background:rgba(255,255,255,.2);box-shadow:none;backdrop-filter:blur(2px)"><svg width="26" height="26" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
       <div style="flex:1">
         <div class="q-ttl">製作一張海報<span class="q-pill">最常用</span></div>
         <div class="q-desc">挑範本 → 改字 → 匯出 PNG / PDF / SVG</div>
       </div>
-      <svg width="22" height="22" fill="none" stroke="#0d9488" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      <svg width="22" height="22" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
     </div>
     <div class="q-row">
       <div class="qcard" onclick="switchTab('ie',document.getElementById('ntab-ie'))">
