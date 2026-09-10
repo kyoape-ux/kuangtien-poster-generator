@@ -35,7 +35,7 @@
   --sel:#4E78A8;--sw:310px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;font-family:'Noto Sans TC',sans-serif,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji';font-size:13px;background:var(--g100);color:var(--g800)}
+html,body{height:100%;overflow:hidden;font-family:'Noto Sans TC',sans-serif,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji';font-size:13px;background:var(--g100);color:var(--g800);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 button,input,select,textarea{font-family:inherit;font-size:inherit}
 
 /* ── NAV ── */
@@ -1546,7 +1546,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     #ntab-home{display:none!important}               /* 首頁改由左上 LOGO 進入 */
     #pg-home{background:radial-gradient(1100px 460px at 50% -8%,#d9f2ed 0%,transparent 62%),linear-gradient(168deg,#f5fbfa 0%,#eaf2f4 100%)}
     .home-wrap{max-width:1180px;margin:0 auto;padding:54px 28px 60px}
-    .home-h{text-align:center;font-size:30px;font-weight:900;letter-spacing:1px;color:#13245e;margin-bottom:9px}
+    .home-h{text-align:center;font-size:30px;font-weight:700;letter-spacing:1px;color:#13245e;margin-bottom:9px}
     .home-sub{text-align:center;color:#6b7a93;font-size:14.5px;margin-bottom:40px}
     .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
     @media(max-width:1100px){.home-grid{grid-template-columns:repeat(3,1fr)}}
@@ -1555,14 +1555,14 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     .hcard{background:#fff;border:1px solid #eef1f6;border-radius:20px;padding:24px 22px;cursor:pointer;transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s,border-color .18s;display:flex;flex-direction:column;gap:13px;box-shadow:0 2px 7px rgba(20,40,90,.05)}
     .hcard:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(13,148,136,.16);border-color:#bfe6df}
     .hcard-ic{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 9px 20px var(--glow)}
-    .hcard-t{font-size:17px;font-weight:800;color:#1e293b;letter-spacing:.4px}
+    .hcard-t{font-size:17px;font-weight:700;color:#1e293b;letter-spacing:.4px}
     .hcard-d{font-size:12.5px;color:#7387a0;line-height:1.6}
-    .q-label{font-size:12px;font-weight:800;letter-spacing:2px;color:#0f766e;margin:0 3px 12px}
-    .home-sec{font-size:12px;font-weight:800;letter-spacing:2px;color:#94a3b8;margin:2px 3px 14px}
+    .q-label{font-size:12px;font-weight:700;letter-spacing:2px;color:#0f766e;margin:0 3px 12px}
+    .home-sec{font-size:12px;font-weight:700;letter-spacing:2px;color:#94a3b8;margin:2px 3px 14px}
     .q-recent{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #d6ece6;border-radius:16px;padding:13px 18px;margin-bottom:22px;cursor:pointer;box-shadow:0 2px 7px rgba(20,40,90,.05);transition:transform .18s,box-shadow .18s}
     .q-recent:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(13,148,136,.14)}
-    .q-main{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;background:linear-gradient(115deg,#4338CA 0%,#5B54E8 44%,#818CF8 100%);border:none;border-radius:20px;padding:22px 24px;cursor:pointer;box-shadow:0 14px 34px rgba(79,70,229,.30);transition:transform .18s,box-shadow .18s}
-    .q-main:hover{transform:translateY(-4px);box-shadow:0 22px 46px rgba(79,70,229,.40)}
+    .q-main{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;background:linear-gradient(115deg,#0A9760 0%,#12B981 44%,#4ADEA0 100%);border:none;border-radius:20px;padding:22px 24px;cursor:pointer;box-shadow:0 14px 34px rgba(16,160,110,.30);transition:transform .18s,box-shadow .18s}
+    .q-main:hover{transform:translateY(-4px);box-shadow:0 22px 46px rgba(16,160,110,.40)}
     .q-main::after{content:'';position:absolute;top:-45%;right:-8%;width:230px;height:230px;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 68%);pointer-events:none}
     .q-main>*{position:relative;z-index:1}
     .q-main .q-ttl{color:#fff}
@@ -1578,7 +1578,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     .qcard.grad>*{position:relative;z-index:1}
     .qcard.grad .q-ttl{color:#fff}
     .qcard.grad .q-desc{color:rgba(255,255,255,.86)}
-    .q-ttl{font-size:16px;font-weight:800;color:#1e293b}
+    .q-ttl{font-size:16px;font-weight:700;color:#1e293b}
     .q-desc{font-size:12.5px;color:#7387a0;line-height:1.55;margin-top:2px}
     .q-pill{font-size:11px;font-weight:700;color:#0f766e;background:#d8f3ec;padding:2px 9px;border-radius:7px;margin-left:8px;vertical-align:middle}
     .q-hint{display:flex;align-items:flex-start;gap:8px;background:#eef6f4;border-radius:12px;padding:11px 14px;margin:18px 0 36px;font-size:12.5px;color:#5a7085;line-height:1.6}
@@ -1592,7 +1592,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       <div class="hcard-ic" style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#2DD4BF,#0D9488);--glow:rgba(45,212,191,.35)"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 105.5-5.5"/><path d="M2.5 4.5V8H6"/></svg></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:11px;color:#94a3b8;letter-spacing:1px">接續上次</div>
-        <div id="home-recent-name" style="font-size:15px;font-weight:800;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="home-recent-name" style="font-size:15px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
         <div id="home-recent-time" style="font-size:12px;color:#7387a0"></div>
       </div>
       <span style="padding:8px 18px;border-radius:9px;background:#0d9488;color:#fff;font-size:13px;font-weight:700;flex-shrink:0">開啟</span>
