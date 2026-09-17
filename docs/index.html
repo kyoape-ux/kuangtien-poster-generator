@@ -1567,6 +1567,21 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     .hcard-ic{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 9px 20px var(--glow)}
     .hcard-t{font-size:17px;font-weight:700;color:#1e293b;letter-spacing:.4px}
     .hcard-d{font-size:12.5px;color:#7387a0;line-height:1.6}
+    /* 全部功能卡片：每卡不同色漸層 */
+    .home-grid .hcard{border:none;color:#fff}
+    .home-grid .hcard .hcard-t{color:#fff}
+    .home-grid .hcard .hcard-d{color:rgba(255,255,255,.86)}
+    .home-grid .hcard .hcard-ic{background:rgba(255,255,255,.2)!important;box-shadow:none!important}
+    .home-grid .hcard:nth-child(1){background:linear-gradient(135deg,#3A57C8,#14286E)}
+    .home-grid .hcard:nth-child(2){background:linear-gradient(135deg,#2FC0DA,#0090AC)}
+    .home-grid .hcard:nth-child(3){background:linear-gradient(135deg,#FFCB4D,#E3A000)}
+    .home-grid .hcard:nth-child(3) .hcard-t{color:#4A3200}
+    .home-grid .hcard:nth-child(3) .hcard-d{color:rgba(74,50,0,.82)}
+    .home-grid .hcard:nth-child(3) .hcard-ic{background:rgba(255,255,255,.72)!important;color:#B07A00}
+    .home-grid .hcard:nth-child(4){background:linear-gradient(135deg,#3FCE7A,#0E9E5A)}
+    .home-grid .hcard:nth-child(5){background:linear-gradient(135deg,#4C8DF6,#1E5FD0)}
+    .home-grid .hcard:nth-child(6){background:linear-gradient(135deg,#17B8A6,#0B7D66)}
+    .home-grid .hcard:nth-child(7){background:linear-gradient(135deg,#C08E63,#8C5E3C)}
     .q-label{font-size:12px;font-weight:700;letter-spacing:2px;color:#0f766e;margin:0 3px 12px}
     .home-sec{font-size:12px;font-weight:700;letter-spacing:2px;color:#94a3b8;margin:2px 3px 14px}
     .q-recent{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #d6ece6;border-radius:16px;padding:13px 18px;margin-bottom:22px;cursor:pointer;box-shadow:0 2px 7px rgba(20,40,90,.05);transition:transform .18s,box-shadow .18s}
