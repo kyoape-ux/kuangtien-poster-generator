@@ -244,6 +244,17 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 #pg-poster .btn-sm svg,#pg-wm .btn-sm svg,#pg-ie .btn-sm svg,#qr-left .btn-sm svg{width:12px;height:12px}
 #pg-poster input[type=range],#pg-wm input[type=range],#pg-ie input[type=range],#qr-left input[type=range]{accent-color:#0D9488;height:5px;border-radius:4px}
 #pg-ie .inp-label{min-width:44px;font-size:11.5px;color:#64748b;font-weight:500}
+/* 拉桿旁的數值步進器：－ [數值] ＋（可手動輸入、可點左右格） */
+.inp-row input[type=range]{flex:1;min-width:36px}
+.stp{display:inline-flex;align-items:center;flex-shrink:0;height:22px;border:1px solid #d5dbe3;border-radius:7px;background:#fff;overflow:hidden}
+.stp button{width:19px;height:22px;border:none;background:#f3f5f8;color:#475569;font-size:13px;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.stp button:hover{background:#e2e8f0;color:#0f172a}
+.stp button:active{background:#cbd5e1}
+.stp input{width:38px;height:22px;border:none;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;text-align:center;font-size:11px;font-weight:600;color:#1e293b;padding:0;outline:none;background:#fff;-moz-appearance:textfield;font-family:inherit}
+.stp input::-webkit-inner-spin-button,.stp input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.stp input:focus{background:#f0fdfa}
+.stp .u{font-size:10px;color:#94a3b8;padding:0 4px 0 2px}
+.stp.wide input{width:46px}
 #pg-ie #ie-histo{border-radius:10px}
 /* QR 左欄標題加 teal 強調條，風格一致 */
 #qr-left .qr-sec-title{color:#64748b;letter-spacing:1.2px}
@@ -1211,7 +1222,8 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       <button class="btn btn-purple btn-full" onclick="document.getElementById('ie-file').click()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 13h10"/></svg> 載入圖片
       </button>
-      <input type="file" id="ie-file" accept="image/*" style="display:none" onchange="ieLoad(this)">
+      <input type="file" id="ie-file" accept="image/*,.heic,.heif" style="display:none" onchange="ieLoad(this)">
+      <div style="font-size:11px;color:var(--g500);margin-top:6px;line-height:1.5">支援 JPG / PNG / WebP；iPhone 的 HEIC 會先提示轉成 JPG 再進入編輯（本機轉檔）。</div>
     </div>
 
     <div class="sec-title">批次圖片</div>
@@ -1220,7 +1232,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <button class="btn btn-purple btn-sm" style="flex:1" onclick="document.getElementById('ie-batch-inp').click()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 13h10"/></svg> 載入</button>
         <button class="btn btn-ghost btn-sm" style="flex:1" onclick="ieBatchClear()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path d="M3 4h10M6 4V3h4v1M5 6l.5 7h5L11 6"/></svg> 清除</button>
       </div>
-      <input type="file" id="ie-batch-inp" accept="image/*" multiple style="display:none" onchange="ieBatchLoad(this)">
+      <input type="file" id="ie-batch-inp" accept="image/*,.heic,.heif" multiple style="display:none" onchange="ieBatchLoad(this)">
       <div id="ie-batch-list" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;max-height:120px;overflow-y:auto"></div>
       <div id="ie-batch-count" style="font-size:11px;color:var(--g500);margin:2px 0 6px"></div>
       <div style="display:flex;gap:6px;margin-bottom:4px">
@@ -1333,6 +1345,22 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <div id="ie-ai-cut-status" style="font-size:11px;color:var(--g500);margin-top:6px;line-height:1.5">用 AI 自動去背（人像最佳）。首次使用會下載模型（約 16MB，之後快取）；圖片全程在本機處理、不會上傳。</div>
       </div>
 
+      <div class="sec-title">風格預設（記憶參數）</div>
+      <div class="sec">
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <select class="inp" id="ie-preset-sel" style="flex:1;font-size:11.5px"><option value="">— 選擇已存風格 —</option></select>
+          <button class="btn btn-ghost btn-sm" onclick="iePresetDelete()" title="刪除所選風格">✕</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="btn btn-amber btn-sm" style="flex:1" onclick="iePresetSave()">儲存目前參數</button>
+          <button class="btn btn-teal btn-sm" style="flex:1" onclick="iePresetApply()">套用所選風格</button>
+        </div>
+        <label style="font-size:11px;color:var(--g500);display:flex;gap:5px;align-items:center;cursor:pointer">
+          <input type="checkbox" id="ie-remember" checked onchange="ieRememberToggle(this)">載入新圖時自動沿用上次參數
+        </label>
+        <div style="font-size:11px;color:var(--g500);margin-top:4px;line-height:1.5">記住亮度／對比／飽和／色相／銳化與色調參數，存在這台電腦的瀏覽器裡。</div>
+      </div>
+
       <div class="sec-title">基礎調光調色</div>
       <div class="sec">
         <div class="inp-row" style="margin-bottom:6px">
@@ -1431,8 +1459,10 @@ body.tool-pan #cscroll:active{cursor:grabbing}
           <span id="ie-lens-lbl" style="font-size:11px;color:var(--g500);min-width:34px">0</span>
         </div>
         <div style="font-size:11px;color:var(--g500);margin-bottom:6px">負值修正桶形(凸出)、正值修正枕形(凹陷)。</div>
-        <button class="btn btn-teal btn-full btn-sm" onclick="ieLensCommit()" style="margin-bottom:10px">✓ 套用鏡頭變形</button>
-        <button class="btn btn-indigo btn-full btn-sm" id="ie-persp-btn" onclick="iePerspToggle()">⧉ 透視校正（拖曳四角）</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-teal btn-sm" style="flex:1" onclick="ieLensCommit()">✓ 套用鏡頭變形</button>
+          <button class="btn btn-indigo btn-sm" style="flex:1" id="ie-persp-btn" onclick="iePerspToggle()" title="拖曳四角把梯形拉正">⧉ 透視校正</button>
+        </div>
         <div id="ie-persp-ctrls" style="display:none;margin-top:6px">
           <div style="font-size:11px;color:var(--g500);margin-bottom:6px">拖曳四個藍點對齊要拉正的矩形（例：翻拍的文件、招牌），系統會把梯形變形校正為正矩形。</div>
           <div style="display:flex;gap:6px">
@@ -3888,6 +3918,7 @@ function showPP(id){
   pp.style.display='block';
   pp.innerHTML = renderPPHTML(obj);
   bindPPEvents(obj);
+  if(window.enhanceRanges) enhanceRanges(pp);
   // ★ 自動捲動讓屬性面板可見（PP 可能在側欄捲動區下方）
   const sbScroll = document.getElementById('sb-scroll');
   if(sbScroll && pp.offsetTop > 0){
@@ -4888,7 +4919,7 @@ function addLogoSlot(){
   const id=++S.wm.logoCnt;
   S.wm.logos.push({
     id, imgEl:null, name:'未選擇',
-    pos:'br', marginX:32, marginY:32, sizeRatio:20, opacity:85, _open:false
+    pos:'tr', marginX:50, marginY:40, sizeRatio:18, opacity:100, _open:false
   });
   renderLogoSlots();
 }
@@ -4902,6 +4933,7 @@ function renderLogoSlots(){
   const ct=document.getElementById('logo-slots');
   ct.innerHTML='';
   S.wm.logos.forEach(slot=>ct.appendChild(buildSlotEl(slot)));
+  if(window.enhanceRanges) enhanceRanges(ct);
 }
 
 function buildSlotEl(slot){
@@ -7574,8 +7606,43 @@ const IE = {
 function ieC(){ return document.getElementById('ie-canvas'); }
 function ieO(){ return document.getElementById('ie-overlay'); }
 
+// ── HEIC / HEIF（iPhone 預設格式）：瀏覽器多半無法直接開啟，先在本機轉成 JPG 再進編輯 ──
+function isHeicFile(f){
+  if(!f) return false;
+  const t=(f.type||'').toLowerCase(), n=(f.name||'').toLowerCase();
+  return t.includes('heic')||t.includes('heif')||/\.(heic|heif)$/.test(n);
+}
+let _heicLibP=null;
+function loadHeicLib(){
+  if(window.heic2any) return Promise.resolve();
+  if(_heicLibP) return _heicLibP;
+  _heicLibP=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    s.onload=res; s.onerror=()=>{ _heicLibP=null; rej(new Error('heic2any load failed')); };
+    document.head.appendChild(s);
+  });
+  return _heicLibP;
+}
+async function heicToJpeg(file, quality=0.92){
+  await loadHeicLib();
+  const out=await heic2any({blob:file, toType:'image/jpeg', quality});
+  const blob=Array.isArray(out)?out[0]:out;
+  const name=(file.name||'photo').replace(/\.(heic|heif)$/i,'')+'.jpg';
+  return new File([blob], name, {type:'image/jpeg'});
+}
+// 單張：先提示，同意後轉檔（回傳轉好的 File；取消或失敗回 null）
+async function heicPromptConvert(file){
+  const ok=confirm(`「${file.name}」是 iPhone 的 HEIC 格式，瀏覽器無法直接開啟。\n要先轉成 JPG 再進入編輯嗎？（在本機轉檔，不會上傳）`);
+  if(!ok) return null;
+  snack('HEIC 轉 JPG 中，首次會下載轉檔元件…',8000);
+  try{ const f=await heicToJpeg(file); snack('已轉成 JPG，載入編輯'); return f; }
+  catch(e){ console.warn(e); snack('HEIC 轉檔失敗。可先用 iPhone「照片」分享成 JPG，或在設定→相機→格式改「最相容」',6000); return null; }
+}
+
 function ieLoad(inp){ const file=inp.files[0]; inp.value=''; if(file) ieLoadFile(file); }
 function ieLoadFile(file){
+  if(isHeicFile(file)){ heicPromptConvert(file).then(f=>{ if(f) ieLoadFile(f); }); return; }
   if(!file || !(file.type||'').startsWith('image/')){ if(window.snack)snack('請提供圖片檔'); return; }
   const reader=new FileReader();
   reader.onload=e=>{
@@ -7595,13 +7662,14 @@ function ieLoadFile(file){
         const cs2=document.getElementById('ie-ai-cut-status'); if(cs2) cs2.textContent='用 AI 自動去背（人像最佳）。首次使用會下載模型（約 16MB，之後快取）；圖片全程在本機處理、不會上傳。'; }
       const lensEl=document.getElementById('ie-lens'); if(lensEl){lensEl.value=0; const ll=document.getElementById('ie-lens-lbl'); if(ll)ll.textContent='0';}
       const pc0=document.getElementById('ie-persp-ctrls'); if(pc0)pc0.style.display='none';
-      const pb0=document.getElementById('ie-persp-btn'); if(pb0)pb0.className='btn btn-indigo btn-full btn-sm';
+      const pb0=document.getElementById('ie-persp-btn'); if(pb0)pb0.className='btn btn-indigo btn-sm';
       ['brightness','contrast','saturation','hue','sharpen','exposure','highlights','shadows','whites','blacks'].forEach(k=>{
         const el=document.getElementById('ie-'+k);
         if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
       });
       const rotEl=document.getElementById('ie-rotate'); if(rotEl){rotEl.value=0;}
       const rotLbl=document.getElementById('ie-rotate-lbl'); if(rotLbl){rotLbl.textContent='0°';}
+      ieRestoreLast(); // 記憶參數：沿用上次調整（可在「風格預設」關閉）
       const dc=ieC(); dc.width=c.width; dc.height=c.height; dc.style.display='block';
       const oc=ieO(); oc.width=c.width; oc.height=c.height;
       document.getElementById('ie-resize-w').value=c.width;
@@ -7625,7 +7693,7 @@ function initIeInput(){
   ['dragenter','dragover'].forEach(t=>area.addEventListener(t,e=>{ stop(e); area.classList.add('ie-dragover'); }));
   ['dragleave','dragend'].forEach(t=>area.addEventListener(t,e=>{ stop(e); if(e.target===area) area.classList.remove('ie-dragover'); }));
   area.addEventListener('drop',e=>{ stop(e); area.classList.remove('ie-dragover');
-    const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(x=>(x.type||'').startsWith('image/'));
+    const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(x=>(x.type||'').startsWith('image/')||isHeicFile(x));
     if(f) ieLoadFile(f); else snack('請拖曳圖片檔'); });
 
   // 海報編輯：拖曳圖片到畫布 → 新增圖片物件（放在拖放點）
@@ -7775,6 +7843,113 @@ function ieSlider(key,inp){
   const lbl=document.getElementById('ie-'+key+'-lbl');
   if(lbl) lbl.textContent=key==='hue'?inp.value+'°':inp.value;
   ieRedrawT();
+  ieRememberLastT();
+}
+
+// ══════════ 風格預設 / 記憶參數（存於 localStorage）══════════
+const IE_ADJ_KEYS=['brightness','contrast','saturation','hue','sharpen','exposure','highlights','shadows','whites','blacks'];
+const IE_PRESET_LS='ktp_ie_presets', IE_LAST_LS='ktp_ie_last', IE_REMEMBER_LS='ktp_ie_remember';
+function _lsGet(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+function _lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function ieGetAdj(){ const o={}; IE_ADJ_KEYS.forEach(k=>o[k]=+IE[k]||0); return o; }
+function ieAdjIsZero(p){ return IE_ADJ_KEYS.every(k=>!(+(p&&p[k])||0)); }
+function ieSetAdj(p, redraw=true){
+  IE_ADJ_KEYS.forEach(k=>{
+    const v=+(p&&p[k])||0; IE[k]=v;
+    const el=document.getElementById('ie-'+k); if(el) el.value=v;
+    const lb=document.getElementById('ie-'+k+'-lbl'); if(lb) lb.textContent=k==='hue'?v+'°':String(v);
+  });
+  if(redraw && IE.origCanvas) ieRedraw();
+}
+function ieRememberOn(){ return !!_lsGet(IE_REMEMBER_LS,1); }
+function ieRememberLast(){ if(ieRememberOn()) _lsSet(IE_LAST_LS, ieGetAdj()); }
+let _ieRemT=0;
+function ieRememberLastT(){ clearTimeout(_ieRemT); _ieRemT=setTimeout(ieRememberLast,300); }
+function ieRestoreLast(){
+  if(!ieRememberOn()) return;
+  const p=_lsGet(IE_LAST_LS,null); if(!p||ieAdjIsZero(p)) return;
+  ieSetAdj(p,false);
+  snack('已沿用上次參數（可在「風格預設」關閉或按重置）',3000);
+}
+function ieRememberToggle(cb){ _lsSet(IE_REMEMBER_LS, cb.checked?1:0); if(cb.checked) ieRememberLast(); snack(cb.checked?'載入新圖會自動沿用上次參數':'已關閉自動沿用'); }
+function iePresetList(){ const l=_lsGet(IE_PRESET_LS,[]); return Array.isArray(l)?l:[]; }
+function iePresetRender(){
+  const sel=document.getElementById('ie-preset-sel'); if(!sel) return;
+  const cur=sel.value;
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  sel.innerHTML='<option value="">— 選擇已存風格 —</option>'+iePresetList().map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join('');
+  if(cur && sel.querySelector(`option[value="${cur}"]`)) sel.value=cur;
+  const cb=document.getElementById('ie-remember'); if(cb) cb.checked=ieRememberOn();
+}
+function iePresetSave(){
+  const cur=ieGetAdj();
+  if(ieAdjIsZero(cur)){ snack('目前參數都是 0，先調整再儲存'); return; }
+  const list=iePresetList();
+  const name=prompt('風格名稱（例：人像柔和、公告高對比）', '風格 '+(list.length+1));
+  if(name==null) return;
+  const nm=name.trim()||('風格 '+(list.length+1));
+  const i=list.findIndex(p=>p.name===nm);
+  const item={name:nm, p:cur, t:Date.now()};
+  if(i>=0) list[i]=item; else list.push(item);
+  _lsSet(IE_PRESET_LS,list); iePresetRender();
+  const sel=document.getElementById('ie-preset-sel'); if(sel) sel.value=String(i>=0?i:list.length-1);
+  snack(`已儲存風格「${nm}」`);
+}
+function iePresetApply(){
+  const sel=document.getElementById('ie-preset-sel'); const p=sel&&iePresetList()[+sel.value];
+  if(!p){ snack('請先選擇風格'); return; }
+  if(!IE.origCanvas){ snack('請先載入圖片'); return; }
+  ieSetAdj(p.p); ieRememberLast(); snack(`已套用「${p.name}」`);
+}
+function iePresetDelete(){
+  const sel=document.getElementById('ie-preset-sel'); const list=iePresetList(); const idx=sel?+sel.value:-1; const p=list[idx];
+  if(!p){ snack('請先選擇風格'); return; }
+  if(!confirm(`刪除風格「${p.name}」？`)) return;
+  list.splice(idx,1); _lsSet(IE_PRESET_LS,list); if(sel) sel.value=''; iePresetRender(); snack('已刪除');
+}
+
+// ══════════ 拉桿數值步進器：每個 range 旁加「－ [數值] ＋」，可手動輸入、可點左右格 ══════════
+function enhanceRanges(root){
+  const scope=root||document;
+  const sel='#pg-ie input[type=range],#pg-wm input[type=range],#pg-poster input[type=range],#qr-left input[type=range],#pp input[type=range]';
+  const list=root ? root.querySelectorAll('input[type=range]') : scope.querySelectorAll(sel);
+  list.forEach(r=>{
+    if(r.dataset.stp) return;
+    const nx=r.nextElementSibling;
+    if(nx && nx.tagName==='INPUT' && nx.type==='number') return; // 已有數字欄位（如 X/Y 偏移）
+    r.dataset.stp='1';
+    const min=parseFloat(r.min), max=parseFloat(r.max), step=parseFloat(r.step)||1;
+    const dec=(step.toString().split('.')[1]||'').length;
+    const wrap=document.createElement('span'); wrap.className='stp'+(Math.abs(min)>=1000||Math.abs(max)>=1000?' wide':'');
+    const bDec=document.createElement('button'); bDec.type='button'; bDec.textContent='−'; bDec.title='減少';
+    const bInc=document.createElement('button'); bInc.type='button'; bInc.textContent='+'; bInc.title='增加';
+    const num=document.createElement('input'); num.type='number'; num.min=r.min; num.max=r.max; num.step=step; num.value=r.value;
+    wrap.append(bDec,num,bInc);
+    // 沿用原本文字標籤的單位（% / ° / px），並隱藏原標籤、監看其變動以同步數值
+    let lbl=nx; if(lbl && lbl.tagName==='SPAN'){
+      const u=(lbl.textContent||'').replace(/^[\s\-−\d.]+/,'').trim();
+      if(u){ const us=document.createElement('span'); us.className='u'; us.textContent=u; wrap.appendChild(us); }
+      lbl.style.display='none';
+      try{ new MutationObserver(()=>{ if(document.activeElement!==num) num.value=r.value; }).observe(lbl,{childList:true,characterData:true,subtree:true}); }catch(e){}
+    }
+    const sync=()=>{ if(document.activeElement!==num) num.value=r.value; };
+    r.addEventListener('input',sync); r.addEventListener('change',sync);
+    const commit=v=>{
+      if(!isFinite(v)) v=+r.value;
+      v=Math.round(v/step)*step; if(!isNaN(min)) v=Math.max(min,v); if(!isNaN(max)) v=Math.min(max,v);
+      v=+v.toFixed(dec);
+      r.value=v; num.value=v;
+      r.dispatchEvent(new Event('input',{bubbles:true}));
+      r.dispatchEvent(new Event('change',{bubbles:true}));
+    };
+    num.addEventListener('change',()=>commit(parseFloat(num.value)));
+    num.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(parseFloat(num.value)); num.blur(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); commit(+r.value+step); } else if(e.key==='ArrowDown'){ e.preventDefault(); commit(+r.value-step); } });
+    num.addEventListener('focus',()=>num.select());
+    bDec.addEventListener('click',()=>commit(+r.value-step));
+    bInc.addEventListener('click',()=>commit(+r.value+step));
+    r.after(wrap);
+  });
 }
 
 function ieAutoWB(){
@@ -8235,7 +8410,7 @@ function iePerspToggle(){
   IE.perspPts=[[mx,my],[w-mx,my],[w-mx,h-my],[mx,h-my]]; // TL,TR,BR,BL
   IE._perspDrag=-1;
   document.getElementById('ie-persp-ctrls').style.display='block';
-  document.getElementById('ie-persp-btn').className='btn btn-amber btn-full btn-sm';
+  document.getElementById('ie-persp-btn').className='btn btn-amber btn-sm';
   const ov=ieO(); ov.style.display='block';
   iePerspDraw();
 }
@@ -8307,7 +8482,7 @@ function iePerspConfirm(){
 function iePerspCancel(keep){
   IE.perspMode=false; IE.perspPts=null; IE._perspDrag=-1;
   const pc=document.getElementById('ie-persp-ctrls'); if(pc) pc.style.display='none';
-  const pb=document.getElementById('ie-persp-btn'); if(pb) pb.className='btn btn-indigo btn-full btn-sm';
+  const pb=document.getElementById('ie-persp-btn'); if(pb) pb.className='btn btn-indigo btn-sm';
   const ov=ieO(); ov.getContext('2d').clearRect(0,0,ov.width,ov.height); ov.style.display='none';
   if(!keep) ieRedraw();
 }
@@ -8519,6 +8694,7 @@ function ieReset(){
     if(el){el.value=0;document.getElementById('ie-'+k+'-lbl').textContent=k==='hue'?'0°':'0';}
   });
   ieRedraw();
+  ieRememberLast(); // 重置後記憶也歸零，下一張不會再沿用
   snack('調整已重置');
 }
 
@@ -8644,8 +8820,18 @@ function renderIeBatchLists(){
 }
 
 function ieBatchLoad(inp){
-  const files=Array.from(inp.files); if(!files.length) return;
+  const files0=Array.from(inp.files); if(!files0.length) return;
   inp.value='';
+  const nHeic=files0.filter(isHeicFile).length;
+  if(nHeic){
+    snack(`偵測到 ${nHeic} 張 HEIC，轉成 JPG 中…`,10000);
+    Promise.all(files0.map(f=>isHeicFile(f)?heicToJpeg(f).catch(()=>null):f))
+      .then(fs=>{ const ok=fs.filter(Boolean); if(ok.length<files0.length) snack(`${files0.length-ok.length} 張 HEIC 轉檔失敗已略過`,4000); if(ok.length) _ieBatchLoadFiles(ok); });
+    return;
+  }
+  _ieBatchLoadFiles(files0);
+}
+function _ieBatchLoadFiles(files){
   IE.batchImgs=[]; IE.batchIdx=0;
   document.getElementById('ie-batch-count').textContent='載入中…';
   let loaded=0;
@@ -8792,11 +8978,55 @@ function ieInitMouseEvents(){
     const rect=dc.getBoundingClientRect();
     const scaleX=dc.width/rect.width;
     const scaleY=dc.height/rect.height;
+    // 夾在圖片範圍內：滑鼠拖出畫布邊緣時框選仍能貼齊到最邊邊
     return{
-      x:Math.round((e.clientX-rect.left)*scaleX),
-      y:Math.round((e.clientY-rect.top)*scaleY)
+      x:Math.max(0,Math.min(dc.width, Math.round((e.clientX-rect.left)*scaleX))),
+      y:Math.max(0,Math.min(dc.height,Math.round((e.clientY-rect.top)*scaleY)))
     };
   }
+  // 裁切／區域框選的拖曳繪製（滑鼠在畫布外也持續更新）
+  function dragDraw(p){
+    const start=IE.cropMode?IE._cropStart:IE._regStart;
+    if(!start) return;
+    let x,y,w,h;
+    const _rr = IE.cropMode ? _ieCropRatioVal() : null;
+    if(_rr){
+      const sx=start.x, sy=start.y, dirX=p.x>=sx?1:-1, dirY=p.y>=sy?1:-1;
+      const W=IE.origCanvas.width, H=IE.origCanvas.height;
+      // 以水平、垂直位移中較大者決定框大小，往任一方向拖都能放大
+      w=Math.max(Math.abs(p.x-sx), Math.abs(p.y-sy)*_rr); h=w/_rr;
+      const maxW=dirX>0?W-sx:sx, maxH=dirY>0?H-sy:sy;
+      if(w>maxW){ w=maxW; h=w/_rr; }
+      if(h>maxH){ h=maxH; w=h*_rr; }
+      x=dirX>0?sx:sx-w; y=dirY>0?sy:sy-h;
+    } else {
+      x=Math.min(start.x,p.x); y=Math.min(start.y,p.y);
+      w=Math.abs(p.x-start.x); h=Math.abs(p.y-start.y);
+    }
+    const ctx=ov.getContext('2d');
+    ctx.clearRect(0,0,ov.width,ov.height);
+    ctx.strokeStyle='rgba(37,99,235,.9)';ctx.lineWidth=2;
+    ctx.setLineDash([5,3]);
+    if(!IE.cropMode && IE.regionShape==='circle'){
+      const cx=x+w/2, cy=y+h/2, rx=w/2, ry=h/2;
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      ctx.stroke();
+      ctx.fillStyle='rgba(37,99,235,.12)';
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      ctx.fill();
+    } else {
+      ctx.strokeRect(x,y,w,h);
+      ctx.fillStyle='rgba(37,99,235,.12)';
+      ctx.fillRect(x,y,w,h);
+    }
+    if(IE.cropMode) IE._cropRect={x,y,w,h};
+    else if(IE.regionMode) IE._regRect={x,y,w,h};
+  }
+  // 拖曳中滑鼠離開畫布：改由 window 接手，放開才結束
+  window.addEventListener('mousemove',e=>{ if(dragging && e.target!==ov) dragDraw(getImgPos(e)); });
+  window.addEventListener('mouseup',()=>{ if(!dragging) return; dragging=false; if(IE.regionMode) iePreviewRegion(); });
 
   ov.addEventListener('mousedown',e=>{
     const p=getImgPos(e);
@@ -8832,51 +9062,15 @@ function ieInitMouseEvents(){
       return; }
     if(IE.regionMode && IE.regionShape==='pen'){ if((IE.regionPoly||[]).length && !IE._polyClosed) iePenDraw(p); return; }
     if(!dragging) return;
-    const start=IE.cropMode?IE._cropStart:IE._regStart;
-    if(!start) return;
-    let x,y,w,h;
-    const _rr = IE.cropMode ? _ieCropRatioVal() : null;
-    if(_rr){
-      const sx=start.x, sy=start.y, dirX=p.x>=sx?1:-1, dirY=p.y>=sy?1:-1;
-      const W=IE.origCanvas.width, H=IE.origCanvas.height;
-      w=Math.abs(p.x-sx); h=w/_rr;
-      const maxW=dirX>0?W-sx:sx, maxH=dirY>0?H-sy:sy;
-      if(w>maxW){ w=maxW; h=w/_rr; }
-      if(h>maxH){ h=maxH; w=h*_rr; }
-      x=dirX>0?sx:sx-w; y=dirY>0?sy:sy-h;
-    } else {
-      x=Math.min(start.x,p.x); y=Math.min(start.y,p.y);
-      w=Math.abs(p.x-start.x); h=Math.abs(p.y-start.y);
-    }
-    const ctx=ov.getContext('2d');
-    ctx.clearRect(0,0,ov.width,ov.height);
-    ctx.strokeStyle='rgba(37,99,235,.9)';ctx.lineWidth=2;
-    ctx.setLineDash([5,3]);
-    if(!IE.cropMode && IE.regionShape==='circle'){
-      const cx=x+w/2, cy=y+h/2, rx=w/2, ry=h/2;
-      ctx.beginPath();
-      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
-      ctx.stroke();
-      ctx.fillStyle='rgba(37,99,235,.12)';
-      ctx.beginPath();
-      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
-      ctx.fill();
-    } else {
-      ctx.strokeRect(x,y,w,h);
-      ctx.fillStyle='rgba(37,99,235,.12)';
-      ctx.fillRect(x,y,w,h);
-    }
-    if(IE.cropMode) IE._cropRect={x,y,w,h};
-    else if(IE.regionMode) IE._regRect={x,y,w,h};
+    dragDraw(p);
   });
 
   ov.addEventListener('mouseup',()=>{
     if(IE.perspMode){ IE._perspDrag=-1; return; }
     if(IE.maskMode){ IE._maskPainting=false; IE._maskStart=null; iePreviewMask(); return; }
-    dragging=false;
-    if(IE.regionMode) iePreviewRegion();
+    // 裁切／區域拖曳結束交由 window mouseup 處理（滑鼠可能在畫布外放開）
   });
-  ov.addEventListener('mouseleave',()=>{ dragging=false; if(IE.perspMode) IE._perspDrag=-1; if(IE.maskMode) IE._maskPainting=false; });
+  ov.addEventListener('mouseleave',()=>{ if(IE.perspMode) IE._perspDrag=-1; if(IE.maskMode) IE._maskPainting=false; });
 }
 
 // ── Fabric.js vector canvas for shapes ──
@@ -9299,6 +9493,8 @@ window.addEventListener('load', ()=>{
   setTimeout(initFabCanvas, 500);
   buildGradBg(); // 漸層背景素材
   initIeInput(); // 圖片編輯：拖曳/貼上載入
+  enhanceRanges(); // 所有拉桿加數值步進器
+  iePresetRender(); // 圖片編輯：風格預設清單
   // 更新時間：自動抓 HTML 檔實際最後修改時間（部署後自動反映）
   try{ const d=new Date(document.lastModified); const bt=document.getElementById('build-ts');
     if(bt && !isNaN(d.getTime())){ const p=n=>String(n).padStart(2,'0');
