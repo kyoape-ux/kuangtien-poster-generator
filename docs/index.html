@@ -41,24 +41,37 @@ button,input,select,textarea{font-family:inherit;font-size:inherit}
 /* ── NAV ── */
 #nav{
   height:44px;background:linear-gradient(100deg,#14253f 0%,#0f3a4c 100%);display:flex;align-items:center;
-  padding:0 16px;gap:4px;flex-shrink:0;user-select:none;
+  padding:0 12px;gap:2px;flex-shrink:0;user-select:none;overflow:hidden;
 }
-#nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:12px;white-space:nowrap;letter-spacing:.5px}
-/* ntab 基底（復原/重做/儲存等工具鈕） */
+#nav .logo{color:#fff;font-weight:700;font-size:13px;margin-right:10px;white-space:nowrap;letter-spacing:.5px}
+/* 主功能 Tab：扁平無框，靠底部色條＋各功能專屬色區隔（視窗窄時自動只留圖示） */
 .ntab{
-  padding:5px 14px;
-  border:1px solid rgba(255,255,255,.22);
-  background:rgba(255,255,255,.13);
-  color:rgba(255,255,255,.82);
-  border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;
-  display:inline-flex;align-items:center;gap:4px;
+  --tabc:#2DD4BF;
+  height:44px;padding:0 11px;border:none;border-top:3px solid transparent;border-bottom:3px solid transparent;
+  background:transparent;color:rgba(255,255,255,.72);
+  border-radius:0;cursor:pointer;font-size:12.5px;font-weight:600;transition:background .15s,color .15s;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;
 }
-.ntab:hover{background:rgba(45,212,191,.20);border-color:rgba(45,212,191,.5);color:#fff}
-/* ── 主功能 Tab：統一青綠 teal 強調（取代各自雜色）── */
-.ntab.on{background:#2DD4BF;color:#06343a;border-color:#2DD4BF;font-weight:700;box-shadow:0 2px 9px rgba(45,212,191,.5)}
-.ntab.on:hover{background:#26C2B0;border-color:#26C2B0;color:#06343a}
-#nav .spacer{flex:1}
-#nav .ver{color:rgba(255,255,255,.45);font-size:11px}
+.ntab svg{width:13px;height:13px}
+.ntab:hover{background:rgba(255,255,255,.08);color:#fff}
+.ntab.on{background:rgba(255,255,255,.10);color:#fff;font-weight:700;border-bottom-color:var(--tabc);box-shadow:none}
+.ntab.on svg{color:var(--tabc)}
+#ntab-home{--tabc:#2DD4BF}
+#ntab-poster{--tabc:#8B9CFF}
+#ntab-ie{--tabc:#38D3EE}
+#ntab-wm{--tabc:#6FAAFF}
+#ntab-qr{--tabc:#34D399}
+#ntab-res{--tabc:#E0A878}
+#ntab-collage{--tabc:#FFD166}
+/* 右側工具鈕（復原/重做/儲存/開啟/須知）：小一號的輕量鈕 */
+.ntab-act{height:30px;padding:0 9px;border:1px solid rgba(255,255,255,.16);border-radius:7px;font-size:11.5px;color:rgba(255,255,255,.78);margin-left:2px}
+.ntab-act:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+.ntab-act.plain{border-color:transparent}
+#nav .spacer{flex:1;min-width:8px}
+#nav .ver{color:rgba(255,255,255,.45);font-size:11px;white-space:nowrap}
+@media (max-width:1320px){#build-ts{display:none}}
+@media (max-width:1200px){.ntab-act .tl{display:none}.ntab-act{padding:0 8px}#nav .ver{display:none}}
+@media (max-width:1040px){.ntab .tl{display:none}.ntab{padding:0 10px}.ntab svg{width:15px;height:15px}#nav .logo span{display:none}}
 
 /* ── LAYOUT ── */
 #main{display:flex;height:calc(100vh - 44px - 24px);overflow:hidden}
@@ -936,20 +949,20 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     <img src="./logos/logo-h-white.png" style="height:28px;object-fit:contain;flex-shrink:0" onerror="this.style.display='none'">
     <span style="font-size:12px;font-weight:600;white-space:nowrap;letter-spacing:.3px">美編小助手</span>
   </div>
-  <button class="ntab on" onclick="switchTab('home',this)" id="ntab-home"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 7l6-5 6 5v6a1 1 0 01-1 1h-3v-4H6v4H3a1 1 0 01-1-1z"/></svg> 首頁</button>
-  <button class="ntab" onclick="switchTab('poster',this)" id="ntab-poster"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg> 海報編輯</button>
-  <button class="ntab" onclick="switchTab('ie',this)" id="ntab-ie"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg> 圖片編輯</button>
-  <button class="ntab" onclick="switchTab('wm',this)" id="ntab-wm"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg> 批次浮水印</button>
-  <button class="ntab" onclick="switchTab('qr',this)" id="ntab-qr"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="10.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="13.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="10.5" y="13.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> QR碼產生</button>
-  <button class="ntab" onclick="switchTab('res',this)" id="ntab-res"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M7 9a3 3 0 004.5.4l2-2a3 3 0 00-4.2-4.2l-1.2 1.2"/><path d="M9 7a3 3 0 00-4.5-.4l-2 2a3 3 0 004.2 4.2l1.2-1.2"/></svg> 素材資源</button>
-  <button class="ntab" onclick="switchTab('collage',this)" id="ntab-collage"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1.5" y="1.5" width="6" height="6" rx="1"/><rect x="8.5" y="1.5" width="6" height="6" rx="1"/><rect x="1.5" y="8.5" width="6" height="6" rx="1"/><rect x="8.5" y="8.5" width="6" height="6" rx="1"/></svg> 拼貼</button>
+  <button class="ntab on" onclick="switchTab('home',this)" id="ntab-home"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 7l6-5 6 5v6a1 1 0 01-1 1h-3v-4H6v4H3a1 1 0 01-1-1z"/></svg> <span class="tl">首頁</span></button>
+  <button class="ntab" onclick="switchTab('poster',this)" id="ntab-poster" title="海報編輯"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg> <span class="tl">海報編輯</span></button>
+  <button class="ntab" onclick="switchTab('ie',this)" id="ntab-ie" title="圖片編輯"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg> <span class="tl">圖片編輯</span></button>
+  <button class="ntab" onclick="switchTab('wm',this)" id="ntab-wm" title="批次浮水印"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M1 9l7-4 7 4-7 4-7-4z"/><path d="M1 6l7-4 7 4"/></svg> <span class="tl">批次浮水印</span></button>
+  <button class="ntab" onclick="switchTab('qr',this)" id="ntab-qr" title="QR碼產生"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="10.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="13.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="10.5" y="13.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> <span class="tl">QR碼產生</span></button>
+  <button class="ntab" onclick="switchTab('res',this)" id="ntab-res" title="素材資源"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M7 9a3 3 0 004.5.4l2-2a3 3 0 00-4.2-4.2l-1.2 1.2"/><path d="M9 7a3 3 0 00-4.5-.4l-2 2a3 3 0 004.2 4.2l1.2-1.2"/></svg> <span class="tl">素材資源</span></button>
+  <button class="ntab" onclick="switchTab('collage',this)" id="ntab-collage" title="拼貼"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="1.5" y="1.5" width="6" height="6" rx="1"/><rect x="8.5" y="1.5" width="6" height="6" rx="1"/><rect x="1.5" y="8.5" width="6" height="6" rx="1"/><rect x="8.5" y="8.5" width="6" height="6" rx="1"/></svg> <span class="tl">拼貼</span></button>
   <div class="spacer"></div>
-  <button class="ntab" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 6h8a4 4 0 010 8"/><path d="M5 3L2 6l3 3"/></svg> 復原</button>
-  <button class="ntab" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M14 6H6a4 4 0 000 8"/><path d="M11 3l3 3-3 3"/></svg> 重做</button>
-  <button class="ntab" onclick="saveProject()" title="儲存為 .ktposter 專案檔（可再次開啟繼續編輯）"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> 儲存專案</button>
-  <button class="ntab" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 5a1 1 0 011-1h3l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V5z"/></svg> 開啟專案</button>
+  <button class="ntab ntab-act" id="btn-undo" onclick="undo()" title="復原 Ctrl+Z" style="opacity:.4;cursor:not-allowed"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 6h8a4 4 0 010 8"/><path d="M5 3L2 6l3 3"/></svg> <span class="tl">復原</span></button>
+  <button class="ntab ntab-act" id="btn-redo" onclick="redo()" title="重做 Ctrl+Y" style="opacity:.4;cursor:not-allowed"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M14 6H6a4 4 0 000 8"/><path d="M11 3l3 3-3 3"/></svg> <span class="tl">重做</span></button>
+  <button class="ntab ntab-act" onclick="saveProject()" title="儲存為 .ktposter 專案檔（可再次開啟繼續編輯）"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><rect x="5" y="2" width="5" height="3.5" rx=".5"/><rect x="4" y="9" width="8" height="5" rx=".5"/></svg> <span class="tl">儲存專案</span></button>
+  <button class="ntab ntab-act" onclick="document.getElementById('proj-load-inp').click()" title="開啟 .ktposter 專案檔"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 5a1 1 0 011-1h3l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V5z"/></svg> <span class="tl">開啟專案</span></button>
   <input type="file" id="proj-load-inp" accept=".ktposter,.json" style="display:none" onchange="loadProject(this)">
-  <button onclick="showTos()" title="使用須知" style="border:none;background:transparent;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> 使用須知</button>
+  <button class="ntab ntab-act plain" onclick="showTos()" title="使用須知"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.5v4M8 5.5v.5"/></svg> <span class="tl">使用須知</span></button>
   <span class="ver" style="margin-left:6px">v3.1</span>
   <span id="build-ts" style="font-size:11px;color:rgba(255,255,255,.45);margin-left:6px">updated: —</span>
 </div>
