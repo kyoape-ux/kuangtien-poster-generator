@@ -257,17 +257,14 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 #pg-poster .btn-sm svg,#pg-wm .btn-sm svg,#pg-ie .btn-sm svg,#qr-left .btn-sm svg{width:12px;height:12px}
 #pg-poster input[type=range],#pg-wm input[type=range],#pg-ie input[type=range],#qr-left input[type=range]{accent-color:#0D9488;height:5px;border-radius:4px}
 #pg-ie .inp-label{min-width:44px;font-size:11.5px;color:#64748b;font-weight:500}
-/* 拉桿旁的數值步進器：－ [數值] ＋（可手動輸入、可點左右格） */
+/* 拉桿旁的數值欄：單一數字框＋原生上下箭頭（可手動輸入、點箭頭步進），不佔空間 */
 .inp-row input[type=range]{flex:1;min-width:36px}
-.stp{display:inline-flex;align-items:center;flex-shrink:0;height:22px;border:1px solid #d5dbe3;border-radius:7px;background:#fff;overflow:hidden}
-.stp button{width:19px;height:22px;border:none;background:#f3f5f8;color:#475569;font-size:13px;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;font-family:inherit}
-.stp button:hover{background:#e2e8f0;color:#0f172a}
-.stp button:active{background:#cbd5e1}
-.stp input{width:38px;height:22px;border:none;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;text-align:center;font-size:11px;font-weight:600;color:#1e293b;padding:0;outline:none;background:#fff;-moz-appearance:textfield;font-family:inherit}
-.stp input::-webkit-inner-spin-button,.stp input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-.stp input:focus{background:#f0fdfa}
-.stp .u{font-size:10px;color:#94a3b8;padding:0 4px 0 2px}
-.stp.wide input{width:46px}
+.stp{display:inline-flex;align-items:center;flex-shrink:0;gap:3px}
+.stp input{width:54px;height:24px;border:1px solid #d5dbe3;border-radius:6px;background:#fff;text-align:left;font-size:12px;font-weight:600;color:#1e293b;padding:0 2px 0 6px;outline:none;font-family:inherit;font-variant-numeric:tabular-nums}
+.stp input::-webkit-inner-spin-button{opacity:1;height:22px;margin:0;cursor:pointer}
+.stp input:focus{border-color:#0D9488;box-shadow:0 0 0 2px rgba(13,148,136,.15)}
+.stp .u{font-size:10.5px;color:#94a3b8}
+.stp.wide input{width:62px}
 #pg-ie #ie-histo{border-radius:10px}
 /* QR 左欄標題加 teal 強調條，風格一致 */
 #qr-left .qr-sec-title{color:#64748b;letter-spacing:1.2px}
@@ -1489,7 +1486,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       <div class="sec">
         <div style="display:flex;gap:6px">
           <button class="btn btn-green btn-full btn-sm" style="flex:1" onclick="ieDownload('png')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 下載 PNG</button>
-          <button class="btn btn-green btn-full btn-sm" style="flex:1" onclick="ieDownload('jpeg')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 下載 JPG</button>
+          <button class="btn btn-blue btn-full btn-sm" style="flex:1" onclick="ieDownload('jpeg')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 下載 JPG</button>
         </div>
       </div>
     </div>
@@ -7934,10 +7931,8 @@ function enhanceRanges(root){
     const min=parseFloat(r.min), max=parseFloat(r.max), step=parseFloat(r.step)||1;
     const dec=(step.toString().split('.')[1]||'').length;
     const wrap=document.createElement('span'); wrap.className='stp'+(Math.abs(min)>=1000||Math.abs(max)>=1000?' wide':'');
-    const bDec=document.createElement('button'); bDec.type='button'; bDec.textContent='−'; bDec.title='減少';
-    const bInc=document.createElement('button'); bInc.type='button'; bInc.textContent='+'; bInc.title='增加';
-    const num=document.createElement('input'); num.type='number'; num.min=r.min; num.max=r.max; num.step=step; num.value=r.value;
-    wrap.append(bDec,num,bInc);
+    const num=document.createElement('input'); num.type='number'; num.min=r.min; num.max=r.max; num.step=step; num.value=r.value; num.title='可直接輸入或點箭頭';
+    wrap.append(num);
     // 沿用原本文字標籤的單位（% / ° / px），並隱藏原標籤、監看其變動以同步數值
     let lbl=nx; if(lbl && lbl.tagName==='SPAN'){
       const u=(lbl.textContent||'').replace(/^[\s\-−\d.]+/,'').trim();
@@ -7955,12 +7950,11 @@ function enhanceRanges(root){
       r.dispatchEvent(new Event('input',{bubbles:true}));
       r.dispatchEvent(new Event('change',{bubbles:true}));
     };
+    // 點原生箭頭／方向鍵（inputType 為空）即時生效；手動打字則等 Enter 或離開欄位再套用
+    num.addEventListener('input',e=>{ if(!e.inputType) commit(parseFloat(num.value)); });
     num.addEventListener('change',()=>commit(parseFloat(num.value)));
-    num.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(parseFloat(num.value)); num.blur(); }
-      else if(e.key==='ArrowUp'){ e.preventDefault(); commit(+r.value+step); } else if(e.key==='ArrowDown'){ e.preventDefault(); commit(+r.value-step); } });
+    num.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(parseFloat(num.value)); num.blur(); } });
     num.addEventListener('focus',()=>num.select());
-    bDec.addEventListener('click',()=>commit(+r.value-step));
-    bInc.addEventListener('click',()=>commit(+r.value+step));
     r.after(wrap);
   });
 }
