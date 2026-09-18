@@ -260,11 +260,12 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 /* 拉桿旁的數值欄：單一數字框＋原生上下箭頭（可手動輸入、點箭頭步進），不佔空間 */
 .inp-row input[type=range]{flex:1;min-width:36px}
 .stp{display:inline-flex;align-items:center;flex-shrink:0;gap:3px}
-.stp input{width:54px;height:24px;border:1px solid #d5dbe3;border-radius:6px;background:#fff;text-align:left;font-size:12px;font-weight:600;color:#1e293b;padding:0 2px 0 6px;outline:none;font-family:inherit;font-variant-numeric:tabular-nums}
+.stp input{width:58px;height:24px;border:1px solid #d5dbe3;border-radius:6px;background:#fff;text-align:left;font-size:12px;font-weight:600;color:#1e293b;padding:0 2px 0 6px;outline:none;font-family:inherit;font-variant-numeric:tabular-nums}
 .stp input::-webkit-inner-spin-button{opacity:1;height:22px;margin:0;cursor:pointer}
 .stp input:focus{border-color:#0D9488;box-shadow:0 0 0 2px rgba(13,148,136,.15)}
-.stp .u{font-size:10.5px;color:#94a3b8}
-.stp.wide input{width:62px}
+/* 單位欄固定寬度、每列都保留（沒單位就留空），框的左右邊緣才會整欄對齊 */
+.stp .u{width:16px;flex-shrink:0;font-size:10px;color:#94a3b8;line-height:1;text-align:left}
+.stp.wide input{width:66px}
 #pg-ie #ie-histo{border-radius:10px}
 /* QR 左欄標題加 teal 強調條，風格一致 */
 #qr-left .qr-sec-title{color:#64748b;letter-spacing:1.2px}
@@ -7932,11 +7933,12 @@ function enhanceRanges(root){
     const dec=(step.toString().split('.')[1]||'').length;
     const wrap=document.createElement('span'); wrap.className='stp'+(Math.abs(min)>=1000||Math.abs(max)>=1000?' wide':'');
     const num=document.createElement('input'); num.type='number'; num.min=r.min; num.max=r.max; num.step=step; num.value=r.value; num.title='可直接輸入或點箭頭';
-    wrap.append(num);
+    const us=document.createElement('span'); us.className='u';
+    wrap.append(num,us);
     // 沿用原本文字標籤的單位（% / ° / px），並隱藏原標籤、監看其變動以同步數值
     let lbl=nx; if(lbl && lbl.tagName==='SPAN'){
       const u=(lbl.textContent||'').replace(/^[\s\-−\d.]+/,'').trim();
-      if(u){ const us=document.createElement('span'); us.className='u'; us.textContent=u; wrap.appendChild(us); }
+      if(u) us.textContent=u;
       lbl.style.display='none';
       try{ new MutationObserver(()=>{ if(document.activeElement!==num) num.value=r.value; }).observe(lbl,{childList:true,characterData:true,subtree:true}); }catch(e){}
     }
