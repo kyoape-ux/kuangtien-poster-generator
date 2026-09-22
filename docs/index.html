@@ -826,6 +826,38 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   display:flex;align-items:center;justify-content:center;padding:16px;
   backdrop-filter:blur(4px);
 }
+/* ── AI 生圖 Modal ── */
+#ai-overlay{position:fixed;inset:0;background:rgba(10,15,40,.62);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.ai-box{background:#fff;border-radius:16px;width:min(860px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.ai-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #e8edf3}
+.ai-head h3{font-size:15px;font-weight:700;color:#14286E;margin:0;flex:1}
+.ai-head .ai-quota{font-size:11px;color:#64748b;white-space:nowrap}
+.ai-body{display:grid;grid-template-columns:300px 1fr;gap:0;flex:1;min-height:0}
+.ai-form{padding:14px 16px;border-right:1px solid #e8edf3;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.ai-form label{font-size:11px;font-weight:700;color:#64748b;letter-spacing:.5px;display:block;margin-bottom:4px}
+.ai-form textarea{width:100%;min-height:74px;border:1px solid #d5dbe3;border-radius:9px;padding:8px 10px;font-size:13px;resize:vertical;outline:none;line-height:1.5}
+.ai-form textarea:focus{border-color:#0D9488;box-shadow:0 0 0 2px rgba(13,148,136,.15)}
+.ai-chips{display:flex;flex-wrap:wrap;gap:5px}
+.ai-chip{padding:5px 10px;border-radius:8px;border:1px solid #d5dbe3;background:#fff;font-size:11.5px;cursor:pointer;color:#334155;font-weight:600}
+.ai-chip:hover{border-color:#0D9488;color:#0D9488}
+.ai-chip.on{background:#14286E;border-color:#14286E;color:#fff}
+.ai-topics{display:flex;flex-wrap:wrap;gap:4px}
+.ai-topic{padding:3px 8px;border-radius:6px;background:#f1f5f9;font-size:11px;color:#475569;cursor:pointer;border:none}
+.ai-topic:hover{background:#dff6fa;color:#00596E}
+.ai-note{font-size:11px;color:#94a3b8;line-height:1.5}
+.ai-out{padding:14px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:#f8fafc}
+.ai-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ai-card{position:relative;border-radius:10px;overflow:hidden;background:#fff;border:2px solid transparent;cursor:pointer;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.ai-card img{width:100%;height:100%;object-fit:cover;display:block}
+.ai-card.on{border-color:#0D9488;box-shadow:0 0 0 3px rgba(13,148,136,.18)}
+.ai-card .ai-ld{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:12px;color:#64748b;background:#f1f5f9}
+.ai-card .ai-ld::before{content:'';width:22px;height:22px;border:3px solid #cbd5e1;border-top-color:#0D9488;border-radius:50%;animation:aispin .8s linear infinite}
+@keyframes aispin{to{transform:rotate(360deg)}}
+.ai-card .ai-err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font-size:11.5px;color:#9C0F1B;background:#fff1f2;line-height:1.5}
+.ai-empty{flex:1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12.5px;text-align:center;line-height:1.7;min-height:200px}
+.ai-foot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid #e8edf3;background:#fff;align-items:center}
+.ai-foot .sp{flex:1}
+@media (max-width:760px){.ai-body{grid-template-columns:1fr}.ai-form{border-right:none;border-bottom:1px solid #e8edf3}}
 .tos-box{
   background:#fff;border-radius:20px;max-width:560px;width:100%;
   box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden;
@@ -1058,9 +1090,8 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <div style="flex:1"></div>
         <button class="btn btn-teal btn-sm" onclick="document.getElementById('bgImgInp').click()"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 13h10"/></svg> 上傳底圖</button>
         <input type="file" id="bgImgInp" accept="image/*,.svg" style="display:none" onchange="addBgImg(this)">
-
-
       </div>
+      <button class="btn btn-purple btn-full btn-sm" onclick="aiGenOpen('bg')" style="margin-bottom:6px"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" style="flex-shrink:0"><path d="M7 1.5l1.15 3.1 3.1 1.15-3.1 1.15L7 10 5.85 6.9 2.75 5.75l3.1-1.15z"/><path d="M12 9.2l.62 1.68 1.68.62-1.68.62L12 14.4l-.62-1.68-1.68-.62 1.68-.62z"/></svg> AI 生成底圖</button>
       <button class="btn btn-ghost btn-full btn-sm" onclick="clearBgImg()">✕ 清除底圖</button>
       <div onclick="toggleGradBg()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin:9px 0 6px;user-select:none">
         <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--g500);letter-spacing:.5px"><span style="display:block;width:3px;height:11px;border-radius:2px;background:var(--g300)"></span>漸層背景</span>
@@ -1234,6 +1265,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 13h10"/></svg> 載入圖片
       </button>
       <input type="file" id="ie-file" accept="image/*,.heic,.heif" style="display:none" onchange="ieLoad(this)">
+      <button class="btn btn-purple btn-full btn-sm" onclick="aiGenOpen('ie')" style="margin-top:6px"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" style="flex-shrink:0"><path d="M7 1.5l1.15 3.1 3.1 1.15-3.1 1.15L7 10 5.85 6.9 2.75 5.75l3.1-1.15z"/><path d="M12 9.2l.62 1.68 1.68.62-1.68.62L12 14.4l-.62-1.68-1.68-.62 1.68-.62z"/></svg> AI 生成圖片</button>
       <div style="font-size:11px;color:var(--g500);margin-top:6px;line-height:1.5">支援 JPG / PNG / WebP；iPhone 的 HEIC 會先提示轉成 JPG 再進入編輯（本機轉檔）。</div>
     </div>
 
@@ -9984,6 +10016,77 @@ const Collage = {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+<!-- ══ AI 生圖 Modal ══ -->
+<div id="ai-overlay" style="display:none" onclick="if(event.target===this)aiGenClose()">
+  <div class="ai-box">
+    <div class="ai-head">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="#7C3AED"><path d="M7 1.5l1.15 3.1 3.1 1.15-3.1 1.15L7 10 5.85 6.9 2.75 5.75l3.1-1.15z"/><path d="M12 9.2l.62 1.68 1.68.62-1.68.62L12 14.4l-.62-1.68-1.68-.62 1.68-.62z"/></svg>
+      <h3 id="ai-title">AI 生成圖片</h3>
+      <span class="ai-quota" id="ai-quota">額度讀取中…</span>
+      <button class="btn btn-ghost btn-sm" onclick="aiGenClose()" title="關閉">✕</button>
+    </div>
+    <div class="ai-body">
+      <div class="ai-form">
+        <div>
+          <label>主題描述（中文即可）</label>
+          <textarea id="ai-prompt" placeholder="例：溫暖明亮的候診區，有綠色植物與陽光"></textarea>
+          <div class="ai-topics" style="margin-top:6px">
+            <button class="ai-topic" onclick="aiTopic('明亮的醫院大廳，有綠色植物與自然光')">醫院大廳</button>
+            <button class="ai-topic" onclick="aiTopic('溫馨的護理師與長者互動，柔和光線')">照護關懷</button>
+            <button class="ai-topic" onclick="aiTopic('健康蔬果與運動用品的靜物，清爽構圖')">健康生活</button>
+            <button class="ai-topic" onclick="aiTopic('聽診器、藥丸與醫療圖示的平面排列')">醫療元素</button>
+            <button class="ai-topic" onclick="aiTopic('中秋節主題，月亮、柚子與燈籠，溫暖色調')">節慶</button>
+            <button class="ai-topic" onclick="aiTopic('抽象柔和的藍綠漸層背景，微微光暈')">純背景</button>
+          </div>
+        </div>
+        <div>
+          <label>風格</label>
+          <div class="ai-chips" id="ai-styles">
+            <button class="ai-chip on" data-v="flat" onclick="aiPick(this)">扁平插畫</button>
+            <button class="ai-chip" data-v="photo" onclick="aiPick(this)">攝影感</button>
+            <button class="ai-chip" data-v="paper" onclick="aiPick(this)">水彩</button>
+            <button class="ai-chip" data-v="grad" onclick="aiPick(this)">漸層背景</button>
+            <button class="ai-chip" data-v="icon" onclick="aiPick(this)">單一圖示</button>
+            <button class="ai-chip" data-v="none" onclick="aiPick(this)">不指定</button>
+          </div>
+        </div>
+        <div>
+          <label>比例</label>
+          <div class="ai-chips" id="ai-ratios">
+            <button class="ai-chip on" data-v="1:1" onclick="aiPick(this)">1:1</button>
+            <button class="ai-chip" data-v="4:3" onclick="aiPick(this)">4:3</button>
+            <button class="ai-chip" data-v="3:4" onclick="aiPick(this)">3:4</button>
+            <button class="ai-chip" data-v="16:9" onclick="aiPick(this)">16:9</button>
+            <button class="ai-chip" data-v="9:16" onclick="aiPick(this)">9:16</button>
+            <button class="ai-chip" data-v="3:2" onclick="aiPick(this)">3:2</button>
+            <button class="ai-chip" data-v="2:3" onclick="aiPick(this)">2:3</button>
+          </div>
+        </div>
+        <div>
+          <label>張數</label>
+          <div class="ai-chips" id="ai-counts">
+            <button class="ai-chip" data-v="1" onclick="aiPick(this)">1</button>
+            <button class="ai-chip on" data-v="2" onclick="aiPick(this)">2</button>
+            <button class="ai-chip" data-v="4" onclick="aiPick(this)">4</button>
+          </div>
+        </div>
+        <button class="btn btn-purple btn-full" id="ai-go" onclick="aiGenerate()"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" style="flex-shrink:0"><path d="M7 1.5l1.15 3.1 3.1 1.15-3.1 1.15L7 10 5.85 6.9 2.75 5.75l3.1-1.15z"/><path d="M12 9.2l.62 1.68 1.68.62-1.68.62L12 14.4l-.62-1.68-1.68-.62 1.68-.62z"/></svg> 開始生成</button>
+        <div class="ai-note">圖片由 FLUX.1 開源模型生成，可自由使用。不要要求圖中出現文字（會壞掉，請用海報編輯上字）；不可用於生成真實人物、真實醫療事實圖，僅作氛圍、插畫、背景示意。</div>
+      </div>
+      <div class="ai-out" id="ai-out">
+        <div class="ai-empty">輸入主題、選風格與比例，按「開始生成」<br>生成後點選圖片，再按下方「使用」</div>
+      </div>
+    </div>
+    <div class="ai-foot">
+      <span style="font-size:11px;color:#94a3b8" id="ai-hint">每張約 3–6 秒</span>
+      <span class="sp"></span>
+      <button class="btn btn-ghost btn-sm" onclick="aiGenClose()">取消</button>
+      <button class="btn btn-ghost btn-sm" id="ai-dl" onclick="aiDownload()" disabled>下載選取</button>
+      <button class="btn btn-green btn-full btn-sm" id="ai-use" onclick="aiUse()" disabled style="min-width:120px">使用選取圖片</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 使用須知 Modal ══ -->
 <div id="tos-overlay" style="display:none">
   <div class="tos-box">
@@ -10183,6 +10286,102 @@ const Collage = {
 <script>
 // ── 使用須知 ──
 const TOS_KEY = 'kt_tos_accepted';
+// ══════════ AI 生圖（Cloudflare Workers AI / FLUX.1 schnell，經 Worker 代理與限速）══════════
+const AI_GEN_API='https://ktgh-poster-gen.ktghvideo.workers.dev';
+const AIG={mode:'ie', results:[], sel:-1, busy:false};
+function aiPick(btn){ btn.parentElement.querySelectorAll('.ai-chip').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+function aiVal(id){ const b=document.querySelector('#'+id+' .ai-chip.on'); return b?b.dataset.v:''; }
+function aiTopic(t){ const ta=document.getElementById('ai-prompt'); ta.value=t; ta.focus(); }
+function aiGenOpen(mode){
+  AIG.mode=mode; AIG.results=[]; AIG.sel=-1;
+  document.getElementById('ai-title').textContent = mode==='bg' ? 'AI 生成海報底圖' : 'AI 生成圖片';
+  document.getElementById('ai-use').textContent = mode==='bg' ? '套用為底圖' : '載入編輯器';
+  document.getElementById('ai-out').innerHTML='<div class="ai-empty">輸入主題、選風格與比例，按「開始生成」<br>生成後點選圖片，再按下方「使用」</div>';
+  document.getElementById('ai-use').disabled=true; document.getElementById('ai-dl').disabled=true;
+  // 海報底圖：比例預設跟著目前畫布；漸層背景風格較常用
+  if(mode==='bg' && typeof S!=='undefined' && S.W && S.H){
+    const r=S.W/S.H, opts={'1:1':1,'4:3':4/3,'3:4':3/4,'16:9':16/9,'9:16':9/16,'3:2':1.5,'2:3':2/3};
+    let best='1:1',bd=9; for(const k in opts){ const d=Math.abs(opts[k]-r); if(d<bd){bd=d;best=k;} }
+    const b=document.querySelector('#ai-ratios .ai-chip[data-v="'+best+'"]'); if(b) aiPick(b);
+  }
+  document.getElementById('ai-overlay').style.display='flex';
+  setTimeout(()=>document.getElementById('ai-prompt').focus(),50);
+  aiQuota();
+}
+function aiGenClose(){ if(AIG.busy && !confirm('生成中，確定關閉？')) return; document.getElementById('ai-overlay').style.display='none'; }
+async function aiQuota(){
+  const el=document.getElementById('ai-quota');
+  try{ const r=await fetch(AI_GEN_API+'/api/quota'); const q=await r.json();
+    if(q.ok) el.textContent=`今日可用 ${Math.max(0,q.perDay-q.usedDay)} / ${q.perDay} 張`; else el.textContent='';
+  }catch(e){ el.textContent='無法連線生圖服務'; }
+}
+async function aiGenerate(){
+  if(AIG.busy) return;
+  const prompt=document.getElementById('ai-prompt').value.trim();
+  if(prompt.length<2){ snack('請先輸入主題描述'); document.getElementById('ai-prompt').focus(); return; }
+  if(/文字|字樣|標題|寫著|寫上|文案|slogan|text/i.test(prompt)) snack('提醒：生圖不擅長文字，圖中文字會壞掉，請在海報編輯上字',4000);
+  const style=aiVal('ai-styles'), ratio=aiVal('ai-ratios'), n=+aiVal('ai-counts')||2;
+  AIG.busy=true; AIG.results=[]; AIG.sel=-1;
+  const go=document.getElementById('ai-go'); go.disabled=true; go.textContent='生成中…';
+  document.getElementById('ai-use').disabled=true; document.getElementById('ai-dl').disabled=true;
+  const out=document.getElementById('ai-out'); out.innerHTML='<div class="ai-grid" id="ai-grid"></div>';
+  const grid=document.getElementById('ai-grid');
+  const cards=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='ai-card'; c.innerHTML='<div class="ai-ld">生成中</div>'; grid.appendChild(c); cards.push(c); }
+  // 一張一張送（避免撞每分鐘限制），單張失敗不影響其他
+  for(let i=0;i<n;i++){
+    try{
+      const r=await fetch(AI_GEN_API+'/api/gen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style,ratio})});
+      const d=await r.json();
+      if(!d.ok) throw new Error(d.error||'生成失敗');
+      const cropped=await aiCropToRatio(d.image,d.w,d.h);
+      AIG.results[i]={src:cropped,w:d.w,h:d.h};
+      cards[i].innerHTML=`<img src="${cropped}" alt="">`;
+      cards[i].onclick=()=>aiSelect(i);
+      if(AIG.sel<0) aiSelect(i);
+    }catch(e){
+      cards[i].innerHTML=`<div class="ai-err">${String(e.message||e).replace(/</g,'&lt;')}</div>`;
+      if(/額度|頻繁|429/.test(String(e.message))) break;
+    }
+  }
+  AIG.busy=false; go.disabled=false; go.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor" stroke="none" style="flex-shrink:0"><path d="M7 1.5l1.15 3.1 3.1 1.15-3.1 1.15L7 10 5.85 6.9 2.75 5.75l3.1-1.15z"/><path d="M12 9.2l.62 1.68 1.68.62-1.68.62L12 14.4l-.62-1.68-1.68-.62 1.68-.62z"/></svg> 再生成一批';
+  aiQuota();
+}
+// 模型固定出 1024²，依所選比例置中裁切
+function aiCropToRatio(dataUrl,w,h){
+  return new Promise(res=>{
+    const img=new Image(); img.onload=()=>{
+      if(w===h || !w || !h){ res(dataUrl); return; }
+      const sw=img.naturalWidth, sh=img.naturalHeight, tr=w/h;
+      let cw=sw, ch=Math.round(sw/tr); if(ch>sh){ ch=sh; cw=Math.round(sh*tr); }
+      const c=document.createElement('canvas'); c.width=cw; c.height=ch;
+      c.getContext('2d').drawImage(img,(sw-cw)/2,(sh-ch)/2,cw,ch,0,0,cw,ch);
+      res(c.toDataURL('image/jpeg',.93));
+    }; img.onerror=()=>res(dataUrl); img.src=dataUrl;
+  });
+}
+function aiSelect(i){
+  AIG.sel=i;
+  document.querySelectorAll('#ai-grid .ai-card').forEach((c,k)=>c.classList.toggle('on',k===i));
+  document.getElementById('ai-use').disabled=false; document.getElementById('ai-dl').disabled=false;
+}
+function aiDownload(){
+  const r=AIG.results[AIG.sel]; if(!r) return;
+  const a=document.createElement('a'); a.href=r.src; a.download=`ai_${Date.now()}.jpg`; a.click();
+}
+function aiUse(){
+  const r=AIG.results[AIG.sel]; if(!r){ snack('請先點選一張圖片'); return; }
+  const img=new Image();
+  img.onload=()=>{
+    if(AIG.mode==='bg'){
+      img._srcDataUrl=r.src; pushHistory(); S.bgImgEl=img; S.bgScale=1; S.bgOffsetX=0; S.bgOffsetY=0; showBgImgControls(); renderBg(); snack('AI 底圖已套用');
+    } else {
+      fetch(r.src).then(x=>x.blob()).then(b=>{ ieLoadFile(new File([b],'ai_'+Date.now()+'.jpg',{type:'image/jpeg'})); });
+    }
+    document.getElementById('ai-overlay').style.display='none';
+  };
+  img.src=r.src;
+}
+
 function showTos(){
   // 每次開啟重置到「使用須知」頁籤
   document.querySelectorAll('.tos-panel').forEach(p=>p.style.display='none');

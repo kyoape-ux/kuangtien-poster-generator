@@ -1,0 +1,21 @@
+name = "ktgh-poster-gen"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+account_id = "b93c8b9df0a6817ac9fbab7e920eb6f2"
+workers_dev = true
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "RL"
+id = "382a642d6f854b87b485e5ab9a8ece7e"
+
+[vars]
+# 允許呼叫的來源（逗號分隔）。本機預覽 localhost 也放行。
+ALLOWED_ORIGINS = "https://kyoape-ux.github.io,http://localhost:3464,http://127.0.0.1:3464"
+# 每 IP 限制：每分鐘 / 每日
+LIMIT_PER_MIN = "4"
+LIMIT_PER_DAY = "40"
+# 全站每日上限（免費額度約 170 張/天，留餘裕）
+LIMIT_GLOBAL_DAY = "150"
