@@ -10073,15 +10073,14 @@ const Collage = {
           </div>
         </div>
         <button class="btn btn-purple btn-full" id="ai-go" onclick="aiGenerate()"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" style="flex-shrink:0"><path d="M7 1.5l1.15 3.1 3.1 1.15-3.1 1.15L7 10 5.85 6.9 2.75 5.75l3.1-1.15z"/><path d="M12 9.2l.62 1.68 1.68.62-1.68.62L12 14.4l-.62-1.68-1.68-.62 1.68-.62z"/></svg> 開始生成</button>
-        <div class="ai-note">圖片由 FLUX.1 開源模型生成，可自由使用。不要要求圖中出現文字（會壞掉，請用海報編輯上字）；不可用於生成真實人物、真實醫療事實圖，僅作氛圍、插畫、背景示意。</div>
+        <div class="ai-note">圖片由 FLUX.2 模型生成（Cloudflare 託管），可用於院內文宣。不要要求圖中出現文字（會壞掉，請用海報編輯上字）；不可用於生成真實人物、真實醫療事實圖，僅作氛圍、插畫、背景示意。</div>
       </div>
       <div class="ai-out" id="ai-out">
         <div class="ai-empty">輸入主題、選風格與比例，按「開始生成」<br>生成後點選圖片，再按下方「使用」</div>
       </div>
     </div>
     <div class="ai-foot">
-      <span style="font-size:11px;color:#94a3b8" id="ai-hint">每張約 3–6 秒</span>
-      <span class="sp"></span>
+      <span style="font-size:11px;color:#94a3b8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="ai-hint">每張約 10–20 秒（先由 AI 把中文改寫成英文提示詞，再生圖）</span>
       <button class="btn btn-ghost btn-sm" onclick="aiGenClose()">取消</button>
       <button class="btn btn-ghost btn-sm" id="ai-dl" onclick="aiDownload()" disabled>下載選取</button>
       <button class="btn btn-green btn-full btn-sm" id="ai-use" onclick="aiUse()" disabled style="min-width:120px">使用選取圖片</button>
@@ -10335,8 +10334,10 @@ async function aiGenerate(){
       const r=await fetch(AI_GEN_API+'/api/gen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,style,ratio})});
       const d=await r.json();
       if(!d.ok) throw new Error(d.error||'生成失敗');
-      const cropped=await aiCropToRatio(d.image,d.w,d.h);
-      AIG.results[i]={src:cropped,w:d.w,h:d.h};
+      // klein 原生輸出所選尺寸；備援 schnell 固定 1024² 才需依 cropTo 裁切
+      const cropped = d.cropTo ? await aiCropToRatio(d.image,d.cropTo[0],d.cropTo[1]) : d.image;
+      AIG.results[i]={src:cropped,w:d.cropTo?d.cropTo[0]:d.w,h:d.cropTo?d.cropTo[1]:d.h,prompt_en:d.prompt_en,model:d.model};
+      if(i===0 && d.prompt_en){ const h=document.getElementById('ai-hint'); h.textContent='AI 英文提示詞：'+d.prompt_en; h.title=d.prompt_en; }
       cards[i].innerHTML=`<img src="${cropped}" alt="">`;
       cards[i].onclick=()=>aiSelect(i);
       if(AIG.sel<0) aiSelect(i);
