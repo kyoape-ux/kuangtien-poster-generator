@@ -826,6 +826,8 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
   display:flex;align-items:center;justify-content:center;padding:16px;
   backdrop-filter:blur(4px);
 }
+#pw.bg-editing{cursor:move;outline:3px dashed #F59E0B;outline-offset:-3px}
+#pw.bg-editing .obj{pointer-events:none}
 /* ── AI 生圖 Modal ── */
 #ai-overlay{position:fixed;inset:0;background:rgba(10,15,40,.62);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
 .ai-box{background:#fff;border-radius:16px;width:min(860px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
@@ -1117,9 +1119,12 @@ body.tool-pan #cscroll:active{cursor:grabbing}
           <input class="inp" type="number" id="bg-offset-y" value="0" style="width:52px" oninput="S.bgOffsetY=+this.value;document.getElementById('bg-offset-y-sl').value=this.value;renderBg()">
         </div>
         <div class="row" style="margin-bottom:6px">
-          <button class="btn btn-indigo btn-full btn-sm" onclick="bgFitCanvas()">適應畫布</button>
+          <button class="btn btn-indigo btn-full btn-sm" onclick="bgCoverCanvas()">填滿畫布</button>
+          <button class="btn btn-ghost btn-full btn-sm" onclick="bgFitCanvas()">完整顯示</button>
           <button class="btn btn-ghost btn-full btn-sm" id="bg-lock-btn" onclick="toggleBgLock()">鎖定底圖</button>
         </div>
+        <button class="btn btn-amber btn-full btn-sm" id="bg-edit-btn" onclick="toggleBgEdit()">移動／縮放底圖（在畫布上拖曳、滾輪縮放）</button>
+        <div style="font-size:11px;color:var(--g500);margin-top:5px;line-height:1.5">開啟後：在畫布拖曳移動底圖、滾輪放大縮小；Esc 或再按一次結束。</div>
       </div>
     </div>
 
@@ -2760,6 +2765,8 @@ function showBgImgControls(){
     if(scSlider){ scSlider.value=Math.round(S.bgScale*100); scSlider.disabled=S.bgLocked; }
     const lbl = document.getElementById('bg-scale-lbl');
     if(lbl) lbl.textContent=Math.round(S.bgScale*100)+'%';
+    const lim = Math.max(1000, Math.round(Math.max(S.W,S.H)*1.5));
+    ['bg-offset-x-sl','bg-offset-y-sl'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.min=-lim; el.max=lim; } });
     const ox = document.getElementById('bg-offset-x');
     if(ox){ ox.value=S.bgOffsetX; ox.disabled=S.bgLocked; }
     const oxsl = document.getElementById('bg-offset-x-sl');
@@ -2773,12 +2780,31 @@ function showBgImgControls(){
   }
 }
 
+// 填滿畫布（cover）：等比放大到蓋滿、置中
+function bgCoverCanvas(render=true){
+  if(!S.bgImgEl||S.bgLocked) return;
+  const nw=S.bgImgEl.naturalWidth, nh=S.bgImgEl.naturalHeight;
+  S.bgScale = Math.max(S.W/nw, S.H/nh);
+  S.bgOffsetX = Math.round((S.W - nw*S.bgScale)/2);
+  S.bgOffsetY = Math.round((S.H - nh*S.bgScale)/2);
+  if(render){ showBgImgControls(); renderBg(); }
+}
+// 直接在畫布上移動／縮放底圖
+function toggleBgEdit(force){
+  S.bgEdit = (force===undefined) ? !S.bgEdit : !!force;
+  if(S.bgEdit && (!S.bgImgEl || S.bgLocked)){ S.bgEdit=false; snack(S.bgLocked?'底圖已鎖定，請先解鎖':'請先套用底圖'); }
+  const b=document.getElementById('bg-edit-btn');
+  if(b){ b.className='btn btn-full btn-sm '+(S.bgEdit?'btn-green':'btn-amber'); b.textContent=S.bgEdit?'✓ 完成底圖調整':'移動／縮放底圖（在畫布上拖曳、滾輪縮放）'; }
+  const pw=document.getElementById('pw'); if(pw){ pw.classList.toggle('bg-editing',S.bgEdit); }
+  if(S.bgEdit){ if(typeof selObj==='function') try{ selObj(null); }catch(e){} snack('拖曳移動底圖、滾輪縮放，Esc 結束'); }
+}
 function bgFitCanvas(){
   if(!S.bgImgEl||S.bgLocked) return;
   const scaleW = S.W / S.bgImgEl.naturalWidth;
   const scaleH = S.H / S.bgImgEl.naturalHeight;
   S.bgScale = Math.min(scaleW, scaleH);
-  S.bgOffsetX = 0; S.bgOffsetY = 0;
+  S.bgOffsetX = Math.round((S.W - S.bgImgEl.naturalWidth*S.bgScale)/2);
+  S.bgOffsetY = Math.round((S.H - S.bgImgEl.naturalHeight*S.bgScale)/2);
   showBgImgControls();
   renderBg();
 }
@@ -2797,7 +2823,7 @@ function addBgImg(inp){
   reader.onload = e => {
     const dataUrl = e.target.result;
     const img = new Image();
-    img.onload = ()=>{ img._srcDataUrl = dataUrl; pushHistory(); S.bgImgEl = img; S.bgScale=1; S.bgOffsetX=0; S.bgOffsetY=0; showBgImgControls(); renderBg(); snack('底圖已載入'); };
+    img.onload = ()=>{ img._srcDataUrl = dataUrl; pushHistory(); S.bgImgEl = img; S.bgLocked=false; bgCoverCanvas(false); showBgImgControls(); renderBg(); snack('底圖已載入，可用「移動／縮放底圖」直接在畫布上調整'); };
     img.src = dataUrl;
   };
   reader.readAsDataURL(file);
@@ -2844,6 +2870,7 @@ function clearCanvas(){
 function clearBgImg(){
   S.bgImgEl = null;
   S.bgScale = 1; S.bgOffsetX = 0; S.bgOffsetY = 0; S.bgLocked = false;
+  if(S.bgEdit) toggleBgEdit(false);
   showBgImgControls();
   renderBg();
   snack('底圖已清除');
@@ -9430,6 +9457,17 @@ function initCanvasInteraction(){
 
   // Ctrl/Cmd + scroll → zoom centred on cursor
   cs.addEventListener('wheel', e => {
+    // 底圖調整模式：滾輪以游標為中心縮放底圖
+    if(S.bgEdit && S.bgImgEl && !S.bgLocked && !e.ctrlKey && !e.metaKey){
+      e.preventDefault();
+      const pr=document.getElementById('pw').getBoundingClientRect();
+      const cx=(e.clientX-pr.left)/S.zoom, cy=(e.clientY-pr.top)/S.zoom;
+      const f=e.deltaY<0?1.06:1/1.06;
+      const ns=clamp(S.bgScale*f,0.02,20);
+      S.bgOffsetX=Math.round(cx-(cx-S.bgOffsetX)*(ns/S.bgScale));
+      S.bgOffsetY=Math.round(cy-(cy-S.bgOffsetY)*(ns/S.bgScale));
+      S.bgScale=ns; showBgImgControls(); renderBg(); return;
+    }
     if(!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
     const rect = cs.getBoundingClientRect();
@@ -9472,6 +9510,24 @@ function initCanvasInteraction(){
   const pwEl=document.getElementById('pw');
   const selRect=document.getElementById('sel-rect');
   let rbanding=false, rbSX=0, rbSY=0;
+
+  // 底圖調整模式：在畫布上拖曳移動底圖
+  let bgDrag=null;
+  cs.addEventListener('mousedown', e=>{
+    if(e.button!==0 || !S.bgEdit || !S.bgImgEl || S.bgLocked) return;
+    if(spaceDown||S.toolMode==='pan') return;
+    pushHistory();
+    bgDrag={x:e.clientX,y:e.clientY,ox:S.bgOffsetX,oy:S.bgOffsetY};
+    e.preventDefault(); e.stopPropagation();
+  }, true);
+  document.addEventListener('mousemove', e=>{
+    if(!bgDrag) return;
+    S.bgOffsetX=Math.round(bgDrag.ox+(e.clientX-bgDrag.x)/S.zoom);
+    S.bgOffsetY=Math.round(bgDrag.oy+(e.clientY-bgDrag.y)/S.zoom);
+    renderBg();
+  });
+  document.addEventListener('mouseup', ()=>{ if(bgDrag){ bgDrag=null; showBgImgControls(); } });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && S.bgEdit) toggleBgEdit(false); });
 
   cs.addEventListener('mousedown', e=>{
     if(e.button!==0) return;
@@ -10376,7 +10432,7 @@ function aiUse(){
   const img=new Image();
   img.onload=()=>{
     if(AIG.mode==='bg'){
-      img._srcDataUrl=r.src; pushHistory(); S.bgImgEl=img; S.bgScale=1; S.bgOffsetX=0; S.bgOffsetY=0; showBgImgControls(); renderBg(); snack('AI 底圖已套用');
+      img._srcDataUrl=r.src; pushHistory(); S.bgImgEl=img; S.bgLocked=false; bgCoverCanvas(false); showBgImgControls(); renderBg(); snack('AI 底圖已套用，可用「移動／縮放底圖」直接在畫布上調整');
     } else {
       fetch(r.src).then(x=>x.blob()).then(b=>{ ieLoadFile(new File([b],'ai_'+Date.now()+'.jpg',{type:'image/jpeg'})); });
     }
