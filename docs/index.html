@@ -1940,8 +1940,8 @@ body.tool-pan #cscroll:active{cursor:grabbing}
     <div id="qr-center" style="flex:1;display:flex;align-items:center;justify-content:center;background:#e8eaed;overflow:auto;padding:24px">
       <div id="qr-preview-box" style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,.14);display:flex;flex-direction:column;align-items:center;gap:14px">
         <div style="font-size:12px;font-weight:600;color:var(--g500);letter-spacing:.5px">QR 碼預覽</div>
-        <div id="qr-preview-wrap" style="position:relative;min-width:300px;min-height:300px;display:flex;align-items:center;justify-content:center;background-image:linear-gradient(45deg,#ddd 25%,transparent 25%),linear-gradient(-45deg,#ddd 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ddd 75%),linear-gradient(-45deg,transparent 75%,#ddd 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;border-radius:10px">
-          <img id="qr-preview-img" src="" alt="" style="border-radius:8px;display:none;max-width:500px;max-height:500px;position:relative;z-index:1">
+        <div id="qr-preview-wrap" style="position:relative;min-width:300px;min-height:300px;display:flex;align-items:center;justify-content:center;background:#d9dfe7;border-radius:10px;padding:18px">
+          <img id="qr-preview-img" src="" alt="" title="虛線＝圖檔邊界；虛線到黑色方塊之間的白邊就是「邊框粗細」" style="display:none;max-width:500px;max-height:500px;position:relative;z-index:1;outline:1.5px dashed #64748b;outline-offset:2px">
           <div id="qr-placeholder" style="width:300px;height:300px;border:2px dashed var(--g200);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--g400);font-size:13px;gap:10px">
             <svg width="72" height="72" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 16 16" style="color:#CBD5E1"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="2.5" y="2.5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="10.5" y="2.5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="2.5" y="10.5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="10.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="13.5" y="10.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="10.5" y="13.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="9" y="9" width="2" height="2" fill="currentColor" stroke="none"/></svg>
             <div>點擊「產生 QR 碼預覽」</div>
@@ -5357,19 +5357,45 @@ async function qrDownload(fmt){
     const a=document.createElement('a'); a.href=_qrComposite; a.download='qrcode.png'; a.click();
     snack('QR 碼 PNG 已下載'); return;
   }
-  // SVG 直接向 API 取（不含 LOGO）
+  // SVG：API 的 svg 不含邊框靜區也不含 LOGO → 取其模組路徑後自行組裝（加邊框、嵌入 LOGO）
   const url=_qrBuildUrl('svg');
   if(!url){ snack('請先輸入內容'); return; }
   snack('下載中…');
   try{
     const resp=await fetch(url);
     if(!resp.ok) throw new Error();
-    const blob=await resp.blob();
+    const src=await resp.text();
+    const doc=new DOMParser().parseFromString(src,'image/svg+xml');
+    const root=doc.documentElement;
+    const qw=parseFloat(root.getAttribute('width'))||parseFloat((root.getAttribute('viewBox')||'').split(/\s+/)[2])||400;
+    const g=doc.querySelector('g#elements')||doc.querySelector('g')||doc.querySelector('path');
+    if(!g) throw new Error('no path');
+    const size   = parseInt(document.getElementById('qr-size').value)||400;
+    const fg     = document.getElementById('qr-color').value||'#000000';
+    const bg     = document.getElementById('qr-bg').value||'#ffffff';
+    const margin = parseInt(document.getElementById('qr-margin').value)||0;
+    // 以輸出尺寸為座標：模組區縮放到 (size - 2*margin)，四周留 margin px（與 PNG 一致）
+    const inner=size-margin*2, k=inner/qw;
+    let inr=new XMLSerializer().serializeToString(g).replace(/fill:rgb\(0, 0, 0\)/g,'fill:'+fg);
+    let logoSvg='';
+    if(_qrLogoImg){
+      const ratio=parseInt(document.getElementById('qr-logo-size').value||'25')/100;
+      const lw=Math.round(size*ratio), lh=Math.round(lw*_qrLogoImg.naturalHeight/_qrLogoImg.naturalWidth);
+      const lx=Math.round((size-lw)/2), ly=Math.round((size-lh)/2), pad=Math.round(lw*0.14), r=Math.round(pad*0.8);
+      // LOGO 以 PNG data URL 嵌入（最長邊 1024，確保放大列印仍清晰）
+      const mx=1024, sc=Math.min(1, mx/Math.max(_qrLogoImg.naturalWidth,_qrLogoImg.naturalHeight));
+      const c=document.createElement('canvas'); c.width=Math.round(_qrLogoImg.naturalWidth*sc); c.height=Math.round(_qrLogoImg.naturalHeight*sc);
+      c.getContext('2d').drawImage(_qrLogoImg,0,0,c.width,c.height);
+      const href=c.toDataURL('image/png');
+      logoSvg=`\n  <rect x="${lx-pad}" y="${ly-pad}" width="${lw+pad*2}" height="${lh+pad*2}" rx="${r}" ry="${r}" fill="${bg}"/>\n  <image x="${lx}" y="${ly}" width="${lw}" height="${lh}" preserveAspectRatio="xMidYMid meet" href="${href}" xlink:href="${href}"/>`;
+    }
+    const out=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">\n  <title>QR Code</title>\n  <rect x="0" y="0" width="${size}" height="${size}" fill="${bg}"/>\n  <g transform="translate(${margin} ${margin}) scale(${k})">${inr}</g>${logoSvg}\n</svg>`;
+    const blob=new Blob([out],{type:'image/svg+xml'});
     const bu=URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=bu; a.download='qrcode.svg'; a.click();
     setTimeout(()=>URL.revokeObjectURL(bu),2000);
-    snack('QR 碼 SVG 已下載');
-  } catch(e){ snack('下載失敗，請確認網路連線'); }
+    snack('QR 碼 SVG 已下載'+(_qrLogoImg?'（含 LOGO）':''));
+  } catch(e){ console.warn(e); snack('下載失敗，請確認網路連線'); }
 }
 
 
