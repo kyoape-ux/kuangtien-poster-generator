@@ -1528,12 +1528,12 @@ body.tool-pan #cscroll:active{cursor:grabbing}
           <span class="inp-label">解析度</span>
           <input class="inp" type="number" id="ie-dpi" value="150" min="36" max="1200" step="1" style="width:64px" oninput="ieDpiHint()">
           <span class="inp-unit">dpi</span>
-          <div style="display:flex;gap:3px;margin-left:auto">
-            <button class="btn btn-ghost btn-sm" style="padding:3px 7px" onclick="ieSetDpi('src')" title="沿用原圖解析度">原圖</button>
-            <button class="btn btn-ghost btn-sm" style="padding:3px 7px" onclick="ieSetDpi(72)">72</button>
-            <button class="btn btn-ghost btn-sm" style="padding:3px 7px" onclick="ieSetDpi(150)">150</button>
-            <button class="btn btn-ghost btn-sm" style="padding:3px 7px" onclick="ieSetDpi(300)">300</button>
-          </div>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:6px;padding-left:50px">
+          <button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 0" onclick="ieSetDpi('src')" title="沿用原圖解析度">原圖</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 0" onclick="ieSetDpi(72)">72</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 0" onclick="ieSetDpi(150)">150</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 0" onclick="ieSetDpi(300)">300</button>
         </div>
         <div class="inp-row" style="margin-bottom:6px">
           <span class="inp-label">JPG 品質</span>
