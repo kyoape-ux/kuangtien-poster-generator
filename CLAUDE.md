@@ -74,3 +74,4 @@ poster-generator-deploy/
 - `dlPoster()` PNG 同樣用 `_exportScaleFor()` 高解析度並以 `pngSetDpi` 寫入 dpi、檔名用規格檔名；`downloadCanvasDpi()` 共用。
 - `applyTemplate` 已支援 `shape` 物件。
 - 同仁用可列印指南：`docs/conf-poster-guide.html`（桌面「學會壁報AI製作指南」資料夾有副本，改了請同步）。
+- AI 設計（頁籤 3）：`confAiDesign()` 打既有 `/api/gen` 生主視覺 → `confBuildTemplate({...sp,onBg:true})` 產生半透明卡片版型 → `bgCoverCanvas` 鋪底圖；`confBananaOpen()` 開 `#banana-overlay`（z-index 10001）：`confBananaPrompt()` 自動寫中文提示詞、`confRenderThumb()` 拿目前畫布當草稿、`confBananaRun()` 打 Worker `/api/design`（需 GEMINI_API_KEY 秘密，模型 vars GEMINI_IMAGE_MODEL 預設 gemini-3.1-flash-image，每人 8／全院 60 張/天）、`confImportPosterDataUrl()` 把整張圖當底圖並清空物件。查證 2026-10：Gemini 影像 API 無免費額度、OpenAI 影像 API 無免費額度；免費可程式化只有 Workers AI。
