@@ -10401,7 +10401,7 @@ const Collage = {
       <div class="conf-step" style="background:#fff">
         <h4><i>0</i>設定這次學會的規格（依學會公告填，不確定的欄位留空）</h4>
         <div class="conf-form">
-          <label class="c4">常用規格（選了會自動填入，之後可再改）
+          <label class="c4">常用尺寸（只帶入寬高與 DPI，之後可再改；容量、字級、檔名請照學會公告填）
             <select id="conf-preset" onchange="confPreset()"></select>
           </label>
           <label class="c2">頁面尺寸（公分，寬 × 高）
@@ -10417,13 +10417,13 @@ const Collage = {
             <input type="number" id="conf-pt" step="1" min="0" placeholder="例：12">
           </label>
           <label>類別／編號標籤（可空）
-            <input type="text" id="conf-tag" placeholder="例：CKD、P-012">
+            <input type="text" id="conf-tag" placeholder="例：P-012、口頭／壁報">
           </label>
           <label class="c2">指定檔名（可空）
-            <input type="text" id="conf-name" placeholder="例：CKD_光田綜合醫院.pdf">
+            <input type="text" id="conf-name" placeholder="例：P012_光田綜合醫院.pdf">
           </label>
           <label class="c2">活動／學會名稱（印在頁尾，可空）
-            <input type="text" id="conf-event" placeholder="例：115 年度腎臟病健康促進機構壁報成果展示">
+            <input type="text" id="conf-event" placeholder="例：○○學會 115 年度年會壁報展">
           </label>
           <label class="c2">單位簡稱（作者列與頁尾）
             <input type="text" id="conf-unit" placeholder="例：光田綜合醫院 腎臟內科" value="光田綜合醫院 ○○科">
@@ -10786,9 +10786,8 @@ function aiUse(){
 // ═══ 學會壁報助手 ═══
 const CONF_LS='ktgh_conf_spec_v1';
 const CONF_PRESETS=[
-  {id:'ckd115',label:'115 腎臟病健康促進壁報：直式 9:16 電子海報（14.29×25.4 cm、PDF ≤5 MB、≥12 pt）',mm:[142.9,254],dpi:300,mb:5,pt:12,name:'CKD_光田綜合醫院.pdf',tag:'CKD',event:'115 年度腎臟病健康促進機構壁報成果展示'},
-  {id:'e916',label:'電子海報 直式 9:16（螢幕播放，14.29×25.4 cm）',mm:[142.9,254],dpi:300},
-  {id:'e169',label:'電子海報 橫式 16:9（螢幕播放，25.4×14.29 cm）',mm:[254,142.9],dpi:300},
+  {id:'e916',label:'直式 9:16（14.29×25.4 cm，電子海報）',mm:[142.9,254],dpi:300},
+  {id:'e169',label:'橫式 16:9（25.4×14.29 cm，電子海報）',mm:[254,142.9],dpi:300},
   {id:'a4v',label:'A4 直式 21×29.7 cm',mm:[210,297],dpi:300},
   {id:'a3v',label:'A3 直式 29.7×42 cm',mm:[297,420],dpi:300},
   {id:'a2v',label:'A2 直式 42×59.4 cm',mm:[420,594],dpi:200},
@@ -10815,18 +10814,20 @@ function confOpen(){
   const sel=document.getElementById('conf-preset');
   if(!sel.options.length) CONF_PRESETS.forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.label; sel.appendChild(o); });
   let saved=null; try{ saved=JSON.parse(localStorage.getItem(CONF_LS)||'null'); }catch(e){}
-  if(saved) confFillForm(saved); else { sel.value='ckd115'; confPreset(); }
+  if(saved) confFillForm(saved); else { sel.value='e916'; confPreset(); }
   document.getElementById('conf-overlay').style.display='flex';
 }
 function confClose(){ document.getElementById('conf-overlay').style.display='none'; }
 function confPreset(){
   const p=CONF_PRESETS.find(x=>x.id===document.getElementById('conf-preset').value); if(!p||!p.mm) { confPxHint(); return; }
-  confFillForm({presetId:p.id, mm:p.mm, dpi:p.dpi||300, maxMB:p.mb||'', minPt:p.pt||'', tag:p.tag||'', name:p.name||'', event:p.event||'', unit:document.getElementById('conf-unit').value});
+  const g=id=>document.getElementById(id);
+  g('conf-w').value=parseFloat((p.mm[0]/10).toFixed(2)); g('conf-h').value=parseFloat((p.mm[1]/10).toFixed(2)); g('conf-dpi').value=String(p.dpi||300);
+  confPxHint();
 }
 function confFillForm(sp){
   const g=id=>document.getElementById(id);
   g('conf-preset').value=sp.presetId||'custom';
-  g('conf-w').value=sp.mm?(sp.mm[0]/10):''; g('conf-h').value=sp.mm?(sp.mm[1]/10):'';
+  g('conf-w').value=sp.mm?parseFloat((sp.mm[0]/10).toFixed(2)):''; g('conf-h').value=sp.mm?parseFloat((sp.mm[1]/10).toFixed(2)):'';
   g('conf-dpi').value=String(sp.dpi??300); g('conf-mb').value=sp.maxMB||''; g('conf-pt').value=sp.minPt||'';
   g('conf-tag').value=sp.tag||''; g('conf-name').value=sp.name||''; g('conf-event').value=sp.event||''; if(sp.unit) g('conf-unit').value=sp.unit;
   confPxHint();

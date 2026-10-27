@@ -64,7 +64,7 @@ poster-generator-deploy/
 
 ## 學會壁報助手（2026-10-27 新增，同日改為規格可自訂）
 
-- 首頁卡片／下載列按鈕 `confOpen()` 開啟 `#conf-overlay`。步驟 0 是規格表單：常用規格 `CONF_PRESETS`（115 CKD 9:16、16:9、A4–A0、展板、自訂）、頁面公分、直↔橫、匯出 DPI、容量上限、最小字級、標籤、檔名、活動名、單位；存 localStorage `ktgh_conf_spec_v1`。
+- 首頁卡片／下載列按鈕 `confOpen()` 開啟 `#conf-overlay`。步驟 0 是規格表單：常用尺寸 `CONF_PRESETS`（只有尺寸：9:16、16:9、A4–A0、展板、自訂；**不可放任何學會名稱或預填容量／字級／檔名**，使用者要求）、頁面公分、直↔橫、匯出 DPI、容量上限、最小字級、標籤、檔名、活動名、單位；存 localStorage `ktgh_conf_spec_v1`。
 - 版型不在 templates.json，由 `confBuildTemplate(spec)` 動態產生（直式單欄／橫式雙欄，字級依頁寬 0.55 次方換算且 ≥ 最小字級，放不下自動縮字、再不行拿掉照片框），經 `applyTemplateObj(tpl)` 套用（`applyTemplate(id)` 已拆成查找＋套用）。
 - `S.pdfSpec={mm,name,maxMB,minPt,dpi,label}` 隨 pages／autosave 保存；畫布 px＝mm×3.7795（1 px＝0.75 pt）。
 - `exportPDF()`：頁面用規格 mm、倍率 `_exportScaleFor()`（規格 dpi/96，否則長邊 ≥2880px，總像素上限 60M 自動降）、容量上限自動降 JPEG 品質、匯出前檢查小於 minPt 的文字、完成提示顯示 MB／px／dpi（<150 dpi 警告）。
