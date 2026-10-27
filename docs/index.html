@@ -10533,11 +10533,11 @@ const Collage = {
         <div class="conf-step" style="background:#fff">
           <h4><i>3</i>外觀與產生</h4>
           <div class="conf-form">
-            <label class="c2">配色（院內品牌色）
+            <label class="c2">配色（只影響「卡片式」與「簡潔式」；其他風格模板有固定配色）
               <select id="conf-theme"><option value="indigo">寧靜靛＋寬廣藍</option><option value="green">沉穩綠＋生命綠</option><option value="blue">寬廣藍</option><option value="warm">大地棕＋陽光黃</option><option value="red">熱情紅</option></select>
             </label>
             <label class="c2">版面風格
-              <select id="conf-style"><option value="card">卡片式（專業版）</option><option value="simple">簡潔式（純文字）</option></select>
+              <select id="conf-style" onchange="confStyleHint()"></select>
             </label>
           </div>
           <p>直式單欄、橫式雙欄自動排版；字級依頁面大小換算且不低於最小字級，放不下時自動縮字與簡化。產生後每張卡片是一個群組：點一下整組選取、拖曳即可換位置，點文字兩下可再改字。</p>
@@ -10913,9 +10913,11 @@ function confSaveContent(){
 function confOpen(){
   const sel=document.getElementById('conf-preset');
   if(!sel.options.length) CONF_PRESETS.forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.label; sel.appendChild(o); });
+  const ss=document.getElementById('conf-style');
+  if(!ss.options.length) Object.keys(CONF_STYLES).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=CONF_STYLES[k].name; ss.appendChild(o); });
   let saved=null; try{ saved=JSON.parse(localStorage.getItem(CONF_LS)||'null'); }catch(e){}
   if(saved) confFillForm(saved); else { sel.value='e916'; confPreset(); }
-  confLoadContent(); confRenderContent();
+  confLoadContent(); confRenderContent(); confStyleHint();
   document.getElementById('conf-overlay').style.display='flex';
 }
 function confClose(){ document.getElementById('conf-overlay').style.display='none'; }
@@ -10934,7 +10936,7 @@ function confFillForm(sp){
   g('conf-preset').value=sp.presetId||'custom';
   g('conf-w').value=sp.mm?parseFloat((sp.mm[0]/10).toFixed(2)):''; g('conf-h').value=sp.mm?parseFloat((sp.mm[1]/10).toFixed(2)):'';
   g('conf-dpi').value=String(sp.dpi??300); g('conf-mb').value=sp.maxMB||''; g('conf-pt').value=sp.minPt||'';
-  g('conf-theme').value=sp.theme||'indigo'; g('conf-style').value=sp.style||'card';
+  g('conf-theme').value=sp.theme||'indigo'; g('conf-style').value=sp.style||'card'; if(!g('conf-style').value) g('conf-style').value='card'; if(typeof confStyleHint==='function') confStyleHint();
   g('conf-tag').value=sp.tag||''; g('conf-name').value=sp.name||''; g('conf-event').value=sp.event||''; if(sp.unit) g('conf-unit').value=sp.unit;
   confPxHint();
 }
@@ -10968,6 +10970,7 @@ function confPxHint(){
   el.className='conf-hint'+(dpi<150?' bad':'');
   el.textContent=`${confRatioName(sp.mm[0],sp.mm[1])}　畫布 ${W}×${H} px　→　匯出 ${outW}×${outH} px（${dpi} dpi）${capped?`，已因瀏覽器記憶體上限自動降到 ${dpi} dpi`:''}${dpi<150?'；低於 150 dpi 印刷會偏糊':''}。字級換算：1 pt＝${(1/0.75).toFixed(2)} px，${sp.minPt?`最小 ${sp.minPt} pt＝${Math.ceil(sp.minPt/0.75)} px`:'未設最小字級'}。`;
 }
+function confStyleHint(){ const st=CONF_STYLES[document.getElementById('conf-style').value]; const th=document.getElementById('conf-theme'); th.disabled=!(st&&st.usesTheme); }
 function confSaveSpec(sp){ try{ localStorage.setItem(CONF_LS,JSON.stringify(sp)); }catch(e){} }
 function confSpecToPdfSpec(sp){ return {mm:sp.mm, name:sp.name||'', maxMB:sp.maxMB||0, minPt:sp.minPt||0, dpi:sp.dpi||0, label:sp.label}; }
 
@@ -11081,88 +11084,34 @@ function confContentForBuild(cc){
   let statsAt=secs.findIndex(s=>/成果|數據|結果|成效/.test(s.title)); if(statsAt<0) statsAt=Math.min(2,secs.length-1);
   return {title, subtitle:(cc.subtitle||'').trim(), authors:(cc.authors||'').trim(), email:(cc.email||'').trim(), qr:(cc.qr||'').trim(), sections:secs, stats, statsAt, photos:(cc.photos||[]).slice(0,6)};
 }
-function confBuildTemplate(sp,cc){ const c=confContentForBuild(cc||CC); return sp.style==='simple' ? confBuildSimple(sp,c) : confBuildCard(sp,c); }
-
-// 簡潔式：純文字排版（單欄／雙欄）
-function confBuildSimple(sp,c){
-  const PX=3.7795, W=Math.round(sp.mm[0]*PX), H=Math.round(sp.mm[1]*PX), land=W>H;
-  const m=Math.round(Math.min(W,H)*0.046);
-  const refMM= land? sp.mm[0]/2 : sp.mm[0];
-  const k=Math.pow(refMM/142.9,0.55);
-  const minPx= sp.minPt? sp.minPt/0.75 : 0;
-  const basePt={title:27,head:19.5,body:13.5,meta:12,num:24,lab:12};
-  const ratio={title:1.9,head:1.3,body:1,meta:1,num:1.8,lab:1};
-  const mkF=f=>{ const F={}; const body=Math.max(minPx, basePt.body*k*f/0.75); for(const key in basePt) F[key]=Math.max(body*ratio[key], basePt[key]*k*f/0.75); return F; };
-  const L=1.4; const G='gc'+Date.now().toString(36)+'_';
-  const txt=(text,size,color,weight,align,x,y,w,h,grp)=>({type:'txt',text,size:Math.round(size),color,weight,align,fontFamily:'Noto Sans TC',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1,groupId:grp});
-  const rect=(x,y,w,h,fill,o={},grp)=>Object.assign({type:'shape',shapeType:'rect',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1,fillColor:fill,strokeColor:'transparent',strokeWidth:0,strokeDash:'solid',groupId:grp},o);
-  const cols=['#14286E','#006341','#006678','#427500','#664B39','#9C0F1B'];
-  const unit=sp.unit||'光田綜合醫院';
-  const meta1=`作者：${c.authors||'王○○、李○○、陳○○'}　｜　單位：${unit}`, meta2=`聯絡 Email：${c.email||'xxxxx@ktgh.com.tw'}`;
-  const foot1=`${unit.split(' ')[0]}${sp.event?'　｜　'+sp.event:''}`, foot2= sp.name? `匯出時自動命名為 ${sp.name}` : '';
-  function build(F,opt){
-    const o=[];
-    const logoH=F.title*1.05, logoW=logoH/0.1725;
-    const titleLines= land?1:opt.titleLines;
-    const headerH=m*0.6+logoH+m*0.45+F.title*L*titleLines+m*0.6;
-    o.push(rect(0,0,W,headerH,'#14286E',{fillGradient:{on:true,angle:135,color1:'#14286E',color2:'#00AAC8'}},G+'hdr'));
-    o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:m,y:Math.round(m*0.6),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:G+'hdr'});
-    if(sp.tag){ const t=sp.tag, tp=F.meta, th=tp*1.8, tw=Math.max(t.length*tp*0.95,tp*3)+tp*1.6, ty=m*0.6+(logoH-th)/2;
-      o.push(rect(W-m-tw,ty,tw,th,'#FFFFFF',{rx:Math.round(th/2)},G+'hdr')); o.push(txt(t,tp,'#14286E','700','center',W-m-tw,ty+(th-tp*L)/2,tw,tp*L,G+'hdr')); }
-    const title=c.title||(titleLines===1?'海報標題：請改成成果主題':'海報標題：請改成成果主題\n（建議 15 字內，可兩行）');
-    o.push(txt(titleLines===1?title.replace('\n','　'):title,F.title,'#FFFFFF','700','left',m,m*0.6+logoH+m*0.45,W-2*m,F.title*L*titleLines,G+'hdr'));
-    let y=headerH;
-    const metaLines= land?1:2, metaH=F.meta*L*metaLines+m*0.7;
-    o.push(rect(0,y,W,metaH,'#E8EAF0',{},G+'auth'));
-    o.push(txt(land? meta1+'　｜　'+meta2 : meta1+'\n'+meta2, F.meta,'#333333','400','left',m,y+m*0.35,W-2*m,F.meta*L*metaLines,G+'auth'));
-    y+=metaH;
-    const footLines= foot2?2:1, footH=F.meta*L*footLines+m*0.7, footY=H-footH;
-    o.push(rect(0,footY,W,footH,'#F5F5F5',{},G+'foot'));
-    o.push(txt(foot2? foot1+'\n'+foot2 : foot1, F.meta,'#666666','400','center',m,footY+m*0.35,W-2*m,F.meta*L*footLines,G+'foot'));
-    const top=y+m*0.8, bottom=footY-m*0.6;
-    const n=c.sections.length, half=Math.ceil(n/2);
-    const cols2= land? [c.sections.map((_,i)=>i).slice(0,half), c.sections.map((_,i)=>i).slice(half)] : [c.sections.map((_,i)=>i)];
-    const colW= land? (W-3*m)/2 : W-2*m;
-    const linesOf=i=>Math.min(opt.lines,c.sections[i].bullets.length);
-    const secH=i=>F.head*1.3+m*0.2+F.body*L*linesOf(i)+((i===c.statsAt&&opt.tiles&&c.stats.length)? m*0.4+F.num*1.2+F.lab*L+m*0.6:0);
-    const placeH=F.body*L*2.4;
-    let over=0;
-    cols2.forEach((idxs,ci)=>{
-      const x=m+ci*(colW+m), hasPlace= opt.place && (land? ci===cols2.length-1 : true);
-      const need=idxs.reduce((a,i)=>a+secH(i),0)+(hasPlace? m*0.5+placeH:0);
-      over=Math.max(over, need-(bottom-top));
-      const gap=Math.max(0,(bottom-top)-need)/(idxs.length+(hasPlace?1:0));
-      let cy=top;
-      idxs.forEach(i=>{
-        const sec=c.sections[i], col=cols[i%cols.length], g=G+'sec'+i;
-        o.push(rect(x,cy+F.head*0.1,F.head*0.22,F.head*1.1,col,{rx:Math.round(F.head*0.11)},g));
-        o.push(txt(`${['一','二','三','四','五','六'][i]}、${sec.title}`,F.head,col,'700','left',x+F.head*0.55,cy,colW-F.head*0.55,F.head*1.3,g));
-        cy+=F.head*1.3+m*0.2;
-        o.push(txt(sec.bullets.slice(0,opt.lines).map(b=>'• '+b).join('\n'),F.body,sec.hint?'#64748b':'#333333','400','left',x+F.body*0.3,cy,colW-F.body*0.3,F.body*L*linesOf(i),g));
-        cy+=F.body*L*linesOf(i);
-        if(i===c.statsAt&&opt.tiles&&c.stats.length){ cy+=m*0.4; const n2=c.stats.length, bw=(colW-(n2-1)*m*0.5)/n2, bh=F.num*1.2+F.lab*L+m*0.6;
-          c.stats.forEach((st,j)=>{ const bx=x+j*(bw+m*0.5);
-            o.push(rect(bx,cy,bw,bh,'#E6F6FA',{rx:Math.round(m*0.4)},g)); o.push(txt(st.value,F.num,'#14286E','700','center',bx,cy+m*0.3,bw,F.num*1.2,g)); o.push(txt(st.label,F.lab,'#006678','500','center',bx,cy+m*0.3+F.num*1.2,bw,F.lab*L,g)); });
-          cy+=bh; }
-        cy+=gap;
-      });
-      if(hasPlace){ cy+=m*0.5;
-        o.push(rect(x,cy,colW,placeH,'transparent',{rx:Math.round(m*0.3),strokeColor:'#9AAAD8',strokeWidth:Math.max(2,Math.round(F.body*0.08)),strokeDash:'8,4'},G+'photos'));
-        o.push(txt('照片／圖表位置：用左側「圖片」插入後刪除此框',F.lab,'#64748b','400','center',x,cy+(placeH-F.lab*L)/2,colW,F.lab*L,G+'photos')); }
-    });
-    return {objs:o,over};
-  }
-  const opt={place:true,lines:3,tiles:true,titleLines:2};
-  let f=1, F=mkF(1), r=build(F,opt), tries=0;
-  while(r.over>0 && tries<5){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
-  const steps=[()=>opt.place=false, ()=>opt.lines=2, ()=>opt.tiles=false, ()=>opt.titleLines=1];
-  for(const st of steps){ if(r.over<=0) break; st(); r=build(F,opt); }
-  return {id:'conf-dyn', name:sp.label, category:'conf', w:W, h:H, bg:'#FFFFFF', previewGrad:['#14286E','#00AAC8'], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.place||opt.lines<3, photoSlots:[], qrSlot:null};
+// ── 預設風格模板（歷年美編海報＋公版）──
+// header: band(漸層色帶疊作者卡) | bar(細色條＋置中標題，公版) | light(白底、彩色院徽、細線) | curve(色帶下緣弧形)
+// section: badge(卡片＋超橢圓編號) | pill(膠囊標題) | label(「一」＋框線標籤，公版)
+// deco: circles | none | poly | glow ；footer: dark | bar | light
+const CONF_STYLES={
+  card:  {name:'卡片式（品牌配色，預設）', usesTheme:true, header:'band', section:'badge', deco:'circles', footer:'dark', bg:null, cardFill:'#FFFFFF', text:'#333333', watermark:false},
+  gov:   {name:'公版 A0（論文海報公版，院徽水印）', c1:'#1F2875', c2:'#1F2875', dark:'#1F2875', tint:'#FFFFFF', tint2:'#F1F2F7', accent:'#F5C542', txt:'#1F2875',
+          header:'bar', section:'label', deco:'none', footer:'bar', bg:'#FFFFFF', cardFill:null, text:'#222222', watermark:true, titleAlign:'center'},
+  blue:  {name:'寬廣藍 漸層標籤（廖崇佑 111 年）', c1:'#0F3C8C', c2:'#2F7FD6', dark:'#0B2A63', tint:'#EAF3FB', tint2:'#D7E8F7', accent:'#5FB4F0', txt:'#0F3C8C',
+          header:'light', section:'pill', deco:'circles', footer:'bar', bg:{grad:['#D6E8F8','#F6FAFE'],angle:180}, cardFill:'#FFFFFF', text:'#2B3A55', watermark:false},
+  green: {name:'清新綠 曲線（李勛華 109 年）', c1:'#1C8A4E', c2:'#7CC243', dark:'#136338', tint:'#F3FAF4', tint2:'#E2F3E6', accent:'#B7E36B', txt:'#1C6B3F',
+          header:'curve', section:'pill', deco:'none', footer:'bar', bg:'#FFFFFF', cardFill:null, text:'#2F3B33', watermark:false},
+  orange:{name:'橙色幾何（羅勝哲 109 年）', c1:'#E8641B', c2:'#F7A541', dark:'#B84A0E', tint:'#FFF6EE', tint2:'#FFE8D2', accent:'#FFC857', txt:'#B84A0E',
+          header:'light', section:'pill', deco:'poly', footer:'bar', bg:'#FFFFFF', cardFill:null, text:'#3A2E28', watermark:false},
+  dark:  {name:'深色紫 科技（蔡慧君、賴建瑋）', c1:'#6D28D9', c2:'#D946EF', dark:'#12092B', tint:'#1B1038', tint2:'#2A1A52', accent:'#F472B6', txt:'#FFFFFF',
+          header:'band', section:'pill', deco:'glow', footer:'dark', bg:'#1B1038', cardFill:'rgba(255,255,255,0.08)', text:'#F1EAFF', watermark:false, darkMode:true},
+  simple:{name:'簡潔式（純文字）', usesTheme:true}
+};
+function confBuildTemplate(sp,cc){
+  const c=confContentForBuild(cc||CC);
+  if(sp.style==='simple') return confBuildSimple(sp,c);
+  const ST=CONF_STYLES[sp.style]||CONF_STYLES.card;
+  return confBuildCard(sp,c,ST);
 }
-
-// 卡片式專業版：底色＋裝飾圓形、漸層標題區疊作者卡、編號徽章卡片、數字磚、圖表／照片位置、結論強調卡、深色頁尾＋QR
-function confBuildCard(sp,c){
-  const T=CONF_THEMES[sp.theme]||CONF_THEMES.indigo;
+// 卡片式／風格模板產生器：同一套流程排版（直式單欄、橫式雙欄、放不下自動縮字與簡化），由 ST 決定外觀
+function confBuildCard(sp,c,ST){
+  ST=ST||CONF_STYLES.card;
+  const T= ST.usesTheme ? (CONF_THEMES[sp.theme]||CONF_THEMES.indigo) : ST;
   const PX=3.7795, W=Math.round(sp.mm[0]*PX), H=Math.round(sp.mm[1]*PX), land=W>H;
   const m=Math.round(Math.min(W,H)*0.042);
   const refMM= land? sp.mm[0]/2 : sp.mm[0];
@@ -11178,71 +11127,131 @@ function confBuildCard(sp,c){
   const grad=(a,b,angle=135)=>({fillGradient:{on:true,angle,color1:a,color2:b}});
   const unit=sp.unit||'光田綜合醫院', unitShort=unit.split(' ')[0];
   const nPhotos=c.photos.length;
+  const darkMode=!!ST.darkMode;
+  const bodyColor=ST.text||'#333333', hintColor= darkMode?'#C9BFE6':'#64748b', capColor= darkMode?'#D9D1F0':'#475569';
+  const pageBg= ST.bg==null ? T.tint : (typeof ST.bg==='string'? ST.bg : ST.bg.grad[0]);
   function build(F,opt){
     const o=[]; let photoSlots=[], qrSlot=null;
-    const pad= opt.compact? m*0.35 : m*0.6;   // 緊湊模式：卡片內距、卡片間距、數字磚都縮小，拿掉副標題
+    const pad= opt.compact? m*0.35 : m*0.6;
     const gapMin= opt.compact? m*0.3 : m*0.5;
     const tileH=F.num*(opt.compact?1.15:1.25)+F.lab*L+m*(opt.compact?0.35:0.55), tilePad=m*(opt.compact?0.15:0.25);
     const colW= land? (W-3*m)/2 : W-2*m;
-    const inner=colW-2*pad;
-    // 底色與裝飾（不入群組）
-    o.push(rect(0,0,W,H,T.tint));
-    o.push(shape('ellipse',-W*0.18,H*0.52,W*0.5,W*0.5,T.c2,{opacity:0.07}));
-    o.push(shape('ellipse',W*0.72,H*0.30,W*0.42,W*0.42,T.c1,{opacity:0.05}));
-    o.push(shape('ellipse',W*0.55,H*0.78,W*0.3,W*0.3,T.accent,{opacity:0.08}));
-    // 標題區
+    const inner= ST.cardFill? colW-2*pad : colW-pad*0.6;
+    const est=(t,fs)=>[...String(t)].reduce((a,ch)=>a+(/[⺀-鿿＀-￯　-〿①-➿←-⇿]/.test(ch)?1:0.56),0)*fs*1.04;
+    // ── 底色與裝飾（不入群組）
+    if(ST.bg&&typeof ST.bg==='object') o.push(rect(0,0,W,H,ST.bg.grad[0],grad(ST.bg.grad[0],ST.bg.grad[1],ST.bg.angle||180)));
+    else o.push(rect(0,0,W,H,pageBg));
+    if(ST.deco==='circles'){
+      o.push(shape('ellipse',-W*0.18,H*0.52,W*0.5,W*0.5,T.c2,{opacity:0.07}));
+      o.push(shape('ellipse',W*0.72,H*0.30,W*0.42,W*0.42,T.c1,{opacity:0.05}));
+      o.push(shape('ellipse',W*0.55,H*0.78,W*0.3,W*0.3,T.accent,{opacity:0.08}));
+    } else if(ST.deco==='glow'){
+      o.push(shape('ellipse',-W*0.25,-H*0.08,W*0.9,W*0.9,T.c1,{opacity:0.35}));
+      o.push(shape('ellipse',W*0.45,H*0.55,W*0.9,W*0.9,T.c2,{opacity:0.18}));
+      o.push(shape('ellipse',W*0.6,-W*0.2,W*0.5,W*0.5,T.accent,{opacity:0.15}));
+    } else if(ST.deco==='poly'){
+      // 低多邊形：角落幾個半透明三角形（橙／桃／黃）
+      const tri=(x,y,w,h,col,op,rot)=>o.push(Object.assign(shape('triangle',x,y,w,h,col,{opacity:op}),{rot:rot||0}));
+      tri(W*0.55,-H*0.02,W*0.5,H*0.16,T.c2,0.35,0); tri(W*0.7,-H*0.03,W*0.42,H*0.13,T.c1,0.25,180); tri(W*0.82,H*0.02,W*0.3,H*0.1,T.accent,0.35,90);
+      tri(-W*0.08,H*0.86,W*0.5,H*0.16,T.c2,0.3,180); tri(-W*0.05,H*0.9,W*0.35,H*0.12,T.c1,0.25,0); tri(W*0.2,H*0.9,W*0.3,H*0.1,T.accent,0.3,270);
+      tri(W*0.62,H*0.9,W*0.5,H*0.12,T.c2,0.25,180); tri(W*0.78,H*0.92,W*0.3,H*0.09,T.accent,0.3,0);
+    }
+    if(ST.watermark){ const s=W*0.62; o.push({type:'img',imgUrl:'./logos/logo-solo.png',x:Math.round(W-s*0.78),y:Math.round(H-s*0.78-m*1.6),w:Math.round(s),h:Math.round(s),rot:0,opacity:0.06,aspectRatio:1}); }
+    // ── 標題區
     const gh=G+'hdr';
     const logoH=F.title*1.0, logoW=logoH/0.1725, titleLines= land?1:opt.titleLines;
     const hasSub= !opt.compact && (c.subtitle||!c.title);
-    const headerH=m*0.8+logoH+m*0.55+F.title*L*titleLines+(hasSub? m*0.25+F.sub*L : 0)+m*1.2;
-    o.push(rect(0,0,W,headerH,T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,120))));
-    o.push(shape('ellipse',W*0.62,-headerH*0.55,W*0.55,W*0.55,'#FFFFFF',{opacity:0.08,groupId:gh}));
-    o.push(shape('ellipse',W*0.84,headerH*0.35,W*0.28,W*0.28,'#FFFFFF',{opacity:0.07,groupId:gh}));
-    o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:m,y:Math.round(m*0.8),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
-    if(sp.tag){ const t=sp.tag, tp=F.meta, th=tp*1.9, tw=Math.max(t.length*tp*1.05,tp*3)+tp*2.2, ty=m*0.8+(logoH-th)/2;
-      o.push(rect(W-m-tw,ty,tw,th,'#FFFFFF',{rx:Math.round(th/2),groupId:gh})); o.push(txt(t,tp,T.txt,'700','center',W-m-tw,ty+(th-tp*L)/2,tw,tp*L,{groupId:gh})); }
-    let y=m*0.8+logoH+m*0.55;
+    const titleColor= (ST.header==='band'||ST.header==='curve')? '#FFFFFF' : T.txt;
+    const titleAlign= ST.titleAlign||'left';
     let title=c.title||(titleLines===1?'海報標題：請改成成果主題':'海報標題：請改成成果主題\n（建議 15 字內，可兩行）');
     if(titleLines===1) title=title.replace(/\n/g,'　');
-    o.push(txt(title,F.title,'#FFFFFF','700','left',m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
-    y+=F.title*L*titleLines;
-    if(hasSub){ y+=m*0.25; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L,{opacity:0.88,groupId:gh})); }
-    // 作者卡
+    let headerH, authY;
+    const tagPill=(fill,color,cy)=>{ if(!sp.tag) return; const t=sp.tag, tp=F.meta, th=tp*1.9, tw=Math.max(t.length*tp*1.05,tp*3)+tp*2.2, ty=cy-th/2;
+      o.push(rect(W-m-tw,ty,tw,th,fill,{rx:Math.round(th/2),groupId:gh})); o.push(txt(t,tp,color,'700','center',W-m-tw,ty+(th-tp*L)/2,tw,tp*L,{groupId:gh})); };
+    if(ST.header==='band'||ST.header==='curve'){
+      headerH=m*0.8+logoH+m*0.55+F.title*L*titleLines+(hasSub? m*0.25+F.sub*L : 0)+m*1.2;
+      if(ST.header==='curve'){
+        o.push(rect(0,0,W,headerH*0.72,T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,120))));
+        o.push(shape('ellipse',-W*0.1,headerH*0.72-W*0.22,W*1.2,W*0.44,T.c2,Object.assign({groupId:gh},grad(T.c1,T.c2,90))));
+      } else {
+        o.push(rect(0,0,W,headerH,T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,120))));
+        o.push(shape('ellipse',W*0.62,-headerH*0.55,W*0.55,W*0.55,'#FFFFFF',{opacity:0.08,groupId:gh}));
+        o.push(shape('ellipse',W*0.84,headerH*0.35,W*0.28,W*0.28,'#FFFFFF',{opacity:0.07,groupId:gh}));
+      }
+      o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:m,y:Math.round(m*0.8),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
+      tagPill('#FFFFFF',T.txt==='#FFFFFF'?T.dark:T.txt, m*0.8+logoH/2);
+      let y=m*0.8+logoH+m*0.55;
+      o.push(txt(title,F.title,'#FFFFFF','700','left',m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
+      y+=F.title*L*titleLines;
+      if(hasSub){ y+=m*0.25; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L,{opacity:0.88,groupId:gh})); }
+      authY=headerH-m*0.6;
+    } else if(ST.header==='bar'){
+      // 公版：上方色條（院徽置中）、標題置中、作者置中
+      const barH=logoH+m*1.0;
+      o.push(rect(0,0,W,barH,T.c1,{groupId:gh}));
+      o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:Math.round((W-logoW)/2),y:Math.round(m*0.5),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
+      tagPill('#FFFFFF',T.txt, barH/2);
+      let y=barH+m*0.8;
+      o.push(txt(title,F.title,T.txt,'700','center',m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
+      y+=F.title*L*titleLines;
+      if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400','center',m,y,W-2*m,F.sub*L,{groupId:gh})); y+=F.sub*L; }
+      headerH=y+m*0.5; authY=headerH;
+    } else { // light：白底、彩色院徽、細線
+      o.push({type:'img',imgUrl:'./logos/logo-h-normal.png',x:m,y:Math.round(m*0.8),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
+      tagPill(T.c1,'#FFFFFF', m*0.8+logoH/2);
+      let y=m*0.8+logoH+m*0.5;
+      o.push(txt(title,F.title,T.txt,'700',titleAlign,m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
+      y+=F.title*L*titleLines;
+      if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400',titleAlign,m,y,W-2*m,F.sub*L,{opacity:0.9,groupId:gh})); y+=F.sub*L; }
+      y+=m*0.4; o.push(rect(m,y,W-2*m,Math.max(3,m*0.12),T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,90))));
+      headerH=y+m*0.5; authY=headerH;
+    }
+    // ── 作者（band／curve 用疊卡；bar 置中純文字；light 左對齊純文字）
     const ga=G+'auth';
-    // 估算文字寬度：中日韓、全形符號、○●◎等圖形符號算 1em，其餘 0.56em，再加 4% 安全邊
-    const est=(t,fs)=>[...String(t)].reduce((a,ch)=>a+(/[\u2e80-\u9fff\uff00-\uffef\u3000-\u303f\u2460-\u27bf\u2190-\u21ff]/.test(ch)?1:0.56),0)*fs*1.04;
     const authW=W-2*m-pad*1.6;
     const aA=`作者：${c.authors||'王○○、李○○、陳○○'}`, aU=`單位：${unit}`, aE=`聯絡 Email：${c.email||'xxxxx@ktgh.com.tw'}`;
     let authText, authLines;
     if(est(aA+'　｜　'+aU+'　｜　'+aE,F.meta)<=authW){ authText=aA+'　｜　'+aU+'　｜　'+aE; authLines=1; }
     else if(est(aA+'　｜　'+aU,F.meta)<=authW){ authText=aA+'　｜　'+aU+'\n'+aE; authLines=2; }
     else { authText=aA+'\n'+aU+'\n'+aE; authLines=3; }
-    const authH=F.meta*L*authLines+m*0.7, authY=headerH-m*0.6;
-    o.push(rect(m,authY+m*0.12,W-2*m,authH,T.c1,{rx:Math.round(m*0.35),opacity:0.10,groupId:ga}));
-    o.push(rect(m,authY,W-2*m,authH,'#FFFFFF',{rx:Math.round(m*0.35),groupId:ga}));
-    o.push(rect(m,authY+authH*0.22,m*0.16,authH*0.56,T.accent,{rx:Math.round(m*0.08),groupId:ga}));
-    o.push(txt(authText, F.meta,'#333333','400','left',m+pad*0.8,authY+m*0.35,authW,F.meta*L*authLines,{groupId:ga}));
-    // 頁尾
+    let authH, contentTop;
+    if(ST.header==='band'||ST.header==='curve'){
+      authH=F.meta*L*authLines+m*0.7;
+      o.push(rect(m,authY+m*0.12,W-2*m,authH,T.c1,{rx:Math.round(m*0.35),opacity:0.10,groupId:ga}));
+      o.push(rect(m,authY,W-2*m,authH, darkMode?T.tint2:'#FFFFFF',{rx:Math.round(m*0.35),groupId:ga}));
+      o.push(rect(m,authY+authH*0.22,m*0.16,authH*0.56,T.accent,{rx:Math.round(m*0.08),groupId:ga}));
+      o.push(txt(authText, F.meta,bodyColor,'400','left',m+pad*0.8,authY+m*0.35,authW,F.meta*L*authLines,{groupId:ga}));
+      contentTop=authY+authH+m*0.8;
+    } else {
+      authH=F.meta*L*authLines;
+      o.push(txt(authText, F.meta,bodyColor,'400',ST.header==='bar'?'center':'left',m+pad*0.8,authY,authW,authH,{groupId:ga}));
+      contentTop=authY+authH+m*0.9;
+    }
+    // ── 頁尾
     const gf=G+'foot';
     const qr=Math.max(F.meta*L*2, F.lab*L*2)+m*0.3, footH=qr+m*0.8, footY=H-footH;
-    o.push(rect(0,footY,W,footH,T.dark,{groupId:gf}));
-    o.push(rect(0,footY,W,Math.max(3,m*0.12),T.accent,{groupId:gf}));
+    const footFill= ST.footer==='light'? T.tint2 : (ST.footer==='bar'? T.c1 : T.dark);
+    const footTxt= ST.footer==='light'? T.txt : '#FFFFFF';
+    o.push(rect(0,footY,W,footH,footFill,{groupId:gf}));
+    if(ST.footer!=='light') o.push(rect(0,footY,W,Math.max(3,m*0.12),T.accent,{groupId:gf}));
     const footW=W-2*m-qr-m;
     let f1=`${unitShort}${sp.event?'　｜　'+sp.event:''}`;
     let f2=`${sp.tag?sp.tag+'　｜　':''}${c.qr? '掃描 QR code 看完整報告' : '聯絡：'+(c.email||'xxxxx@ktgh.com.tw')}`;
     if(est(f1,F.meta)>footW&&sp.event){ f1=sp.event; f2=unitShort+'　｜　'+f2; }
     if(est(f2,F.meta)>footW&&sp.tag){ f2=f2.replace(sp.tag+'　｜　',''); }
-    o.push(txt(f1+'\n'+f2,F.meta,'#FFFFFF','400','left',m,footY+m*0.4,W-2*m-qr-m,F.meta*L*2,{opacity:0.92,groupId:gf}));
+    o.push(txt(f1+'\n'+f2,F.meta,footTxt,'400','left',m,footY+m*0.4,footW,F.meta*L*2,{opacity:0.92,groupId:gf}));
     o.push(rect(W-m-qr,footY+m*0.4,qr,qr,'#FFFFFF',{rx:Math.round(m*0.15),groupId:gf}));
     if(c.qr) qrSlot={x:Math.round(W-m-qr+qr*0.06),y:Math.round(footY+m*0.4+qr*0.06),w:Math.round(qr*0.88),h:Math.round(qr*0.88),groupId:gf};
-    else o.push(txt('QR\n（選用）',F.lab,T.txt,'700','center',W-m-qr,footY+m*0.4+(qr-F.lab*L*2)/2,qr,F.lab*L*2,{groupId:gf}));
-    // 內容區塊
-    const top=authY+authH+m*0.8, bottom=footY-m*0.7;
+    else o.push(txt('QR\n（選用）',F.lab,T.txt==='#FFFFFF'?T.dark:T.txt,'700','center',W-m-qr,footY+m*0.4+(qr-F.lab*L*2)/2,qr,F.lab*L*2,{groupId:gf}));
+    // ── 內容區塊
+    const top=contentTop, bottom=footY-m*0.7;
     const badgeD=F.head*1.5;
+    const headBlockH= ST.section==='badge'? Math.max(badgeD,F.head*1.35) : (ST.section==='pill'? F.head*1.75 : F.head*1.6);
     const n=c.sections.length;
     const linesOf=i=>Math.min(opt.lines,c.sections[i].bullets.length);
     const tilesAt=i=> i===c.statsAt && opt.tiles && c.stats.length>0;
-    const secH=i=>pad+Math.max(badgeD,F.head*1.35)+m*0.3+F.body*L*linesOf(i)+pad+(tilesAt(i)?(m*0.35+tileH):0)+((i===c.statsAt&&opt.chart&&!nPhotos)? m*0.4+F.body*L*3.2:0);
+    const cpad= ST.cardFill? pad : pad*0.5;
+    const secH=i=>cpad+headBlockH+m*0.3+F.body*L*linesOf(i)+cpad+(tilesAt(i)?(m*0.35+tileH):0)+((i===c.statsAt&&opt.chart&&!nPhotos)? m*0.4+F.body*L*3.2:0);
     const perRow= nPhotos? Math.min(3,nPhotos) : 3, rows= nPhotos? Math.ceil(nPhotos/3) : 1;
     const slotW=(colW-(perRow-1)*m*0.4)/perRow, slotH= opt.photoCompact? slotW*0.5 : slotW*0.6;
     const hasCaps= nPhotos && c.photos.some(p=>(p.caption||'').trim()) && !opt.photoCompact;
@@ -11251,6 +11260,7 @@ function confBuildCard(sp,c){
     const half=Math.ceil(n/2);
     const idxAll=c.sections.map((_,i)=>i);
     const blocks= land? [[...idxAll.slice(0,half),'photos'],[...idxAll.slice(half)]] : [[...idxAll.slice(0,Math.min(2,n)),'photos',...idxAll.slice(Math.min(2,n))]];
+    const numCN=['一','二','三','四','五','六'];
     let over=0;
     blocks.forEach((list,ci)=>{
       const x=m+ci*(colW+m);
@@ -11265,36 +11275,53 @@ function confBuildCard(sp,c){
           for(let r=0;r<rows;r++){
             const inRow= nPhotos? Math.min(3,nPhotos-r*3) : 3; const sw=(colW-(inRow-1)*m*0.4)/inRow;
             for(let j=0;j<inRow;j++){ const px=x+j*(sw+m*0.4), py=cy+r*(rowH+m*0.3), idx=r*3+j;
-              o.push(rect(px,py,sw,slotH,'#DDE3EC',{rx:Math.round(m*0.3),groupId:gp}));
+              o.push(rect(px,py,sw,slotH, darkMode?'#2A1A52':'#DDE3EC',{rx:Math.round(m*0.3),groupId:gp}));
               if(nPhotos){ photoSlots.push({x:Math.round(px),y:Math.round(py),w:Math.round(sw),h:Math.round(slotH),idx,groupId:gp,rx:Math.round(m*0.3)});
-                const cap=(c.photos[idx].caption||'').trim(); if(hasCaps&&cap) o.push(txt(cap,F.lab,'#475569','400','center',px,py+slotH+m*0.1,sw,F.lab*L,{groupId:gp})); }
-              else { o.push(shape('ellipse',px+sw*0.38,py+slotH*0.28,sw*0.24,sw*0.24,'#FFFFFF',{opacity:0.9,groupId:gp})); o.push(txt(`照片 ${j+1}`,F.lab,'#64748b','500','center',px,py+slotH*0.62,sw,F.lab*L,{groupId:gp})); }
+                const cap=(c.photos[idx].caption||'').trim(); if(hasCaps&&cap) o.push(txt(cap,F.lab,capColor,'400','center',px,py+slotH+m*0.1,sw,F.lab*L,{groupId:gp})); }
+              else { o.push(shape('ellipse',px+sw*0.38,py+slotH*0.28,sw*0.24,sw*0.24,'#FFFFFF',{opacity:0.9,groupId:gp})); o.push(txt(`照片 ${j+1}`,F.lab,hintColor,'500','center',px,py+slotH*0.62,sw,F.lab*L,{groupId:gp})); }
             }
           }
-          if(!nPhotos&&!opt.photoCompact) o.push(txt('活動照片：在助手「內容與照片」加入後會自動排進來（建議 3 張、長邊 ≥1500 px）',F.lab,'#64748b','400','left',x,cy+slotH+m*0.1,colW,F.lab*L,{opacity:0.9,groupId:gp}));
+          if(!nPhotos&&!opt.photoCompact) o.push(txt('活動照片：在助手「內容與照片」加入後會自動排進來（建議 3 張、長邊 ≥1500 px）',F.lab,hintColor,'400','left',x,cy+slotH+m*0.1,colW,F.lab*L,{opacity:0.9,groupId:gp}));
           cy+=photoH+gap; return;
         }
         const i=b, sec=c.sections[i], h=secH(i), tinted=(i===n-1&&n>=3), gs=G+'sec'+i;
-        o.push(rect(x,cy+m*0.12,colW,h,T.c1,{rx:Math.round(m*0.4),opacity:0.08,groupId:gs}));
-        o.push(rect(x,cy,colW,h,tinted?T.tint2:'#FFFFFF',{rx:Math.round(m*0.4),groupId:gs}));
-        if(tinted) o.push(rect(x,cy,Math.max(4,m*0.18),h,T.c1,{rx:Math.round(m*0.09),groupId:gs}));
-        const by=cy+pad;
-        o.push(Object.assign(shape('superellipse',x+pad,by,badgeD,badgeD,T.c1,grad(T.c1,T.c2)),{groupId:gs}));
-        o.push(txt(String(i+1).padStart(2,'0'),F.badge,'#FFFFFF','700','center',x+pad,by+(badgeD-F.badge*L)/2,badgeD,F.badge*L,{groupId:gs}));
-        o.push(txt(sec.title,F.head,T.txt,'700','left',x+pad+badgeD+m*0.35,by+(badgeD-F.head*L)/2,inner-badgeD-m*0.35,F.head*L,{groupId:gs}));
-        o.push(rect(x+pad,by+badgeD+m*0.12,inner,Math.max(2,F.head*0.07),T.tint2,{groupId:gs}));
-        let ty=by+Math.max(badgeD,F.head*1.35)+m*0.3;
-        o.push(txt(sec.bullets.slice(0,opt.lines).map(t=>'• '+t).join('\n'),F.body,sec.hint?'#64748b':'#333333','400','left',x+pad,ty,inner,F.body*L*linesOf(i),{groupId:gs}));
+        const tx0= ST.cardFill? x+pad : x+pad*0.3;
+        if(ST.cardFill){
+          if(!darkMode) o.push(rect(x,cy+m*0.12,colW,h,T.c1,{rx:Math.round(m*0.4),opacity:0.08,groupId:gs}));
+          o.push(rect(x,cy,colW,h,(tinted&&!darkMode)?T.tint2:ST.cardFill,{rx:Math.round(m*0.4),groupId:gs}));
+          if(tinted&&!darkMode) o.push(rect(x,cy,Math.max(4,m*0.18),h,T.c1,{rx:Math.round(m*0.09),groupId:gs}));
+        } else if(tinted){ o.push(rect(x,cy,colW,h,T.tint2,{rx:Math.round(m*0.3),opacity:0.85,groupId:gs})); }
+        const by=cy+cpad;
+        if(ST.section==='badge'){
+          o.push(Object.assign(shape('superellipse',tx0,by,badgeD,badgeD,T.c1,grad(T.c1,T.c2)),{groupId:gs}));
+          o.push(txt(String(i+1).padStart(2,'0'),F.badge,'#FFFFFF','700','center',tx0,by+(badgeD-F.badge*L)/2,badgeD,F.badge*L,{groupId:gs}));
+          o.push(txt(sec.title,F.head,T.txt,'700','left',tx0+badgeD+m*0.35,by+(badgeD-F.head*L)/2,inner-badgeD-m*0.35,F.head*L,{groupId:gs}));
+          o.push(rect(tx0,by+badgeD+m*0.12,inner,Math.max(2,F.head*0.07),T.tint2,{groupId:gs}));
+        } else if(ST.section==='pill'){
+          const ph2=F.head*1.75, pw=Math.min(inner, Math.max(est(sec.title,F.head)+F.head*2.6, F.head*6));
+          o.push(rect(tx0,by,pw,ph2,T.c1,Object.assign({rx:Math.round(ph2/2),groupId:gs},grad(T.c1,T.c2,90))));
+          o.push(txt(String(i+1).padStart(2,'0'),F.badge,'#FFFFFF','700','center',tx0+F.head*0.3,by+(ph2-F.badge*L)/2,F.head*1.3,F.badge*L,{opacity:0.85,groupId:gs}));
+          o.push(txt(sec.title,F.head,'#FFFFFF','700','left',tx0+F.head*1.6,by+(ph2-F.head*L)/2,pw-F.head*1.6,F.head*L,{groupId:gs}));
+          o.push(rect(tx0+pw+m*0.3,by+ph2/2-1,Math.max(0,inner-pw-m*0.3),Math.max(2,F.head*0.08),T.c2,{opacity:0.5,groupId:gs}));
+        } else { // label：公版「一　目的」＋框線標籤
+          const lh=F.head*1.6, lw=Math.max(est(sec.title,F.head)+F.head*1.2, F.head*3.2);
+          o.push(txt(numCN[i]||String(i+1),F.head,T.txt,'700','left',tx0,by+(lh-F.head*L)/2,F.head*1.4,F.head*L,{groupId:gs}));
+          o.push(rect(tx0+F.head*1.5,by,lw,lh,'#FFFFFF',{rx:Math.round(F.head*0.2),strokeColor:T.accent,strokeWidth:Math.max(2,Math.round(F.head*0.12)),groupId:gs}));
+          o.push(txt(sec.title,F.head,'#222222','700','center',tx0+F.head*1.5,by+(lh-F.head*L)/2,lw,F.head*L,{groupId:gs}));
+          o.push(rect(tx0,by+lh+m*0.15,inner,Math.max(2,F.head*0.06),T.tint2,{groupId:gs}));
+        }
+        let ty=by+headBlockH+m*0.3;
+        o.push(txt(sec.bullets.slice(0,opt.lines).map(t=>'• '+t).join('\n'),F.body,sec.hint?hintColor:bodyColor,'400','left',tx0,ty,inner,F.body*L*linesOf(i),{groupId:gs}));
         ty+=F.body*L*linesOf(i);
         if(tilesAt(i)){ ty+=m*0.35; const n2=c.stats.length, tw=(inner-(n2-1)*m*0.35)/n2, th=tileH, nh=F.num*(opt.compact?1.15:1.25);
-          c.stats.forEach((st,j)=>{ const tx=x+pad+j*(tw+m*0.35);
+          c.stats.forEach((st,j)=>{ const tx=tx0+j*(tw+m*0.35);
             o.push(rect(tx,ty,tw,th,T.c1,Object.assign({rx:Math.round(m*0.3),groupId:gs},grad(j%2?T.c2:T.c1,j%2?T.c1:T.c2))));
             o.push(txt(st.value,F.num,'#FFFFFF','700','center',tx,ty+tilePad,tw,nh,{groupId:gs}));
             o.push(txt(st.label,F.lab,'#FFFFFF','500','center',tx,ty+tilePad+nh,tw,F.lab*L,{opacity:0.9,groupId:gs})); });
           ty+=th; }
         if(i===c.statsAt&&opt.chart&&!nPhotos){ ty+=m*0.4; const ch=F.body*L*3.2;
-          o.push(rect(x+pad,ty,inner,ch,T.tint,{rx:Math.round(m*0.3),strokeColor:T.c2,strokeWidth:Math.max(2,Math.round(F.body*0.08)),strokeDash:'8,4',groupId:gs}));
-          o.push(txt('圖表位置：把 Excel 或 Gemini 畫好的圖表當照片加入即可',F.lab,'#64748b','400','center',x+pad,ty+(ch-F.lab*L)/2,inner,F.lab*L,{groupId:gs})); }
+          o.push(rect(tx0,ty,inner,ch, darkMode?'rgba(255,255,255,0.06)':T.tint,{rx:Math.round(m*0.3),strokeColor:T.c2,strokeWidth:Math.max(2,Math.round(F.body*0.08)),strokeDash:'8,4',groupId:gs}));
+          o.push(txt('圖表位置：把 Excel 或 Gemini 畫好的圖表當照片加入即可',F.lab,hintColor,'400','center',tx0,ty+(ch-F.lab*L)/2,inner,F.lab*L,{groupId:gs})); }
         cy+=h+gap;
       });
     });
@@ -11305,7 +11332,7 @@ function confBuildCard(sp,c){
   while(r.over>0 && tries<5){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
   const steps=[()=>opt.chart=false, ()=>opt.lines=2, ()=>opt.photoCompact=true, ()=>opt.compact=true, ()=>opt.photos=false, ()=>opt.tiles=false, ()=>opt.titleLines=1];
   for(const st of steps){ if(r.over<=0) break; st(); r=build(F,opt); }
-  return {id:'conf-dyn', name:sp.label, category:'conf', w:W, h:H, bg:T.tint, previewGrad:[T.c1,T.c2], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.photos||opt.lines<3||!opt.tiles, photoSlots:r.photoSlots, qrSlot:r.qrSlot};
+  return {id:'conf-dyn', name:sp.label+'・'+(ST.name||'').split('（')[0], category:'conf', w:W, h:H, bg:pageBg, previewGrad:[T.c1,T.c2], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.photos||opt.lines<3||!opt.tiles, photoSlots:r.photoSlots, qrSlot:r.qrSlot};
 }
 // 把照片裁進槽位、QR 放進頁尾（非同步，之後才套用版型）
 async function confAttachMedia(tpl,c){
