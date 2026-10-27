@@ -1,6 +1,7 @@
 // 美編小助手 AI 生圖代理：Workers AI + KV 限速
 // POST /api/gen { prompt, style, ratio, quality? } → { ok, image:"data:image/jpeg;base64,...", w, h, prompt_en }
 // GET  /api/quota → 目前額度
+// POST /api/outline { text, sections? } → { ok, title, subtitle, sections:[{title,bullets[]}], stats:[{value,label}] }
 //
 // 品質策略：
 //  1. 先用 LLM 把中文主題改寫成細緻的英文提示詞（FLUX 的文字編碼器對中文理解很差，這步影響最大）
@@ -177,6 +178,47 @@ export default {
       }, 200, c.headers);
     }
 
+    // ── 3) 學會壁報：貼上簡報／報告文字 → 海報內容 JSON（標題、段落、亮點數字）──
+    if (url.pathname === '/api/outline' && req.method === 'POST') {
+      let body;
+      try { body = await req.json(); } catch { return json({ ok: false, error: 'bad json' }, 400, c.headers); }
+      const text = String(body.text || '').trim().slice(0, 12000);
+      if (text.length < 20) return json({ ok: false, error: '請貼上至少 20 字的成果資料' }, 400, c.headers);
+      const nSec = Math.min(6, Math.max(2, +body.sections || 4));
+      const om = await readCount(env, `om:${minKey()}:${ip}`), od = await readCount(env, `od:${dayKey()}:${ip}`);
+      if (om >= 6) return json({ ok: false, error: '太頻繁了，請等一分鐘再試' }, 429, c.headers);
+      if (od >= 60) return json({ ok: false, error: '今日 AI 整理額度已用完（每人 60 次／天）' }, 429, c.headers);
+      const out = await outlineText(env, text, nSec);
+      if (!out) return json({ ok: false, error: 'AI 整理失敗，請縮短文字再試或手動填寫' }, 502, c.headers);
+      await Promise.all([bump(env, `om:${minKey()}:${ip}`, 120), bump(env, `od:${dayKey()}:${ip}`, 60 * 60 * 26)]);
+      return json({ ok: true, ...out }, 200, c.headers);
+    }
+
     return json({ ok: false, error: 'not found' }, 404, c.headers);
   },
 };
+
+// 文字 → 海報內容 JSON。qwen3 中文整理品質佳；失敗退 gemma。只回傳 JSON，不含 <think>。
+async function outlineText(env, text, nSec) {
+  const sys = `你是醫院品質與衛教海報的文案編輯。把使用者提供的成果資料整理成學會壁報海報內容，只輸出一個 JSON 物件，不要任何解釋或 markdown：
+{"title":"主標題（15字內）","subtitle":"副標題（22字內，一句話說明核心做法與效益）","sections":[{"title":"段落標題（6字內）","bullets":["重點（22字內）","重點","重點"]}],"stats":[{"value":"4,053","label":"數字說明（8字內）"}]}
+規則：全部繁體中文；sections 固定 ${nSec} 段，順序為 背景與目的、執行方法、成果與數據、結論與未來（${nSec > 4 ? '可再加「團隊與資源」「病人回饋」等' : nSec < 4 ? '不足時合併相鄰段落' : '不得增減'}），每段 2–3 個 bullets，每個 bullet 不超過 22 字、不用句號結尾；stats 給 2–3 個資料裡真的有的數字（value 只放數字或百分比，label 說明）；沒有數字就給空陣列；不要編造資料裡沒有的內容，不確定的寫「（待補）」；不要表情符號。`;
+  for (const model of [LLM, LLM_FALLBACK]) {
+    try {
+      const r = await env.AI.run(model, {
+        messages: [{ role: 'system', content: sys }, { role: 'user', content: text + ' /no_think' }],
+        max_tokens: 1200, temperature: 0.3,
+      });
+      let t = (r && (r.response || r.result?.response) || '');
+      t = t.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      const m = t.match(/\{[\s\S]*\}/); if (!m) continue;
+      const o = JSON.parse(m[0]);
+      if (!o || !Array.isArray(o.sections) || !o.sections.length) continue;
+      const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+      const sections = o.sections.slice(0, 6).map(s => ({ title: clean(s.title).slice(0, 12), bullets: (Array.isArray(s.bullets) ? s.bullets : [s.bullets]).map(clean).filter(Boolean).slice(0, 4).map(b => b.replace(/^[•\-\d.、\s]+/, '').slice(0, 40)) }));
+      const stats = (Array.isArray(o.stats) ? o.stats : []).slice(0, 4).map(x => ({ value: clean(x.value).slice(0, 12), label: clean(x.label).slice(0, 16) })).filter(x => x.value);
+      return { title: clean(o.title).slice(0, 30), subtitle: clean(o.subtitle).slice(0, 50), sections, stats, model };
+    } catch (e) { /* try next */ }
+  }
+  return null;
+}

@@ -119,8 +119,9 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
       <div class="route best">
         <h4>A. 美編小助手 + AI 文案<span class="tag">最推薦</span></h4>
         <ul>
-          <li>首頁「學會壁報／投稿海報」先填該學會規格（或選常用規格），一鍵產生版型：直式單欄、橫式雙欄。</li>
-          <li>文案請 ChatGPT／Gemini 整理，貼進去就好。</li>
+          <li>首頁「學會壁報／投稿海報」：1 填該學會規格 → 2 填內容與照片 → 3 產生版型。不用自己排版。</li>
+          <li>把簡報文字貼進「AI 自動填表」，院內 AI 會整理成標題、段落重點與亮點數字；或用 ChatGPT／Gemini 整理後貼入。</li>
+          <li>照片直接選檔，自動裁切成一致大小、可加圖說；每張卡片是群組，可整組拖曳換位置。</li>
           <li>匯出自動：頁面公分數、DPI 像素、檔名、容量上限、字級檢查，完成後顯示實際 dpi 與 MB。</li>
           <li>文字與形狀在匯出時重繪，A0 也清楚。</li>
         </ul>
@@ -156,8 +157,9 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
         </ul>
       </div></div>
       <div class="step"><div>
-        <h4>請免費 AI 整理文案（10 分鐘）</h4>
-        <p>開 <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a> 或 <a href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>（免費版即可，用院內公務帳號登入），貼上下面的提示詞，再把你的資料貼在最後。資料很多、很多份檔案時，改用 <a href="https://notebooklm.google.com" target="_blank" rel="noopener">NotebookLM</a>：先上傳檔案當來源，再用第二段提示詞問它，它只會引用你上傳的內容，比較不會瞎編。</p>
+        <h4>請 AI 整理文案（5–10 分鐘）</h4>
+        <p><strong>最快：</strong>在美編小助手「2 內容與照片」把簡報各頁文字或報告貼進「AI 自動填表」，院內 AI（Cloudflare Workers AI，免費、資料不經外部帳號）會整理成主標題、副標題、各段落 2–3 個重點與亮點數字，直接填進欄位，你再核對修改。</p>
+        <p><strong>或用外部免費 AI：</strong>開 <a href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a> 或 <a href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>（免費版即可，用院內公務帳號登入），貼上下面的提示詞，再把你的資料貼在最後。資料很多、很多份檔案時，改用 <a href="https://notebooklm.google.com" target="_blank" rel="noopener">NotebookLM</a>：先上傳檔案當來源，再用第二段提示詞問它，它只會引用你上傳的內容，比較不會瞎編。</p>
         <div class="prompt" id="p1"><button class="cp" onclick="cp('p1')">複製</button>你是醫院品質與衛教海報的文案編輯。請把下面的成果資料整理成「學會壁報（直式 9:16 電子海報）」的文案，條件：
 1. 全部使用繁體中文，不要表情符號。
 2. 固定四段：一、背景與目的／二、執行方法／三、成果與數據／四、結論與未來。每段 3–5 個重點，每點不超過 25 字。
@@ -171,13 +173,13 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
         <p class="note">AI 給的是草稿。數字、年份、人次請對回原始資料再使用；看到「（待補）」就是資料裡沒有，請自己補。</p>
       </div></div>
       <div class="step"><div>
-        <h4>填規格、產生版型、貼字、放照片（15 分鐘）</h4>
+        <h4>填規格、填內容、產生版型（15 分鐘）</h4>
         <ul>
-          <li>開美編小助手，首頁點「學會壁報／投稿海報」。在「步驟 0」選常用規格或自己填：寬 × 高（公分）、直↔橫、匯出 DPI、容量上限、最小字級、類別標籤、檔名、活動名稱、單位簡稱。下方會即時顯示畫布像素、匯出像素與 dpi。</li>
-          <li>選「配色」（寧靜靛、沉穩綠、寬廣藍、大地棕、熱情紅，皆為院內品牌色）與「版面風格」（卡片式專業版或簡潔式），按「用這個規格產生版型並開始編輯」。版型會依尺寸自動排：直式單欄、橫式雙欄，字級依頁面大小換算，且不低於你填的最小字級；內容放不下時自動縮字並簡化區塊。</li>
-          <li>已經有自己排好的海報？按「只套用規格到目前畫布」，保留設計、只套匯出規則（必要時會問你要不要改畫布比例）。</li>
-          <li>卡片式版型內容：漸層標題區（標籤、院徽、主副標題）、作者卡、四張編號段落卡、成果數字磚、圖表位置、三格照片位置、結論強調卡、深色頁尾與 QR 位置。點文字兩下即可改；照片與圖表用左側「圖片」插入後覆蓋灰框，圖表可先用 Excel 或 Gemini 畫好再截圖。</li>
-          <li>字級換算：畫布 1 pt ＝ 1.33 px（例如最小 12 pt ＝ 16 px）。畫布尺寸會隨你填的公分數變化，所以用 pt 想就好。</li>
+          <li><strong>1 學會規格：</strong>選常用尺寸或自己填寬 × 高（公分）、直↔橫、匯出 DPI、容量上限、最小字級、類別標籤、檔名、活動名稱、單位。下方即時顯示畫布像素、匯出像素與 dpi。</li>
+          <li><strong>2 內容與照片：</strong>主標題（用「／」分兩行）、副標題、作者、Email、QR 連結；段落 2–6 段可增刪、上下移，每段每行一個重點；亮點數字 0–4 個；照片與圖表 0–6 張，選檔即可，會自動裁成一致大小，可加圖說。內容會記在這台電腦，下次自動帶入。</li>
+          <li><strong>3 產生與匯出：</strong>選配色（寧靜靛、沉穩綠、寬廣藍、大地棕、熱情紅，皆院內品牌色）與風格（卡片式專業版／簡潔式），按「產生版型」。直式單欄、橫式雙欄自動排；字級依頁面換算且不低於最小字級，放不下時自動縮字並簡化（先縮照片、去副標題，最後才拿掉照片）。</li>
+          <li><strong>產生後微調：</strong>每張卡片是一個群組，點一下整組選取、拖曳即可換位置；點文字兩下可改字；想換照片就回「2 內容」換檔重新產生。已有自己排好的海報可按「只套用規格到目前畫布」。</li>
+          <li>字級換算：畫布 1 pt ＝ 1.33 px（例如最小 12 pt ＝ 16 px）。</li>
         </ul>
       </div></div>
       <div class="step"><div>
@@ -246,7 +248,8 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
 
     <h2>九、常見問題</h2>
     <p><strong>Q：一定要用美編小助手嗎？</strong>不用。只要最後的 PDF 符合第一節的規範即可；美編小助手只是把尺寸、檔名、容量、字級這些容易錯的地方自動處理掉。</p>
-    <p><strong>Q：免費版 AI 夠用嗎？</strong>文案整理、NotebookLM 摘要、每天少量生圖，免費版都夠。遇到額度用完，換另一個平台或隔天再做。</p>
+    <p><strong>Q：免費版 AI 夠用嗎？</strong>文案整理、NotebookLM 摘要、每天少量生圖，免費版都夠。美編小助手內建的「AI 自動填表」與「AI 底圖」走院內 Cloudflare Workers AI（Qwen3 文字模型、FLUX.2 生圖），免費且不用登入；外部平台額度用完就換一個或隔天再做。</p>
+    <p><strong>Q：哪些免費 AI 值得試？</strong>整理文案：Gemini（Google 帳號免費）、ChatGPT 免費版、NotebookLM（多份檔案最好用）。底圖與插圖：Gemini 內建生圖（Nano Banana，可指定比例）、美編小助手 AI 底圖。要圖中有正確中文字：Ideogram 免費額度較擅長文字，但仍要逐字檢查。整張海報草稿：NotebookLM 資訊圖表只當版面參考。</p>
     <p><strong>Q：什麼情況還是要找美編？</strong>需要客製插畫、全院統一主視覺、或要印大型展板且對品質要求高時。先用本流程做出草稿再找美編，美編只需精修，排程會快很多。</p>
     <p><strong>Q：其他學會的規範不一樣？</strong>這是常態。把第一節的五個欄位換成該學會的要求，填進美編小助手「步驟 0」即可，橫式、A0、展板都支援；AI 提示詞裡的比例也跟著改。</p>
     <p><strong>Q：匯出提示說 dpi 偏低怎麼辦？</strong>回到助手把「匯出解析度」調高再匯出；若是 A0 以上被自動降到約 180 dpi，那是瀏覽器記憶體限制，展板用途可接受，要更高就改用 PowerPoint／Slides 向量輸出。</p>
