@@ -61,3 +61,11 @@ poster-generator-deploy/
 
 - [ ] 盤點現有版型，建立 ROADMAP.md
 - [ ] 補充橫式版型
+
+## 學會壁報助手（2026-10-27 新增）
+
+- 首頁卡片／下載列按鈕 `confOpen()` 開啟 `#conf-overlay`：投稿規範速查、AI 提示詞複製（`CONF_PROMPTS`）、套版、AI 底圖、匯出。
+- 版型 `conf-ckd-9x16`（`templates.json`，類別 `conf`）可帶 `pdfSpec:{mm:[142.9,254], name, maxMB, minPt}`；`applyTemplate` 會存到 `S.pdfSpec`，並隨 pages／autosave 保存。
+- `exportPDF()` 若頁面有 `pdfSpec` 且畫布比例未被改掉：頁面用規格 mm、檔名用 `name`、JPEG 品質自動降到 `maxMB` 內、匯出前檢查小於 `minPt` 的文字（1080px 畫布對 142.9mm：1px＝0.375pt，32px＝12pt）。
+- `applyTemplate` 已支援 `shape` 物件（之前只有 txt／table／img，形狀會被略過）。
+- 同仁用的可列印指南：`docs/conf-poster-guide.html`（桌面「學會壁報AI製作指南」資料夾有一份副本，改了請同步）。
