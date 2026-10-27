@@ -10984,7 +10984,9 @@ function confBuildCard(sp){
   const k=Math.pow(refMM/142.9,0.55);
   const minPx= sp.minPt? sp.minPt/0.75 : 0;
   const basePt={title:26,sub:12.5,head:17,body:13,meta:11.5,num:26,lab:11,badge:12};
-  const mkF=f=>{ const F={}; for(const key in basePt) F[key]=Math.max(minPx, basePt[key]*k*f/0.75); return F; };
+  // 縮字時保留階層：內文到最小字級後，標題／段落標題／數字仍維持倍率，不會全部一樣大
+  const ratio={title:1.9,sub:1.0,head:1.3,body:1.0,meta:1.0,num:1.8,lab:1.0,badge:1.0};
+  const mkF=f=>{ const F={}; const body=Math.max(minPx, basePt.body*k*f/0.75); for(const key in basePt) F[key]=Math.max(body*ratio[key], basePt[key]*k*f/0.75); return F; };
   const L=1.4;
   const txt=(text,size,color,weight,align,x,y,w,h,extra={})=>Object.assign({type:'txt',text,size:Math.round(size),color,weight,align,fontFamily:'Noto Sans TC',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1},extra);
   const shape=(type,x,y,w,h,fill,o={})=>Object.assign({type:'shape',shapeType:type,x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1,fillColor:fill,strokeColor:'transparent',strokeWidth:0,strokeDash:'solid'},o);
@@ -10997,7 +10999,7 @@ function confBuildCard(sp){
   const unit=sp.unit||'光田綜合醫院', unitShort=unit.split(' ')[0];
   function build(F,opt){
     const o=[];
-    const pad=m*0.6;
+    const pad= opt.compact? m*0.45 : m*0.6;   // 緊湊模式：卡片內距縮小、拿掉副標題
     const colW= land? (W-3*m)/2 : W-2*m;
     const inner=colW-2*pad;
     opt.short = inner/F.body < 20;
@@ -11008,7 +11010,7 @@ function confBuildCard(sp){
     o.push(shape('ellipse',W*0.55,H*0.78,W*0.3,W*0.3,T.accent,{opacity:0.08}));
     // 標題區
     const logoH=F.title*1.0, logoW=logoH/0.1725, titleLines= land?1:opt.titleLines;
-    const headerH=m*0.8+logoH+m*0.55+F.title*L*titleLines+m*0.25+F.sub*L+m*1.2;
+    const headerH=m*0.8+logoH+m*0.55+F.title*L*titleLines+(opt.compact?0:m*0.25+F.sub*L)+m*1.2;
     o.push(rect(0,0,W,headerH,T.c1,grad(T.c1,T.c2,120)));
     o.push(shape('ellipse',W*0.62,-headerH*0.55,W*0.55,W*0.55,'#FFFFFF',{opacity:0.08}));
     o.push(shape('ellipse',W*0.84,headerH*0.35,W*0.28,W*0.28,'#FFFFFF',{opacity:0.07}));
@@ -11018,7 +11020,7 @@ function confBuildCard(sp){
     let y=m*0.8+logoH+m*0.55;
     o.push(txt(titleLines===1?'海報標題：請改成成果主題':'海報標題：請改成成果主題\n（建議 15 字內，可兩行）',F.title,'#FFFFFF','700','left',m,y,W-2*m,F.title*L*titleLines));
     y+=F.title*L*titleLines+m*0.25;
-    o.push(txt('副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L,{opacity:0.88}));
+    if(!opt.compact) o.push(txt('副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L,{opacity:0.88}));
     // 作者卡（疊在標題區下緣）
     const authLines= land?1:2, authH=F.meta*L*authLines+m*0.7, authY=headerH-m*0.6;
     o.push(rect(m,authY+m*0.12,W-2*m,authH,T.c1,{rx:Math.round(m*0.35),opacity:0.10}));
@@ -11037,7 +11039,7 @@ function confBuildCard(sp){
     const top=authY+authH+m*0.8, bottom=footY-m*0.7;
     const badgeD=F.head*1.5;
     const secH=i=>pad+Math.max(badgeD,F.head*1.35)+m*0.3+F.body*L*opt.lines+pad+(i===2?(opt.tiles? m*0.35+F.num*1.25+F.lab*L+m*0.55:0)+(opt.chart? m*0.4+F.body*L*3.2:0):0);
-    const photoH=opt.photos? colW*0.2+F.lab*L+m*0.25 : 0;
+    const photoH=opt.photos? (opt.photoCompact? colW*0.16+m*0.1 : colW*0.2+F.lab*L+m*0.25) : 0;
     const blocks= land? [[0,1,'photos'],[2,3]] : [[0,1,'photos',2,3]];
     let over=0;
     blocks.forEach((list,ci)=>{
@@ -11049,12 +11051,12 @@ function confBuildCard(sp){
       let cy=top;
       items.forEach(b=>{
         if(b==='photos'){
-          const pw=(colW-2*m*0.4)/3, ph=colW*0.2;
+          const pw=(colW-2*m*0.4)/3, ph=opt.photoCompact? colW*0.16 : colW*0.2;
           for(let j=0;j<3;j++){ const px=x+j*(pw+m*0.4);
             o.push(rect(px,cy,pw,ph,'#DDE3EC',{rx:Math.round(m*0.3)}));
             o.push(shape('ellipse',px+pw*0.38,cy+ph*0.28,pw*0.24,pw*0.24,'#FFFFFF',{opacity:0.9}));
             o.push(txt(`照片 ${j+1}`,F.lab,'#64748b','500','center',px,cy+ph*0.62,pw,F.lab*L)); }
-          o.push(txt('活動照片：用左側「圖片」插入後覆蓋灰框（建議 3 張、長邊 ≥1500 px）',F.lab,'#64748b','400','left',x,cy+ph+m*0.1,colW,F.lab*L,{opacity:0.9}));
+          if(!opt.photoCompact) o.push(txt('活動照片：用左側「圖片」插入後覆蓋灰框（建議 3 張、長邊 ≥1500 px）',F.lab,'#64748b','400','left',x,cy+ph+m*0.1,colW,F.lab*L,{opacity:0.9}));
           cy+=photoH+gap; return;
         }
         const i=b, [t,full,short]=SEC[i], h=secH(i), tinted=i===3;
@@ -11083,10 +11085,10 @@ function confBuildCard(sp){
     });
     return {objs:o,over};
   }
-  const opt={photos:true,chart:true,tiles:true,lines:3,short:false,titleLines:2};
+  const opt={photos:true,photoCompact:false,chart:true,tiles:true,lines:3,short:false,titleLines:2,compact:false};
   let f=1, F=mkF(1), r=build(F,opt), tries=0;
   while(r.over>0 && tries<5){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
-  const steps=[()=>opt.chart=false, ()=>opt.photos=false, ()=>opt.short=true, ()=>opt.lines=2, ()=>opt.tiles=false, ()=>opt.titleLines=1];
+  const steps=[()=>opt.chart=false, ()=>opt.short=true, ()=>opt.lines=2, ()=>opt.photoCompact=true, ()=>opt.compact=true, ()=>opt.photos=false, ()=>opt.tiles=false, ()=>opt.titleLines=1]; // 照片先縮小、再緊湊版面，最後才拿掉照片
   for(const st of steps){ if(r.over<=0) break; st(); r=build(F,opt); }
   return {id:'conf-dyn', name:sp.label, category:'conf', w:W, h:H, bg:T.tint, previewGrad:[T.c1,T.c2], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.photos||!opt.chart||opt.lines<3||!opt.tiles};
 }

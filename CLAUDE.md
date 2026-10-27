@@ -65,7 +65,7 @@ poster-generator-deploy/
 ## 學會壁報助手（2026-10-27 新增，同日改為規格可自訂）
 
 - 首頁卡片／下載列按鈕 `confOpen()` 開啟 `#conf-overlay`。步驟 0 是規格表單：常用尺寸 `CONF_PRESETS`（只有尺寸：9:16、16:9、A4–A0、展板、自訂；**不可放任何學會名稱或預填容量／字級／檔名**，使用者要求）、頁面公分、直↔橫、匯出 DPI、容量上限、最小字級、標籤、檔名、活動名、單位；存 localStorage `ktgh_conf_spec_v1`。
-- 版型不在 templates.json，由 `confBuildTemplate(spec)` 依 `spec.style` 分派：`confBuildCard`（預設，卡片式專業版：底色＋裝飾圓、漸層標題區疊作者卡、超橢圓編號徽章卡片、成果數字磚、圖表／照片位置、結論強調卡、深色頁尾＋QR）或 `confBuildSimple`（簡潔式）；配色 `CONF_THEMES`（indigo/green/blue/warm/red，皆品牌色）。字級依頁寬 0.55 次方換算且 ≥ 最小字級，放不下自動縮字、再逐步簡化（去圖表→去照片→短句→2 行→去數字磚→標題 1 行）。經 `applyTemplateObj(tpl)` 套用（`applyTemplate(id)` 已拆成查找＋套用）。
+- 版型不在 templates.json，由 `confBuildTemplate(spec)` 依 `spec.style` 分派：`confBuildCard`（預設，卡片式專業版：底色＋裝飾圓、漸層標題區疊作者卡、超橢圓編號徽章卡片、成果數字磚、圖表／照片位置、結論強調卡、深色頁尾＋QR）或 `confBuildSimple`（簡潔式）；配色 `CONF_THEMES`（indigo/green/blue/warm/red，皆品牌色）。字級依頁寬 0.55 次方換算且 ≥ 最小字級，放不下自動縮字（內文到最小字級後標題／段標／數字仍維持倍率階層）、再逐步簡化（去圖表→短句→2 行→照片縮小→緊湊版面去副標題→去照片→去數字磚→標題 1 行）。經 `applyTemplateObj(tpl)` 套用（`applyTemplate(id)` 已拆成查找＋套用）。
 - 使用者明確要求：成品要有設計感、不能陽春，否則無法給同事用；預設清單只能是尺寸、不可帶學會名稱。
 - `_drawPolyCanvas` 補上 superellipse（匯出 PNG/PDF 之前會漏畫超橢圓，徽章會消失）。
 - `S.pdfSpec={mm,name,maxMB,minPt,dpi,label}` 隨 pages／autosave 保存；畫布 px＝mm×3.7795（1 px＝0.75 pt）。
