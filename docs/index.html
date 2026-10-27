@@ -5012,7 +5012,8 @@ async function dlPoster(){
       ctx.fillStyle = obj.color;
       ctx.textBaseline = 'top';
       ctx.textAlign = obj.align;
-      const lines = obj.text.split('\n');
+      const lines = _wrapCanvasLines(ctx, obj.text, obj.w);   // 與編輯器相同的自動換行
+      ctx.beginPath(); ctx.rect(-obj.w/2,-obj.h/2,obj.w,obj.h); ctx.clip(); // 與編輯器相同：超出文字框即裁切
       const ax = obj.align==='center'?0 : obj.align==='right'?obj.w/2 : -obj.w/2;
       const halfLead = obj.size * 0.2;
       // 文字外框（strokeText，圓角 lineJoin/Cap）
@@ -6017,7 +6018,8 @@ async function exportPDF(){
         ctx.fillStyle=obj.color;
         ctx.textBaseline='top';
         ctx.textAlign=obj.align||'left';
-        const lines=(obj.text||'').split('\n');
+        const lines=_wrapCanvasLines(ctx,obj.text||'',obj.w);   // 與編輯器相同的自動換行
+        ctx.beginPath(); ctx.rect(-obj.w/2,-obj.h/2,obj.w,obj.h); ctx.clip();
         const ax=obj.align==='center'?0:obj.align==='right'?obj.w/2:-obj.w/2;
         const halfLead=obj.size*0.2;
         // 文字外框（圓角 lineJoin/Cap）
@@ -6053,6 +6055,36 @@ async function exportPDF(){
   else if(dpi0<150) snack(`PDF 已下載：${fname}（${info}）。解析度低於 150 dpi，實體印刷會偏糊，建議在助手把匯出 DPI 調高`,8000);
   else snack(`PDF 已下載：${fname}（${info}）`,6000);
 }
+// 畫布文字自動換行：模擬編輯器 .tinner（white-space:pre-wrap; word-break:break-word）
+//  - 中日韓字可在任何字間斷行；拉丁字詞以空白斷行，單字太長才逐字切
+//  - 行尾空白懸掛；收尾標點（，。、；：！？）」』】）不放行首
+function _wrapCanvasLines(ctx, text, maxW){
+  const out=[]; const CJK=/[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef\u2460-\u27bf\u2190-\u21ff]/;
+  const CLOSE=/^[，。、；：！？）」』】》〉…～]$/;
+  for(const para of String(text==null?'':text).split('\n')){
+    if(para===''){ out.push(''); continue; }
+    const toks=para.match(/[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef\u2460-\u27bf\u2190-\u21ff]|\s+|[^\s\u2e80-\u9fff\u3000-\u303f\uff00-\uffef\u2460-\u27bf\u2190-\u21ff]+/g)||[para];
+    let line='';
+    for(const t of toks){
+      const cand=line+t;
+      if(line===''||/^\s+$/.test(t)||CLOSE.test(t)||ctx.measureText(cand).width<=maxW+0.01){
+        if(line===''&&!/^\s+$/.test(t)&&ctx.measureText(t).width>maxW+0.01){ // 單一詞太長：逐字切
+          let cur=''; for(const ch of t){ if(cur!==''&&ctx.measureText(cur+ch).width>maxW+0.01){ out.push(cur); cur=''; } cur+=ch; } line=cur; continue;
+        }
+        line=cand; continue;
+      }
+      out.push(line); line='';
+      if(ctx.measureText(t).width<=maxW+0.01){ line=t; }
+      else { let cur=''; for(const ch of t){ if(cur!==''&&ctx.measureText(cur+ch).width>maxW+0.01){ out.push(cur); cur=''; } cur+=ch; } line=cur; }
+    }
+    out.push(line);
+  }
+  return out;
+}
+const _measCtx=document.createElement('canvas').getContext('2d');
+function _txtFontStack(ff){ return ff==='Noto Serif TC'?"'Noto Serif TC',serif":"'Noto Sans TC',sans-serif"; }
+// 量測某段文字在指定寬度下會排成幾行（與匯出同一套換行）
+function _txtLines(text,size,weight,family,maxW){ _measCtx.font=`${weight||400} ${Math.round(size)}px ${_txtFontStack(family)}`; return _wrapCanvasLines(_measCtx,text,maxW).length; }
 function _exportScaleFor(pg){
   const s=_pdfSpecFor(pg);
   let sc = (s&&s.dpi) ? s.dpi/96 : Math.min(4,Math.max(2,Math.ceil(2880/Math.max(pg.W,pg.H))));
@@ -10551,7 +10583,7 @@ const Collage = {
           <h4><i style="background:#6D28D9">AI</i>AI 設計：讓模型做視覺，不只排版</h4>
           <p><strong>路線 1（免費、一鍵）：</strong>院內 FLUX.2 依你選的風格與主題生成主視覺底圖，再把內容自動排成半透明卡片疊在上面。文字永遠正確、可印刷。</p>
           <div class="row"><button class="btn btn-purple" onclick="confAiDesign()">AI 主視覺＋自動排版（免費）</button></div>
-          <p style="margin-top:6px"><strong>路線 2（Nano Banana）：</strong>把內容、照片、院徽與設計草稿交給 Google 的 Nano Banana 畫出整張海報（含中文字）。免費用 Gemini App 手動貼；院內若設定 Gemini 金鑰可一鍵生成（付費模型，約每張 NT$2）。產出是一張圖，錯字要用文字工具覆蓋修正。</p>
+          <p style="margin-top:6px"><strong>路線 2（Nano Banana，免費）：</strong>把內容、照片、院徽與設計草稿交給 Google 的 Nano Banana 畫出整張海報（含中文字），用 Gemini App 免費帳號即可，回來匯入成品。產出是一張圖，錯字要用文字工具覆蓋修正。</p>
           <div class="row"><button class="btn btn-indigo" onclick="confBananaOpen()">用 Nano Banana 畫整張海報</button><span id="conf-banana-st" style="font-size:11.5px;color:#64748b;align-self:center"></span></div>
         </div>
         <div class="conf-step" style="background:#fff">
@@ -10598,20 +10630,14 @@ const Collage = {
           <a class="btn btn-indigo btn-sm" href="./logos/logo-h-normal.png" download="光田綜合醫院院徽.png" style="text-decoration:none">下載院徽（PNG）</a>
         </div>
       </div>
-      <div class="conf-steps">
+      <div class="conf-steps" style="grid-template-columns:1fr">
         <div class="conf-step">
-          <h4><i>2</i>免費路線：Gemini App</h4>
-          <p>1. 開 <a class="lnk" href="https://gemini.google.com" target="_blank" rel="noopener">gemini.google.com</a>，選「建立圖片」（Nano Banana）。<br>2. 貼上提示詞，附上設計草稿 PNG、院徽 PNG 與活動照片（去識別化）。<br>3. 產生後可接著說「把第二段字放大」「換成橫式」繼續修。<br>4. 下載成品，回到這裡按「匯入 AI 成品」。免費帳號每天有張數限制。</p>
+          <h4><i>2</i>Gemini App（免費）</h4>
+              <p>1. 開 <a class="lnk" href="https://gemini.google.com" target="_blank" rel="noopener">gemini.google.com</a>，選「建立圖片」（Nano Banana）。<br>2. 貼上提示詞，附上設計草稿 PNG、院徽 PNG 與活動照片（去識別化）。<br>3. 產生後可接著說「把第二段字放大」「換成橫式」繼續修。<br>4. 下載成品，回到這裡按「匯入 AI 成品」。免費帳號每天有張數限制。</p>
           <div class="row"><label class="btn btn-green btn-sm" style="cursor:pointer">匯入 AI 成品<input type="file" accept="image/*" style="display:none" onchange="confImportPosterFile(this)"></label></div>
         </div>
-        <div class="conf-step">
-          <h4><i>3</i>院內一鍵生成（需 Gemini 金鑰）</h4>
-          <p id="banana-key-st">檢查中…</p>
-          <div class="row"><button class="btn btn-purple btn-sm" id="banana-run" onclick="confBananaRun()" disabled>一鍵生成（Nano Banana）</button><select id="banana-size" style="border:1px solid #d5dbe3;border-radius:8px;padding:5px 8px;font-size:12px"><option value="1K">1K（快）</option><option value="2K">2K（印刷）</option></select></div>
-          <div class="conf-ai-status" id="banana-status"></div>
-          <div id="banana-out" style="display:none;margin-top:6px"><img id="banana-img" alt="" style="max-width:100%;max-height:360px;border-radius:8px;border:1px solid #e3e8ef;display:block"><div class="row" style="margin-top:6px"><button class="btn btn-green btn-sm" onclick="confBananaUse()">套用為整張海報</button><button class="btn btn-ghost btn-sm" onclick="confBananaRun()">再生成一張</button></div></div>
-        </div>
       </div>
+      <div style="display:none"><p id="banana-key-st"></p><button id="banana-run" onclick="confBananaRun()"></button><select id="banana-size"><option value="1K">1K</option></select><div id="banana-status"></div><div id="banana-out"><img id="banana-img" alt=""></div></div>
       <div class="conf-check"><h4>注意</h4>
         <label><input type="checkbox"> 成品是一張圖：中文字可能有錯字或數字變動，請逐字核對；錯的地方用「文字」工具加白底文字蓋上</label>
         <label><input type="checkbox"> 圖片解析度多為 1024–2048 px：電子海報可用，實體印刷請選 2K 或改用「AI 主視覺＋自動排版」</label>
@@ -11135,6 +11161,83 @@ function confContentForBuild(cc){
 // header: band(漸層色帶疊作者卡) | bar(細色條＋置中標題，公版) | light(白底、彩色院徽、細線) | curve(色帶下緣弧形)
 // section: badge(卡片＋超橢圓編號) | pill(膠囊標題) | label(「一」＋框線標籤，公版)
 // deco: circles | none | poly | glow ；footer: dark | bar | light
+// 簡潔式：純文字排版（單欄／雙欄）
+function confBuildSimple(sp,c){
+  const PX=3.7795, W=Math.round(sp.mm[0]*PX), H=Math.round(sp.mm[1]*PX), land=W>H;
+  const m=Math.round(Math.min(W,H)*0.046);
+  const refMM= land? sp.mm[0]/2 : sp.mm[0];
+  const k=Math.pow(refMM/142.9,0.55);
+  const minPx= sp.minPt? sp.minPt/0.75 : 0;
+  const basePt={title:27,head:19.5,body:13.5,meta:12,num:24,lab:12};
+  const ratio={title:1.9,head:1.3,body:1,meta:1,num:1.8,lab:1};
+  const mkF=f=>{ const F={}; const body=Math.max(minPx, basePt.body*k*f/0.75); for(const key in basePt) F[key]=Math.max(body*ratio[key], basePt[key]*k*f/0.75); return F; };
+  const L=1.4; const G='gc'+Date.now().toString(36)+'_';
+  const txt=(text,size,color,weight,align,x,y,w,h,grp)=>({type:'txt',text,size:Math.round(size),color,weight,align,fontFamily:'Noto Sans TC',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1,groupId:grp});
+  const rect=(x,y,w,h,fill,o={},grp)=>Object.assign({type:'shape',shapeType:'rect',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1,fillColor:fill,strokeColor:'transparent',strokeWidth:0,strokeDash:'solid',groupId:grp},o);
+  const cols=['#14286E','#006341','#006678','#427500','#664B39','#9C0F1B'];
+  const unit=sp.unit||'光田綜合醫院';
+  const meta1=`作者：${c.authors||'王○○、李○○、陳○○'}　｜　單位：${unit}`, meta2=`聯絡 Email：${c.email||'xxxxx@ktgh.com.tw'}`;
+  const foot1=`${unit.split(' ')[0]}${sp.event?'　｜　'+sp.event:''}`, foot2= sp.name? `匯出時自動命名為 ${sp.name}` : '';
+  function build(F,opt){
+    const o=[];
+    const logoH=F.title*1.05, logoW=logoH/0.1725;
+    const titleLines= land?1:opt.titleLines;
+    const headerH=m*0.6+logoH+m*0.45+F.title*L*titleLines+m*0.6;
+    o.push(rect(0,0,W,headerH,'#14286E',{fillGradient:{on:true,angle:135,color1:'#14286E',color2:'#00AAC8'}},G+'hdr'));
+    o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:m,y:Math.round(m*0.6),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:G+'hdr'});
+    if(sp.tag){ const t=sp.tag, tp=F.meta, th=tp*1.8, tw=Math.max(t.length*tp*0.95,tp*3)+tp*1.6, ty=m*0.6+(logoH-th)/2;
+      o.push(rect(W-m-tw,ty,tw,th,'#FFFFFF',{rx:Math.round(th/2)},G+'hdr')); o.push(txt(t,tp,'#14286E','700','center',W-m-tw,ty+(th-tp*L)/2,tw,tp*L,G+'hdr')); }
+    const title=c.title||(titleLines===1?'海報標題：請改成成果主題':'海報標題：請改成成果主題\n（建議 15 字內，可兩行）');
+    o.push(txt(titleLines===1?title.replace('\n','　'):title,F.title,'#FFFFFF','700','left',m,m*0.6+logoH+m*0.45,W-2*m,F.title*L*titleLines,G+'hdr'));
+    let y=headerH;
+    const metaLines= land?1:2, metaH=F.meta*L*metaLines+m*0.7;
+    o.push(rect(0,y,W,metaH,'#E8EAF0',{},G+'auth'));
+    o.push(txt(land? meta1+'　｜　'+meta2 : meta1+'\n'+meta2, F.meta,'#333333','400','left',m,y+m*0.35,W-2*m,F.meta*L*metaLines,G+'auth'));
+    y+=metaH;
+    const footLines= foot2?2:1, footH=F.meta*L*footLines+m*0.7, footY=H-footH;
+    o.push(rect(0,footY,W,footH,'#F5F5F5',{},G+'foot'));
+    o.push(txt(foot2? foot1+'\n'+foot2 : foot1, F.meta,'#666666','400','center',m,footY+m*0.35,W-2*m,F.meta*L*footLines,G+'foot'));
+    const top=y+m*0.8, bottom=footY-m*0.6;
+    const n=c.sections.length, half=Math.ceil(n/2);
+    const cols2= land? [c.sections.map((_,i)=>i).slice(0,half), c.sections.map((_,i)=>i).slice(half)] : [c.sections.map((_,i)=>i)];
+    const colW= land? (W-3*m)/2 : W-2*m;
+    const bodyText=i=>c.sections[i].bullets.slice(0,opt.lines).map(b=>'• '+b).join('\n');
+    const _lc={}; const linesOf=i=>{ if(_lc[i]==null) _lc[i]=Math.max(1,_txtLines(bodyText(i),F.body,'400','Noto Sans TC',colW-F.body*0.3)); return _lc[i]; };
+    const secH=i=>F.head*1.3+m*0.2+F.body*L*linesOf(i)+((i===c.statsAt&&opt.tiles&&c.stats.length)? m*0.4+F.num*1.2+F.lab*L+m*0.6:0);
+    const placeH=F.body*L*2.4;
+    let over=0;
+    cols2.forEach((idxs,ci)=>{
+      const x=m+ci*(colW+m), hasPlace= opt.place && (land? ci===cols2.length-1 : true);
+      const need=idxs.reduce((a,i)=>a+secH(i),0)+(hasPlace? m*0.5+placeH:0);
+      over=Math.max(over, need-(bottom-top));
+      const gap=Math.max(0,(bottom-top)-need)/(idxs.length+(hasPlace?1:0));
+      let cy=top;
+      idxs.forEach(i=>{
+        const sec=c.sections[i], col=cols[i%cols.length], g=G+'sec'+i;
+        o.push(rect(x,cy+F.head*0.1,F.head*0.22,F.head*1.1,col,{rx:Math.round(F.head*0.11)},g));
+        o.push(txt(`${['一','二','三','四','五','六'][i]}、${sec.title}`,F.head,col,'700','left',x+F.head*0.55,cy,colW-F.head*0.55,F.head*1.3,g));
+        cy+=F.head*1.3+m*0.2;
+        o.push(txt(bodyText(i),F.body,sec.hint?'#64748b':'#333333','400','left',x+F.body*0.3,cy,colW-F.body*0.3,F.body*L*linesOf(i),g));
+        cy+=F.body*L*linesOf(i);
+        if(i===c.statsAt&&opt.tiles&&c.stats.length){ cy+=m*0.4; const n2=c.stats.length, bw=(colW-(n2-1)*m*0.5)/n2, bh=F.num*1.2+F.lab*L+m*0.6;
+          c.stats.forEach((st,j)=>{ const bx=x+j*(bw+m*0.5);
+            o.push(rect(bx,cy,bw,bh,'#E6F6FA',{rx:Math.round(m*0.4)},g)); o.push(txt(st.value,F.num,'#14286E','700','center',bx,cy+m*0.3,bw,F.num*1.2,g)); o.push(txt(st.label,F.lab,'#006678','500','center',bx,cy+m*0.3+F.num*1.2,bw,F.lab*L,g)); });
+          cy+=bh; }
+        cy+=gap;
+      });
+      if(hasPlace){ cy+=m*0.5;
+        o.push(rect(x,cy,colW,placeH,'transparent',{rx:Math.round(m*0.3),strokeColor:'#9AAAD8',strokeWidth:Math.max(2,Math.round(F.body*0.08)),strokeDash:'8,4'},G+'photos'));
+        o.push(txt('照片／圖表位置：用左側「圖片」插入後刪除此框',F.lab,'#64748b','400','center',x,cy+(placeH-F.lab*L)/2,colW,F.lab*L,G+'photos')); }
+    });
+    return {objs:o,over};
+  }
+  const opt={place:true,lines:3,tiles:true,titleLines:2};
+  let f=1, F=mkF(1), r=build(F,opt), tries=0;
+  while(r.over>0 && tries<5){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
+  const steps=[()=>opt.place=false, ()=>opt.lines=2, ()=>opt.tiles=false, ()=>opt.titleLines=1];
+  for(const st of steps){ if(r.over<=0) break; st(); r=build(F,opt); }
+  return {id:'conf-dyn', name:sp.label, category:'conf', w:W, h:H, bg:'#FFFFFF', previewGrad:['#14286E','#00AAC8'], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.place||opt.lines<3, photoSlots:[], qrSlot:null};
+}
 const CONF_STYLES={
   card:  {name:'卡片式（品牌配色，預設）', usesTheme:true, prompt:'乾淨明亮的醫療海報背景，柔和的靛藍到淺藍漸層、微微光暈與幾何圓形', aiStyle:'grad', header:'band', section:'badge', deco:'circles', footer:'dark', bg:null, cardFill:'#FFFFFF', text:'#333333', watermark:false},
   gov:   {name:'公版 A0（論文海報公版，院徽水印）', prompt:'純白底醫院學術海報，上下各一條深藍色帶，極簡、留白、專業', aiStyle:'grad', c1:'#1F2875', c2:'#1F2875', dark:'#1F2875', tint:'#FFFFFF', tint2:'#F1F2F7', accent:'#F5C542', txt:'#1F2875',
@@ -11187,6 +11290,7 @@ function confBuildCard(sp,c,ST){
     const colW= land? (W-3*m)/2 : W-2*m;
     const inner= (ST.cardFill||onBg)? colW-2*pad : colW-pad*0.6;
     const est=(t,fs)=>[...String(t)].reduce((a,ch)=>a+(/[⺀-鿿＀-￯　-〿①-➿←-⇿]/.test(ch)?1:0.56),0)*fs*1.04;
+    const nl=(t,size,weight,w)=>_txtLines(t,size,weight||'400','Noto Sans TC',w); // 實際換行行數（與匯出一致）
     // ── 底色與裝飾（不入群組；AI 底圖模式全部略過）
     if(onBg){ /* 底圖由 S.bgImgEl 提供 */ }
     else if(ST.bg&&typeof ST.bg==='object') o.push(rect(0,0,W,H,ST.bg.grad[0],grad(ST.bg.grad[0],ST.bg.grad[1],ST.bg.angle||180)));
@@ -11210,17 +11314,20 @@ function confBuildCard(sp,c,ST){
     if(ST.watermark&&!onBg){ const s=W*0.62; o.push({type:'img',imgUrl:'./logos/logo-solo.png',x:Math.round(W-s*0.78),y:Math.round(H-s*0.78-m*1.6),w:Math.round(s),h:Math.round(s),rot:0,opacity:0.06,aspectRatio:1}); }
     // ── 標題區
     const gh=G+'hdr';
-    const logoH=F.title*1.0, logoW=logoH/0.1725, titleLines= land?1:opt.titleLines;
+    const logoH=F.title*1.0, logoW=logoH/0.1725;
+    let titleLines= land?1:opt.titleLines;
     const hasSub= !opt.compact && (c.subtitle||!c.title);
     const titleColor= (ST.header==='band'||ST.header==='curve')? '#FFFFFF' : T.txt;
     const titleAlign= ST.titleAlign||'left';
     let title=c.title||(titleLines===1?'海報標題：請改成成果主題':'海報標題：請改成成果主題\n（建議 15 字內，可兩行）');
     if(titleLines===1) title=title.replace(/\n/g,'　');
+    titleLines=Math.min(4,Math.max(titleLines, nl(title,F.title,'700',W-2*m)));   // 標題實際換行數
+    const subLines= hasSub? Math.max(1,nl(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,'400',W-2*m)) : 0;
     let headerH, authY;
     const tagPill=(fill,color,cy)=>{ if(!sp.tag) return; const t=sp.tag, tp=F.meta, th=tp*1.9, tw=Math.max(t.length*tp*1.05,tp*3)+tp*2.2, ty=cy-th/2;
       o.push(rect(W-m-tw,ty,tw,th,fill,{rx:Math.round(th/2),groupId:gh})); o.push(txt(t,tp,color,'700','center',W-m-tw,ty+(th-tp*L)/2,tw,tp*L,{groupId:gh})); };
     if(ST.header==='band'||ST.header==='curve'){
-      headerH=m*0.8+logoH+m*0.55+F.title*L*titleLines+(hasSub? m*0.25+F.sub*L : 0)+m*1.2;
+      headerH=m*0.8+logoH+m*0.55+F.title*L*titleLines+(hasSub? m*0.25+F.sub*L*subLines : 0)+m*1.2;
       if(ST.header==='curve'){
         o.push(rect(0,0,W,headerH*0.72,T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,120))));
         o.push(shape('ellipse',-W*0.1,headerH*0.72-W*0.22,W*1.2,W*0.44,T.c2,Object.assign({groupId:gh},grad(T.c1,T.c2,90))));
@@ -11234,28 +11341,28 @@ function confBuildCard(sp,c,ST){
       let y=m*0.8+logoH+m*0.55;
       o.push(txt(title,F.title,'#FFFFFF','700','left',m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
       y+=F.title*L*titleLines;
-      if(hasSub){ y+=m*0.25; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L,{opacity:0.88,groupId:gh})); }
+      if(hasSub){ y+=m*0.25; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L*subLines,{opacity:0.88,groupId:gh})); }
       authY=headerH-m*0.6;
     } else if(ST.header==='bar'){
       // 公版：上方色條（院徽置中）、標題置中、作者置中
       const barH=logoH+m*1.0;
-      if(onBg) o.push(rect(0,barH,W,F.title*L*titleLines+F.sub*L+F.meta*L*3+m*3.2,'#FFFFFF',{opacity:0.85,groupId:gh}));
+      if(onBg) o.push(rect(0,barH,W,F.title*L*titleLines+F.sub*L*subLines+F.meta*L*3+m*3.2,'#FFFFFF',{opacity:0.85,groupId:gh}));
       o.push(rect(0,0,W,barH,T.c1,{groupId:gh}));
       o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:Math.round((W-logoW)/2),y:Math.round(m*0.5),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
       tagPill('#FFFFFF',T.txt, barH/2);
       let y=barH+m*0.8;
       o.push(txt(title,F.title,T.txt,'700','center',m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
       y+=F.title*L*titleLines;
-      if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400','center',m,y,W-2*m,F.sub*L,{groupId:gh})); y+=F.sub*L; }
+      if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400','center',m,y,W-2*m,F.sub*L*subLines,{groupId:gh})); y+=F.sub*L*subLines; }
       headerH=y+m*0.5; authY=headerH;
     } else { // light：白底、彩色院徽、細線
-      if(onBg) o.push(rect(m*0.5,m*0.4,W-m,logoH+F.title*L*titleLines+F.sub*L+F.meta*L*3+m*3.4,'#FFFFFF',{opacity:0.85,rx:Math.round(m*0.4),groupId:gh}));
+      if(onBg) o.push(rect(m*0.5,m*0.4,W-m,logoH+F.title*L*titleLines+F.sub*L*subLines+F.meta*L*3+m*3.4,'#FFFFFF',{opacity:0.85,rx:Math.round(m*0.4),groupId:gh}));
       o.push({type:'img',imgUrl:'./logos/logo-h-normal.png',x:m,y:Math.round(m*0.8),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
       tagPill(T.c1,'#FFFFFF', m*0.8+logoH/2);
       let y=m*0.8+logoH+m*0.5;
       o.push(txt(title,F.title,T.txt,'700',titleAlign,m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
       y+=F.title*L*titleLines;
-      if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400',titleAlign,m,y,W-2*m,F.sub*L,{opacity:0.9,groupId:gh})); y+=F.sub*L; }
+      if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400',titleAlign,m,y,W-2*m,F.sub*L*subLines,{opacity:0.9,groupId:gh})); y+=F.sub*L*subLines; }
       y+=m*0.4; o.push(rect(m,y,W-2*m,Math.max(3,m*0.12),T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,90))));
       headerH=y+m*0.5; authY=headerH;
     }
@@ -11264,9 +11371,9 @@ function confBuildCard(sp,c,ST){
     const authW=W-2*m-pad*1.6;
     const aA=`作者：${c.authors||'王○○、李○○、陳○○'}`, aU=`單位：${unit}`, aE=`聯絡 Email：${c.email||'xxxxx@ktgh.com.tw'}`;
     let authText, authLines;
-    if(est(aA+'　｜　'+aU+'　｜　'+aE,F.meta)<=authW){ authText=aA+'　｜　'+aU+'　｜　'+aE; authLines=1; }
-    else if(est(aA+'　｜　'+aU,F.meta)<=authW){ authText=aA+'　｜　'+aU+'\n'+aE; authLines=2; }
-    else { authText=aA+'\n'+aU+'\n'+aE; authLines=3; }
+    if(nl(aA+'　｜　'+aU+'　｜　'+aE,F.meta,'400',authW)===1){ authText=aA+'　｜　'+aU+'　｜　'+aE; authLines=1; }
+    else if(nl(aA+'　｜　'+aU,F.meta,'400',authW)===1){ authText=aA+'　｜　'+aU+'\n'+aE; authLines=nl(authText,F.meta,'400',authW); }
+    else { authText=aA+'\n'+aU+'\n'+aE; authLines=nl(authText,F.meta,'400',authW); }
     let authH, contentTop;
     if(ST.header==='band'||ST.header==='curve'){
       authH=F.meta*L*authLines+m*0.7;
@@ -11290,8 +11397,9 @@ function confBuildCard(sp,c,ST){
     const footW=W-2*m-qr-m;
     let f1=`${unitShort}${sp.event?'　｜　'+sp.event:''}`;
     let f2=`${sp.tag?sp.tag+'　｜　':''}${c.qr? '掃描 QR code 看完整報告' : '聯絡：'+(c.email||'xxxxx@ktgh.com.tw')}`;
-    if(est(f1,F.meta)>footW&&sp.event){ f1=sp.event; f2=unitShort+'　｜　'+f2; }
-    if(est(f2,F.meta)>footW&&sp.tag){ f2=f2.replace(sp.tag+'　｜　',''); }
+    if(nl(f1,F.meta,'400',footW)>1&&sp.event){ f1=sp.event; f2=unitShort+'　｜　'+f2; }
+    if(nl(f2,F.meta,'400',footW)>1&&sp.tag){ f2=f2.replace(sp.tag+'　｜　',''); }
+    if(nl(f1,F.meta,'400',footW)>1&&sp.event){ f1=unitShort; }
     o.push(txt(f1+'\n'+f2,F.meta,footTxt,'400','left',m,footY+m*0.4,footW,F.meta*L*2,{opacity:0.92,groupId:gf}));
     o.push(rect(W-m-qr,footY+m*0.4,qr,qr,'#FFFFFF',{rx:Math.round(m*0.15),groupId:gf}));
     if(c.qr) qrSlot={x:Math.round(W-m-qr+qr*0.06),y:Math.round(footY+m*0.4+qr*0.06),w:Math.round(qr*0.88),h:Math.round(qr*0.88),groupId:gf};
@@ -11301,9 +11409,11 @@ function confBuildCard(sp,c,ST){
     const badgeD=F.head*1.5;
     const headBlockH= ST.section==='badge'? Math.max(badgeD,F.head*1.35) : (ST.section==='pill'? F.head*1.75 : F.head*1.6);
     const n=c.sections.length;
-    const linesOf=i=>Math.min(opt.lines,c.sections[i].bullets.length);
-    const tilesAt=i=> i===c.statsAt && opt.tiles && c.stats.length>0;
     const cpad= (ST.cardFill||onBg)? pad : pad*0.5;
+    const bodyW= inner;
+    const bodyText=i=>c.sections[i].bullets.slice(0,opt.lines).map(t=>'• '+t).join('\n');
+    const _lc={}; const linesOf=i=>{ if(_lc[i]==null) _lc[i]=Math.max(1,nl(bodyText(i),F.body,'400',bodyW)); return _lc[i]; };
+    const tilesAt=i=> i===c.statsAt && opt.tiles && c.stats.length>0;
     const secH=i=>cpad+headBlockH+m*0.3+F.body*L*linesOf(i)+cpad+(tilesAt(i)?(m*0.35+tileH):0)+((i===c.statsAt&&opt.chart&&!nPhotos)? m*0.4+F.body*L*3.2:0);
     const perRow= nPhotos? Math.min(3,nPhotos) : 3, rows= nPhotos? Math.ceil(nPhotos/3) : 1;
     const slotW=(colW-(perRow-1)*m*0.4)/perRow, slotH= opt.photoCompact? slotW*0.5 : slotW*0.6;
@@ -11364,7 +11474,7 @@ function confBuildCard(sp,c,ST){
           o.push(rect(tx0,by+lh+m*0.15,inner,Math.max(2,F.head*0.06),T.tint2,{groupId:gs}));
         }
         let ty=by+headBlockH+m*0.3;
-        o.push(txt(sec.bullets.slice(0,opt.lines).map(t=>'• '+t).join('\n'),F.body,sec.hint?hintColor:bodyColor,'400','left',tx0,ty,inner,F.body*L*linesOf(i),{groupId:gs}));
+        o.push(txt(bodyText(i),F.body,sec.hint?hintColor:bodyColor,'400','left',tx0,ty,inner,F.body*L*linesOf(i),{groupId:gs}));
         ty+=F.body*L*linesOf(i);
         if(tilesAt(i)){ ty+=m*0.35; const n2=c.stats.length, tw=(inner-(n2-1)*m*0.35)/n2, th=tileH, nh=F.num*(opt.compact?1.15:1.25);
           c.stats.forEach((st,j)=>{ const tx=tx0+j*(tw+m*0.35);
@@ -11456,12 +11566,6 @@ async function confBananaOpen(){
   document.getElementById('banana-prompt').value=confBananaPrompt(sp,c,ST);
   document.getElementById('banana-out').style.display='none'; document.getElementById('banana-status').textContent=''; _bananaResult=null;
   document.getElementById('banana-overlay').style.display='flex';
-  const st=document.getElementById('banana-key-st'), btn=document.getElementById('banana-run');
-  st.textContent='檢查院內金鑰…'; btn.disabled=true;
-  try{ const q=await (await fetch(AI_GEN_API+'/api/quota')).json();
-    if(q.gemini){ st.textContent=`院內已設定 Gemini 金鑰（${q.geminiModel||'Nano Banana'}）。今日本機剩 ${Math.max(0,q.bananaPerDay-q.bananaUsedDay)}／${q.bananaPerDay} 張，全院剩 ${Math.max(0,q.bananaGlobalDay-q.bananaGlobalUsed)} 張。`; btn.disabled=false; }
-    else st.textContent='院內尚未設定 Gemini API 金鑰（由資訊／行銷承辦在 Cloudflare 設定後即可一鍵生成）。請先用左邊的免費路線。';
-  }catch(e){ st.textContent='無法連線院內 AI 服務，請用左邊的免費路線。'; }
 }
 function confBananaClose(){ document.getElementById('banana-overlay').style.display='none'; }
 function confBananaCopy(){ const t=document.getElementById('banana-prompt').value; const done=()=>snack('提示詞已複製，到 Gemini 貼上並附圖',3000); if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done).catch(()=>_confCopyFallback(t,done)); else _confCopyFallback(t,done); }
