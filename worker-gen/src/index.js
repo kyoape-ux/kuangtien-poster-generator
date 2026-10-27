@@ -1,6 +1,7 @@
 // 美編小助手 AI 生圖代理：Workers AI + KV 限速
 // POST /api/gen { prompt, style, ratio, quality? } → { ok, image:"data:image/jpeg;base64,...", w, h, prompt_en }
 // GET  /api/quota → 目前額度
+// POST /api/design  { prompt, aspect, images[] } → { ok, image }（Nano Banana，需 GEMINI_API_KEY）
 // POST /api/outline { text, sections? } → { ok, title, subtitle, sections:[{title,bullets[]}], stats:[{value,label}] }
 //
 // 品質策略：
@@ -15,6 +16,8 @@ const MODELS = {
 // 中文理解好、便宜（$0.05/M tokens）；qwen3 會吐 <think>，取回後剝掉
 const LLM = '@cf/qwen/qwen3-30b-a3b-fp8';
 const LLM_FALLBACK = '@cf/google/gemma-4-26b-a4b-it';
+// Nano Banana（Gemini 影像模型）：無免費 API 額度，需在 Cloudflare 設定秘密 GEMINI_API_KEY（wrangler secret put）；模型可用 vars GEMINI_IMAGE_MODEL 覆寫
+const GEMINI_IMAGE_MODEL = 'gemini-3.1-flash-image';
 
 
 // 風格範本（英文後綴）
@@ -138,7 +141,50 @@ export default {
     const ip = req.headers.get('CF-Connecting-IP') || '0.0.0.0';
 
     if (url.pathname === '/api/quota' && req.method === 'GET') {
-      return json({ ok: true, ...(await quota(env, ip)) }, 200, c.headers);
+      const bd = await readCount(env, `bd:${dayKey()}:${ip}`), bg = await readCount(env, `bg:${dayKey()}`);
+      return json({ ok: true, ...(await quota(env, ip)), gemini: !!env.GEMINI_API_KEY, geminiModel: env.GEMINI_IMAGE_MODEL || GEMINI_IMAGE_MODEL, bananaUsedDay: bd, bananaPerDay: +env.BANANA_PER_DAY || 8, bananaGlobalUsed: bg, bananaGlobalDay: +env.BANANA_GLOBAL_DAY || 60 }, 200, c.headers);
+    }
+
+    // ── 4) Nano Banana 整張海報：內容＋照片＋院徽 → Gemini 影像模型（需 GEMINI_API_KEY 秘密；付費模型，額度另計）──
+    if (url.pathname === '/api/design' && req.method === 'POST') {
+      if (!env.GEMINI_API_KEY) return json({ ok: false, needKey: true, error: '院內尚未設定 Gemini API 金鑰，請改用「Gemini App 免費路線」或「AI 主視覺＋自動排版」' }, 400, c.headers);
+      let body;
+      try { body = await req.json(); } catch { return json({ ok: false, error: 'bad json' }, 400, c.headers); }
+      const prompt = String(body.prompt || '').trim().slice(0, 6000);
+      if (prompt.length < 20) return json({ ok: false, error: '提示詞太短' }, 400, c.headers);
+      const perDay = +env.BANANA_PER_DAY || 8, globalDay = +env.BANANA_GLOBAL_DAY || 60;
+      const bd = await readCount(env, `bd:${dayKey()}:${ip}`), bg = await readCount(env, `bg:${dayKey()}`);
+      if (bg >= globalDay) return json({ ok: false, error: '今日全院 Nano Banana 額度已用完，明天再試' }, 429, c.headers);
+      if (bd >= perDay) return json({ ok: false, error: `今日 Nano Banana 額度已用完（每人 ${perDay} 張／天）` }, 429, c.headers);
+      const images = (Array.isArray(body.images) ? body.images : []).slice(0, 5);
+      const parts = [{ text: prompt }];
+      for (const im of images) {
+        const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(im || ''));
+        if (m && m[2].length < 6_000_000) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+      }
+      const model = env.GEMINI_IMAGE_MODEL || GEMINI_IMAGE_MODEL;
+      const ar = String(body.aspect || '9:16');
+      const gen = { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: ['1:1','2:3','3:2','3:4','4:3','4:5','5:4','9:16','16:9','21:9'].includes(ar) ? ar : '9:16' } };
+      if (body.size === '2K' || body.size === '4K') gen.imageConfig.imageSize = body.size;
+      let resp, txt;
+      try {
+        resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+          body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: gen }),
+        });
+        txt = await resp.text();
+      } catch (e) { return json({ ok: false, error: 'Gemini 連線失敗：' + (e.message || e) }, 502, c.headers); }
+      if (!resp.ok) return json({ ok: false, error: `Gemini ${resp.status}：` + txt.slice(0, 300) }, 502, c.headers);
+      let out; try { out = JSON.parse(txt); } catch { return json({ ok: false, error: 'Gemini 回應非 JSON' }, 502, c.headers); }
+      const cand = out.candidates && out.candidates[0];
+      const imgPart = cand && cand.content && cand.content.parts && cand.content.parts.find(p => p.inlineData && p.inlineData.data);
+      if (!imgPart) {
+        const reason = (cand && cand.finishReason) || (out.promptFeedback && out.promptFeedback.blockReason) || '沒有產生圖片';
+        return json({ ok: false, error: 'Gemini 未回傳圖片：' + reason }, 502, c.headers);
+      }
+      await Promise.all([bump(env, `bd:${dayKey()}:${ip}`, 60 * 60 * 26), bump(env, `bg:${dayKey()}`, 60 * 60 * 26)]);
+      const textPart = cand.content.parts.find(p => p.text);
+      return json({ ok: true, image: `data:${imgPart.inlineData.mimeType || 'image/png'};base64,${imgPart.inlineData.data}`, model, note: textPart ? String(textPart.text).slice(0, 300) : undefined, quota: { usedDay: bd + 1, perDay } }, 200, c.headers);
     }
 
     if (url.pathname === '/api/gen' && req.method === 'POST') {

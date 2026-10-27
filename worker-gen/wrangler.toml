@@ -19,3 +19,7 @@ LIMIT_PER_MIN = "4"
 LIMIT_PER_DAY = "40"
 # 全站每日上限（免費額度約 170 張/天，留餘裕）
 LIMIT_GLOBAL_DAY = "150"
+# Nano Banana（Gemini 影像 API，付費）每人／全院每日張數上限；金鑰用 `wrangler secret put GEMINI_API_KEY` 設定
+BANANA_PER_DAY = "8"
+BANANA_GLOBAL_DAY = "60"
+GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image"

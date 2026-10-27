@@ -198,6 +198,14 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
       </div></div>
     </div>
 
+    <h2>三之二、讓 AI 做視覺：美編小助手的三條 AI 路線</h2>
+    <table>
+      <tr><th>路線</th><th>怎麼做</th><th>費用</th><th>優點／限制</th></tr>
+      <tr><td>AI 主視覺＋自動排版</td><td>「3 產生與匯出」按一個鈕：院內 FLUX.2 依風格與主題生成主視覺底圖，內容自動排成半透明卡片疊上去</td><td>免費（院內 Cloudflare Workers AI，每日額度約 90 張）</td><td>文字永遠正確、可印刷；底圖約 1024 px，實體大圖建議再按「AI 生成底圖」換高品質底圖或改用一般版型</td></tr>
+      <tr><td>Nano Banana（Gemini App）</td><td>按「用 Nano Banana 畫整張海報」，複製自動寫好的提示詞，到 gemini.google.com 貼上並附上設計草稿、院徽、照片，產生後「匯入 AI 成品」</td><td>免費（Google 帳號，每日張數有限）</td><td>整張海報含中文字、最有設計感；錯字與數字要逐字核對，用文字工具覆蓋修正；多為 1024–2048 px</td></tr>
+      <tr><td>Nano Banana 院內一鍵</td><td>同上視窗的「一鍵生成」，自動附草稿、照片、院徽</td><td>付費：Gemini 影像 API 約每張 NT$2（1K）到 NT$3（2K），需承辦在 Cloudflare 設定金鑰</td><td>不用離開工具；每人每天 8 張、全院 60 張上限</td></tr>
+    </table>
+    <p class="note">查證（2026 年 10 月）：Gemini 影像模型（Nano Banana 系列）的 API 沒有免費額度，免費只有 Gemini App 的網頁介面；OpenAI 的圖片 API 也沒有免費額度。免費且可程式化的只有院內 Cloudflare Workers AI（FLUX.2），但它不擅長中文字，所以設計成「AI 畫背景、工具排文字」。</p>
     <h2>四、作法 B：PowerPoint／Google Slides 的尺寸設定</h2>
     <table>
       <tr><th>工具</th><th>頁面設定</th><th>匯出</th></tr>
