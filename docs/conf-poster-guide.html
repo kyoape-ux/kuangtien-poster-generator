@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>學會壁報 AI 製作指南｜直式 9:16 電子海報</title>
+<title>學會壁報 AI 製作指南｜依各學會規格自製投稿海報</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--indigo:#14286E;--indigo-dark:#102058;--blue:#00AAC8;--blue-text:#006678;--tint:#E8EAF0;--blue-tint:#E6F6FA;--red:#9C0F1B;--red-tint:#FCE8EA;--text:#333;--muted:#666;--border:#E6E6E6;--bg:#F5F5F5}
@@ -76,46 +76,60 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
     <header class="hd">
       <div>
         <h1>學會壁報 AI 製作指南</h1>
-        <div class="sub">直式 9:16 電子海報｜用免費 AI 平台自己做出可投稿、可印刷的成品</div>
+        <div class="sub">用免費 AI 平台與美編小助手，依各學會自己的規格做出可投稿、可印刷的海報</div>
       </div>
-      <div class="meta">光田綜合醫院 行銷企劃<br>版本 2026-10-27｜適用 115 年度腎臟病健康促進機構壁報成果展示</div>
+      <div class="meta">光田綜合醫院 行銷企劃<br>版本 2026-10-27（第 2 版：規格可自訂）｜範例：115 年度腎臟病健康促進機構壁報成果展示</div>
     </header>
 
     <div class="lead">
-      <strong>這份指南要解決的事：</strong>往後各單位要投稿學會海報時，先自己用免費 AI 工具（ChatGPT、Gemini、NotebookLM）加上院內「美編小助手」做出合規草稿，不必排隊等美編人工設計。整個流程約 30 到 60 分鐘，產出符合尺寸規範的 PDF（也可存 JPG），可直接投稿或送印。
+      <strong>這份指南要解決的事：</strong>往後各單位要投稿學會海報時，先自己用免費 AI 工具（ChatGPT、Gemini、NotebookLM）加上院內「美編小助手」做出合規草稿，不必排隊等美編人工設計。整個流程約 30 到 60 分鐘，產出符合該學會尺寸規範、解析度足夠印刷的 PDF 或 PNG。<br><strong>重要：每個學會的規範都不同</strong>（直式或橫式、電子海報或實體壁報、A0／A1／9:16、容量、字級、檔名），所以第一步永遠是抄下該學會公告的規格，再把它填進工具。
     </div>
 
-    <h2>一、投稿規範速查</h2>
+    <h2>一、先抄下這個學會的規格（五個欄位）</h2>
+    <p>打開學會的投稿公告或製作指南，找出下面五個欄位。找不到的留空，工具會用通用做法處理。</p>
     <table>
-      <tr><th>項目</th><th>規格</th><th>在工具裡怎麼設定</th></tr>
-      <tr><td>檔案格式</td><td>PDF，1 頁；每篇限上傳 1 份</td><td>匯出時選 PDF，確認只有 1 頁</td></tr>
-      <tr><td>版面</td><td>直式 9:16</td><td>頁面 14.29 × 25.4 cm（學會範例 PPT 尺寸）；或 1080 × 1920 px、2160 × 3840 px</td></tr>
-      <tr><td>檔案大小</td><td>5 MB 以下</td><td>照片先縮到長邊 1500 px 左右；超過時用第六節的壓縮方法</td></tr>
-      <tr><td>語言</td><td>中文</td><td>AI 提示詞一律要求「繁體中文」</td></tr>
-      <tr><td>字級</td><td>最小 12 pt；建議 24–30 pt 以上</td><td>美編小助手畫布 32 px＝12 pt、64 px＝24 pt、80 px＝30 pt；PowerPoint／Slides 直接看 pt</td></tr>
-      <tr><td>檔名</td><td>CKD_院所名.pdf</td><td><code>CKD_光田綜合醫院.pdf</code>（美編小助手匯出時自動命名）</td></tr>
-      <tr><td>不支援</td><td>影片、音訊、動畫、嵌入式多媒體</td><td>靜態單頁即可，不要放 GIF 或影片連結物件</td></tr>
+      <tr><th>欄位</th><th>公告裡通常怎麼寫</th><th>填進美編小助手的位置</th><th>範例：115 腎臟病健康促進壁報</th></tr>
+      <tr><td>版面尺寸與方向</td><td>「直式 9:16」「A0 直式」「90×120 cm」「16:9 電子海報」</td><td>頁面尺寸（公分）＋「直↔橫」鈕；常用規格下拉可直接選</td><td>直式 9:16，頁面 14.29 × 25.4 cm（學會範例 PPT 尺寸）</td></tr>
+      <tr><td>檔案格式與頁數</td><td>「PDF 1 頁」「JPG」「PPT 轉 PDF」</td><td>匯出 PDF（單頁）或下載 PNG</td><td>PDF，1 頁，每篇 1 份</td></tr>
+      <tr><td>檔案大小上限</td><td>「5 MB 以下」「不得超過 10 MB」</td><td>檔案上限（MB）</td><td>5 MB 以下</td></tr>
+      <tr><td>字級下限</td><td>「最小 12 pt」「建議 24 pt 以上」</td><td>最小字級（pt）；版型字級不會低於它，匯出前也會檢查</td><td>最小 12 pt，建議 24–30 pt 以上</td></tr>
+      <tr><td>檔名與必備欄位</td><td>「CKD_院所名.pdf」「需含題目、作者、單位、Email」</td><td>指定檔名、類別標籤、活動名稱、單位簡稱</td><td>CKD_光田綜合醫院.pdf；需含類別 CKD、標題、作者、單位、Email</td></tr>
     </table>
-    <p><strong>海報必備內容：</strong>投稿類別「CKD」、海報標題、作者姓名、所屬單位、聯絡 Email；機構標誌選填。</p>
-    <div class="chips"><span class="red">線上投稿截止：民國 115 年 11 月 10 日 23:59</span><span class="red">活動日期：115 年 12 月 5–6 日</span><span>地點：臺大醫院國際會議中心</span></div>
-    <p class="note">以上依「115年度腎臟病健康促進機構壁報成果展示－電子海報製作指南」整理，請以投稿表單所載最新資訊為準。其他學會的規範不同時，只要把「版面、頁數、容量、字級、檔名」五項換掉，本流程一樣適用。</p>
+    <div class="chips"><span class="red">範例學會的投稿截止：民國 115 年 11 月 10 日 23:59</span><span class="red">活動：115 年 12 月 5–6 日 臺大醫院國際會議中心</span><span>其他學會請以各自公告為準</span></div>
+    <p class="note">同一個學會每年也可能改規格，投稿前再對一次公告。工具裡的「常用規格」只是起點，所有欄位都可以改。</p>
+
+    <h2>一之二、解析度要夠，不然印出來會糊</h2>
+    <p>電子海報在螢幕上看，1080 × 1920 px 就夠；要實體輸出（A1、A0、展板）就要看 dpi。原則：<strong>印刷 300 dpi、大圖輸出 200 dpi、1 公尺外看的展板 150 dpi</strong>。美編小助手的匯出會依你選的 DPI 算出像素，並在完成後顯示實際 dpi。</p>
+    <table>
+      <tr><th>成品尺寸</th><th>150 dpi（展板）</th><th>200 dpi（大圖輸出）</th><th>300 dpi（印刷）</th><th>AI 生圖通常給的</th></tr>
+      <tr><td>電子海報 14.29 × 25.4 cm（9:16）</td><td>844 × 1500 px</td><td>1125 × 2000 px</td><td>1688 × 3000 px</td><td rowspan="5">1024–2048 px 長邊。只夠螢幕或 A4 以下使用；放大到 A1 以上一定糊。</td></tr>
+      <tr><td>A3 29.7 × 42 cm</td><td>1754 × 2480 px</td><td>2339 × 3307 px</td><td>3508 × 4961 px</td></tr>
+      <tr><td>A1 59.4 × 84.1 cm</td><td>3508 × 4967 px</td><td>4677 × 6622 px</td><td>7016 × 9933 px</td></tr>
+      <tr><td>A0 84.1 × 118.9 cm</td><td>4967 × 7022 px</td><td>6622 × 9362 px</td><td>9933 × 14043 px（瀏覽器會自動降到約 180 dpi）</td></tr>
+      <tr><td>展板 90 × 120 cm</td><td>5315 × 7087 px</td><td>7087 × 9449 px</td><td>10630 × 14173 px（同上）</td></tr>
+    </table>
+    <ul>
+      <li>美編小助手的文字與形狀是在匯出時重新繪製，所以 A0 也清楚；照片本身的解析度要自己顧，長邊至少 2000 px 以上再放大圖。</li>
+      <li>PowerPoint／Google Slides 另存 PDF 時文字是向量，印刷最銳利，但內嵌照片一樣要夠大。</li>
+      <li>AI 生成的整張海報圖片不要直接送印 A1 以上；要印就把它當底圖，文字另外上。</li>
+    </ul>
 
     <h2>二、三種作法，依情況選一種</h2>
     <div class="routes">
       <div class="route best">
         <h4>A. 美編小助手 + AI 文案<span class="tag">最推薦</span></h4>
         <ul>
-          <li>首頁「學會壁報／投稿海報」一鍵套用 9:16 版型，欄位都預留好。</li>
+          <li>首頁「學會壁報／投稿海報」先填該學會規格（或選常用規格），一鍵產生版型：直式單欄、橫式雙欄。</li>
           <li>文案請 ChatGPT／Gemini 整理，貼進去就好。</li>
-          <li>匯出自動：14.29 × 25.4 cm、檔名、5 MB 內、字級檢查。</li>
-          <li>文字是用畫布渲染的高解析圖，放大印刷也清楚。</li>
+          <li>匯出自動：頁面公分數、DPI 像素、檔名、容量上限、字級檢查，完成後顯示實際 dpi 與 MB。</li>
+          <li>文字與形狀在匯出時重繪，A0 也清楚。</li>
         </ul>
       </div>
       <div class="route">
         <h4>B. PowerPoint／Google Slides + AI 文案</h4>
         <ul>
           <li>習慣用簡報軟體的人適合。</li>
-          <li>把頁面改成 14.29 × 25.4 cm，照學會範例排。</li>
+          <li>把頁面改成學會要求的公分數，照學會範例排。</li>
           <li>另存 PDF 時文字是向量，印刷最銳利。</li>
           <li>版面要自己排，較花時間。</li>
         </ul>
@@ -157,26 +171,27 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
         <p class="note">AI 給的是草稿。數字、年份、人次請對回原始資料再使用；看到「（待補）」就是資料裡沒有，請自己補。</p>
       </div></div>
       <div class="step"><div>
-        <h4>套版、貼字、放照片（15 分鐘）</h4>
+        <h4>填規格、產生版型、貼字、放照片（15 分鐘）</h4>
         <ul>
-          <li>開美編小助手，首頁點「學會壁報／投稿海報」，再按「套用版型並開始編輯」。</li>
-          <li>版型已有：標題區（含 CKD 標示與院徽）、作者／單位／Email 列、四個段落、三個亮點數字、頁尾。點文字兩下即可改字。</li>
-          <li>照片與圖表：左側「圖片」工具插入，放在對應段落旁；圖表可先用 Excel 或 Gemini 畫好再截圖。</li>
-          <li>字級對照：標題 72 px（27 pt）、段落標題 52 px（19.5 pt）、內文 36 px（13.5 pt）、最小 32 px（12 pt）。想符合「建議 24 pt 以上」就把內文拉到 64 px，並刪減字數。</li>
+          <li>開美編小助手，首頁點「學會壁報／投稿海報」。在「步驟 0」選常用規格或自己填：寬 × 高（公分）、直↔橫、匯出 DPI、容量上限、最小字級、類別標籤、檔名、活動名稱、單位簡稱。下方會即時顯示畫布像素、匯出像素與 dpi。</li>
+          <li>按「用這個規格產生版型並開始編輯」。版型會依尺寸自動排：直式單欄、橫式雙欄，字級依頁面大小換算，且不低於你填的最小字級；內容放不下時自動縮字。</li>
+          <li>已經有自己排好的海報？按「只套用規格到目前畫布」，保留設計、只套匯出規則（必要時會問你要不要改畫布比例）。</li>
+          <li>版型內容：標題區（標籤與院徽）、作者／單位／Email 列、四個段落、三個亮點數字、照片位置、頁尾。點文字兩下即可改；照片用左側「圖片」插入，圖表可先用 Excel 或 Gemini 畫好再截圖。</li>
+          <li>字級換算：畫布 1 pt ＝ 1.33 px（例如最小 12 pt ＝ 16 px）。畫布尺寸會隨你填的公分數變化，所以用 pt 想就好。</li>
         </ul>
       </div></div>
       <div class="step"><div>
         <h4>底圖與視覺（選用，5 分鐘）</h4>
-        <p>想要有氣氛的底圖，在助手裡按「AI 生成底圖（9:16）」（院內 FLUX 模型，免費、不用登入），或到 Gemini 生圖後存檔，用「背景圖」匯入。提示詞範例：</p>
-        <div class="prompt" id="p3"><button class="cp" onclick="cp('p3')">複製</button>直式 9:16 海報底圖，醫療健康主題（腎臟照護、健康促進），乾淨明亮，靛藍 #14286E 到淺藍 #00AAC8 的柔和漸層，上方留深色區塊放標題，中段與下方大面積留白放文字，扁平插畫風格，不要任何文字、不要人臉、不要標誌，高解析度</div>
+        <p>想要有氣氛的底圖，在助手裡按「AI 生成底圖」（會自動跟著畫布比例）（院內 FLUX 模型，免費、不用登入），或到 Gemini 生圖後存檔，用「背景圖」匯入。提示詞範例：</p>
+        <div class="prompt" id="p3"><button class="cp" onclick="cp('p3')">複製</button>海報底圖（在 Gemini 生圖時另外指定比例，例如「直式 9:16」或「直式 A 系列」），醫療健康主題，乾淨明亮，靛藍 #14286E 到淺藍 #00AAC8 的柔和漸層，上方留深色區塊放標題，其餘大面積留白放文字，扁平插畫風格，不要任何文字、不要人臉、不要標誌，高解析度</div>
         <p class="note">原則：AI 只畫背景與插圖，所有中文字都在美編小助手或簡報軟體裡打，才不會出現錯字。</p>
       </div></div>
       <div class="step"><div>
         <h4>匯出合規 PDF 並檢查（5 分鐘）</h4>
         <ul>
-          <li>助手裡按「匯出 PDF（投稿版）」或左側「匯出 PDF」。系統會自動：設定頁面 14.29 × 25.4 cm、命名 <code>CKD_光田綜合醫院.pdf</code>、把容量壓到 5 MB 內、提醒小於 12 pt 的文字，並顯示實際檔案大小。</li>
-          <li>需要 JPG（例如貼公告、傳 LINE）：按「下載海報 PNG」，再用「圖片編輯」轉存 JPG。</li>
-          <li>用電腦開啟 PDF 看一次：只有 1 頁、直式、五個必備欄位都在、檔案大小在 5 MB 內。</li>
+          <li>助手裡按「匯出 PDF（投稿版）」。系統會自動：頁面照你填的公分數、依 DPI 產生像素、用指定檔名、超過容量上限時自動壓縮、提醒小於最小字級的文字，完成後顯示實際 MB、像素與 dpi。</li>
+          <li>要送印或貼公告：按「下載 PNG（高解析度）」，檔案會寫入 dpi，印刷廠開啟就是正確尺寸；需要 JPG 再用「圖片編輯」轉存。</li>
+          <li>用電腦開啟 PDF 看一次：頁數、方向、必備欄位、檔案大小都對照該學會的公告。</li>
         </ul>
       </div></div>
     </div>
@@ -184,10 +199,10 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
     <h2>四、作法 B：PowerPoint／Google Slides 的尺寸設定</h2>
     <table>
       <tr><th>工具</th><th>頁面設定</th><th>匯出</th></tr>
-      <tr><td>PowerPoint</td><td>設計 → 投影片大小 → 自訂投影片大小：寬 14.29 cm、高 25.4 cm、直向（與學會範例檔相同）</td><td>檔案 → 另存新檔 → PDF；若超過 5 MB，另存時選「最小大小（線上發佈）」或先「壓縮圖片」至 220 ppi</td></tr>
-      <tr><td>Google Slides</td><td>檔案 → 頁面設定 → 自訂：14.29 × 25.4 公分</td><td>檔案 → 下載 → PDF 文件</td></tr>
-      <tr><td>Canva（免費版）</td><td>自訂尺寸 1080 × 1920 px（或 2160 × 3840 px）</td><td>分享 → 下載 → PDF 列印；中文字型選 Noto Sans TC（思源黑體）</td></tr>
-      <tr><td>Gemini／ChatGPT 生圖</td><td>在提示詞寫明「直式 9:16」</td><td>下載圖片後放進上述任一工具的 9:16 頁面再存 PDF；不要直接把圖片改副檔名</td></tr>
+      <tr><td>PowerPoint</td><td>設計 → 投影片大小 → 自訂投影片大小：填學會要求的公分數（例如 9:16 電子海報 14.29 × 25.4 cm、A1 59.4 × 84.1 cm；PowerPoint 上限 142.24 cm，A0 要用 50% 比例再放大印）</td><td>檔案 → 另存新檔 → PDF；若超過 5 MB，另存時選「最小大小（線上發佈）」或先「壓縮圖片」至 220 ppi</td></tr>
+      <tr><td>Google Slides</td><td>檔案 → 頁面設定 → 自訂：填公分數</td><td>檔案 → 下載 → PDF 文件</td></tr>
+      <tr><td>Canva（免費版）</td><td>自訂尺寸可直接填公分；電子海報也可填 1080 × 1920 px 或 2160 × 3840 px</td><td>分享 → 下載 → PDF 列印；中文字型選 Noto Sans TC（思源黑體）</td></tr>
+      <tr><td>Gemini／ChatGPT 生圖</td><td>在提示詞寫明比例（直式 9:16、橫式 16:9、直式 A 系列）</td><td>下載圖片後放進上述任一工具的 9:16 頁面再存 PDF；不要直接把圖片改副檔名</td></tr>
     </table>
     <p>排版可以直接照學會的範例檔：上方院徽＋大標題，下面分區放內容。段落文字請 AI 整理（第三節第 2 步的提示詞通用），標題 28–36 pt、內文 14–18 pt、最小 12 pt。</p>
 
@@ -196,14 +211,14 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
       <li><strong>NotebookLM（免費版）：</strong>上傳成果報告後，在右側「工作室」選「資訊圖表」，方向選直式，風格選簡潔；免費版每日有生成次數限制。產出若不是精準 9:16，請放進 9:16 頁面補白邊，不要拉變形。</li>
       <li><strong>Gemini 生圖（免費版）：</strong>提示詞寫「直式 9:16 的中文學術海報，標題『…』，四個區塊…」可以得到完整草稿，但中文常出現錯字與假字，數字也可能被改掉。每個字都要檢查；錯一個字就要重生或回到作法 A 重排。</li>
       <li><strong>ChatGPT 生圖（免費版）：</strong>同上，額度較少、速度較慢；可先請它「只畫版面示意、文字用灰色方塊代替」，當作排版參考。</li>
-      <li><strong>共同限制：</strong>生成圖片通常只有 1024–2048 px，直接投稿電子海報可以，放大印到 60 cm 寬會偏糊；且圖片無法再改字。</li>
+      <li><strong>共同限制：</strong>生成圖片通常只有 1024–2048 px，電子海報可以，印到 A1 以上會糊（見一之二的對照表）；且圖片無法再改字。</li>
       <li><strong>資料安全：</strong>不要把含病人姓名、病歷號、可辨識照片的資料貼到任何外部 AI 平台；統計表先去識別化。</li>
     </ul>
 
-    <h2>六、PDF 超過 5 MB 怎麼辦</h2>
+    <h2>六、PDF 超過學會的容量上限怎麼辦</h2>
     <ol>
       <li>先縮照片：每張長邊 1500 px 以內就夠電子海報用（美編小助手「圖片編輯」可批次縮）。</li>
-      <li>美編小助手匯出會自動降低 JPEG 品質直到 5 MB 內；若仍超過，表示照片太多，請減少張數。</li>
+      <li>美編小助手匯出會自動降低 JPEG 品質直到你填的容量上限內；若仍超過，表示照片太多或 DPI 太高，請減少張數或調低 DPI。</li>
       <li>Mac：用「預覽程式」開 PDF → 檔案 → 匯出 → Quartz 濾鏡選「Reduce File Size」。</li>
       <li>Windows／PowerPoint：另存 PDF 時選「最小大小」；或檔案 → 資訊 → 壓縮媒體。</li>
       <li>線上壓縮（檔案不含敏感資料時）：Adobe Acrobat 線上壓縮、iLovePDF。</li>
@@ -211,18 +226,19 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
 
     <h2>七、要實體印刷時</h2>
     <ul>
-      <li>電子海報頁面 14.29 × 25.4 cm 等比放大到常見展板 60 × 106.7 cm，約 4.2 倍。</li>
-      <li>美編小助手匯出的 PDF 內含 2160 × 3840 px 圖像，放大到 60 cm 寬約 91 dpi，一般展板觀看距離 1 公尺以上可接受；要更銳利請改用作法 B（PowerPoint／Slides 文字為向量）。</li>
+      <li>在美編小助手直接選實體尺寸（A1、A0、90 × 120 cm 或自訂）與 DPI 再匯出，不要用電子海報的小尺寸放大。</li>
+      <li>匯出完成的提示會顯示實際 dpi；低於 150 dpi 會警告。A0 以上因瀏覽器記憶體限制會自動降到約 180 dpi，展板觀看距離下可接受；要更銳利請改用作法 B（PowerPoint／Slides 文字為向量）。</li>
       <li>照片請用原始檔，不要用 LINE 傳過的壓縮圖；AI 生成的底圖只當背景，不要放成主視覺大圖。</li>
       <li>送印時跟印刷廠說明：成品尺寸、直式、不出血即可（海報四邊留白已在版型內）。</li>
     </ul>
 
     <h2>八、投稿前檢查清單</h2>
     <div class="check">
-      <label><input type="checkbox"> PDF 為直式 9:16、僅 1 頁、5 MB 以下</label>
-      <label><input type="checkbox"> 內容為中文，最小字級不低於 12 pt；AI 產生的數字已核對原始資料</label>
-      <label><input type="checkbox"> 已包含：投稿類別 CKD、海報標題、作者姓名、所屬單位、聯絡 Email</label>
-      <label><input type="checkbox"> 檔名為 CKD_光田綜合醫院.pdf</label>
+      <label><input type="checkbox"> 尺寸、方向、頁數、檔案大小與該學會公告一致（匯出提示有顯示實際數值）</label>
+      <label><input type="checkbox"> 解析度足夠：電子海報 ≥1080 px 寬、實體輸出 ≥150 dpi；照片不模糊</label>
+      <label><input type="checkbox"> 字級不低於學會規定；AI 產生的數字已核對原始資料</label>
+      <label><input type="checkbox"> 必備欄位都有：類別／編號、標題、作者、單位、聯絡方式（依學會要求）</label>
+      <label><input type="checkbox"> 檔名符合學會格式</label>
       <label><input type="checkbox"> 無影片、音訊、動畫或嵌入式多媒體</label>
       <label><input type="checkbox"> 照片無病人可辨識資訊；AI 生成圖片未當作真實醫療照片使用</label>
       <label><input type="checkbox"> 承辦主管已看過定稿</label>
@@ -232,7 +248,8 @@ code{background:var(--tint);color:var(--indigo);padding:1px 6px;border-radius:5p
     <p><strong>Q：一定要用美編小助手嗎？</strong>不用。只要最後的 PDF 符合第一節的規範即可；美編小助手只是把尺寸、檔名、容量、字級這些容易錯的地方自動處理掉。</p>
     <p><strong>Q：免費版 AI 夠用嗎？</strong>文案整理、NotebookLM 摘要、每天少量生圖，免費版都夠。遇到額度用完，換另一個平台或隔天再做。</p>
     <p><strong>Q：什麼情況還是要找美編？</strong>需要客製插畫、全院統一主視覺、或要印大型展板且對品質要求高時。先用本流程做出草稿再找美編，美編只需精修，排程會快很多。</p>
-    <p><strong>Q：其他學會的規範不一樣？</strong>把第一節的五項（版面、頁數、容量、字級、檔名）換成該學會的要求；若是橫式或 A0 尺寸，在美編小助手「海報編輯」自訂畫布尺寸即可，提示詞把「直式 9:16」改掉就好。</p>
+    <p><strong>Q：其他學會的規範不一樣？</strong>這是常態。把第一節的五個欄位換成該學會的要求，填進美編小助手「步驟 0」即可，橫式、A0、展板都支援；AI 提示詞裡的比例也跟著改。</p>
+    <p><strong>Q：匯出提示說 dpi 偏低怎麼辦？</strong>回到助手把「匯出解析度」調高再匯出；若是 A0 以上被自動降到約 180 dpi，那是瀏覽器記憶體限制，展板用途可接受，要更高就改用 PowerPoint／Slides 向量輸出。</p>
 
     <footer>光田醫療社團法人光田綜合醫院 行銷企劃｜學會壁報 AI 製作指南 2026-10-27｜美編小助手：kyoape-ux.github.io/kuangtien-poster-generator</footer>
   </div>

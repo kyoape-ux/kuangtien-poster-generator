@@ -852,6 +852,16 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 .conf-check input{margin-top:3px}
 .conf-foot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid #e8edf3;background:#fff;align-items:center}
 .conf-foot .sp{flex:1;font-size:11px;color:#94a3b8}
+.conf-form{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px}
+.conf-form label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:700;color:#64748b}
+.conf-form input,.conf-form select{border:1px solid #d5dbe3;border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:inherit;outline:none;background:#fff;color:#1e293b;min-width:0}
+.conf-form input:focus,.conf-form select:focus{border-color:#14286E;box-shadow:0 0 0 2px rgba(20,40,110,.12)}
+.conf-form .c2{grid-column:span 2}.conf-form .c4{grid-column:span 4}
+.conf-form .wh{display:flex;gap:6px;align-items:center}.conf-form .wh input{flex:1}
+.conf-form .wh button{border:1px solid #d5dbe3;background:#fff;border-radius:8px;padding:5px 8px;font-size:11.5px;cursor:pointer;color:#14286E;font-weight:700;white-space:nowrap}
+.conf-hint{font-size:11.5px;color:#006678;background:#E6F6FA;border-radius:8px;padding:6px 10px;line-height:1.55}
+.conf-hint.bad{color:#9C0F1B;background:#FCE8EA}
+@media (max-width:720px){.conf-form{grid-template-columns:1fr 1fr}.conf-form .c4{grid-column:span 2}}
 @media (max-width:720px){.conf-steps{grid-template-columns:1fr}}
 /* ── AI 生圖 Modal ── */
 #ai-overlay{position:fixed;inset:0;background:rgba(10,15,40,.62);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
@@ -1100,9 +1110,9 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       </div>
       <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;min-width:0">
         <span class="inp-label" style="white-space:nowrap;flex-shrink:0">自訂</span>
-        <input class="inp" type="number" id="inW" placeholder="W" min="100" max="4000" value="794" style="flex:1;min-width:0">
+        <input class="inp" type="number" id="inW" placeholder="W" min="100" max="20000" value="794" style="flex:1;min-width:0">
         <span style="color:var(--g400);font-size:13px;flex-shrink:0">×</span>
-        <input class="inp" type="number" id="inH" placeholder="H" min="100" max="4000" value="1123" style="flex:1;min-width:0">
+        <input class="inp" type="number" id="inH" placeholder="H" min="100" max="20000" value="1123" style="flex:1;min-width:0">
         <span class="inp-unit" style="flex-shrink:0">px</span>
         <button class="btn btn-blue btn-sm" onclick="applyCustom()" style="flex-shrink:0">套用</button>
       </div>
@@ -1584,7 +1594,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
   <div id="dlbar">
     <button class="btn btn-green btn-full" onclick="handleDl()" id="dl-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 下載海報 PNG</button>
     <button class="btn btn-amber btn-full" onclick="exportPDF()" id="dl-pdf-btn" style="margin-top:5px"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M8 2v8M5 7l3 4 3-4"/><path d="M2 13h12"/></svg> 匯出 PDF（全部頁面）</button>
-    <button class="btn btn-indigo btn-full" onclick="confOpen()" id="conf-btn" style="margin-top:5px"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg> 學會壁報助手（9:16 投稿 PDF）</button>
+    <button class="btn btn-indigo btn-full" onclick="confOpen()" id="conf-btn" style="margin-top:5px"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg> 學會壁報助手（投稿海報）</button>
     <button class="btn btn-teal btn-full" onclick="exportSVG()" id="dl-svg-btn" style="margin-top:5px"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M2 12L5 4l4 5 2.5-3.5L14 12"/></svg> 匯出 SVG 向量檔</button>
   </div>
 </div><!-- /sb -->
@@ -1755,7 +1765,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       <div class="hcard-ic" style="background:rgba(255,255,255,.2);box-shadow:none;backdrop-filter:blur(2px)"><svg width="26" height="26" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 16 16"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg></div>
       <div style="flex:1">
         <div class="q-ttl">學會壁報／投稿海報<span class="q-pill">AI 輔助</span></div>
-        <div class="q-desc">直式 9:16 版型、AI 文案提示詞、AI 底圖，匯出合規 PDF（≤ 5 MB、自動命名、字級檢查）</div>
+        <div class="q-desc">填入該學會規格（尺寸、容量、字級、檔名）自動產生版型，AI 文案提示詞與底圖，匯出高解析度合規 PDF／PNG</div>
       </div>
       <svg width="22" height="22" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
     </div>
@@ -1775,7 +1785,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       <div class="hcard" onclick="confOpen()">
         <div class="hcard-ic" style="background:linear-gradient(135deg,#3B5BDB,#14286E);--glow:rgba(59,91,219,.4)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg></div>
         <div class="hcard-t">學會壁報助手</div>
-        <div class="hcard-d">投稿學會的直式 9:16 電子海報：規範速查、AI 文案／底圖提示詞、套版、匯出 ≤ 5 MB 合規 PDF。</div>
+        <div class="hcard-d">投稿學會海報：依各學會規格（直式、橫式、A0、9:16 等）產生版型，AI 文案／底圖提示詞，匯出高解析度合規 PDF／PNG。</div>
       </div>
       <div class="hcard" onclick="switchTab('ie',document.getElementById('ntab-ie'))">
         <div class="hcard-ic" style="background:linear-gradient(135deg,#22D3EE,#0891B2);--glow:rgba(34,211,238,.4)"><svg width="25" height="25" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 9.5l4-3 3 2.5 2-1.5 5 4.5"/><circle cx="11.5" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg></div>
@@ -2473,7 +2483,6 @@ const TPL_CATEGORIES = [
   { id:'a4',      name:'A4公告海報' },
   { id:'health',  name:'衛教海報' },
   { id:'invite',  name:'邀請卡' },
-  { id:'conf',    name:'學會壁報' },
 ];
 
 let TEMPLATES = [];
@@ -4858,8 +4867,11 @@ function upP(id, key, val){
 async function dlPoster(){
   await document.fonts.ready;
   const cvs = document.createElement('canvas');
-  cvs.width = S.W; cvs.height = S.H;
+  const pgNow={W:S.W,H:S.H,pdfSpec:S.pdfSpec};
+  const sc=_exportScaleFor(pgNow);               // 高解析度：規格 DPI 或長邊 ≥2880px
+  cvs.width = Math.round(S.W*sc); cvs.height = Math.round(S.H*sc);
   const ctx = cvs.getContext('2d');
+  ctx.scale(sc,sc);
 
   // background
   ctx.fillStyle = S.bgColor;
@@ -4985,8 +4997,20 @@ async function dlPoster(){
     ctx.restore();
   }
 
-  downloadOne(cvs, `光田醫院_${S.name}_${Date.now()}`, 'png', 1);
-  snack('海報已下載！');
+  const dpi=_effectiveDpi(pgNow,sc);
+  const base=(S.pdfSpec&&S.pdfSpec.name)? S.pdfSpec.name.replace(/\.pdf$/i,'') : `光田醫院_${S.name}_${Date.now()}`;
+  await downloadCanvasDpi(cvs, base, 'png', 1, dpi);
+  snack(`海報 PNG 已下載：${cvs.width}×${cvs.height} px（${dpi} dpi）`,5000);
+}
+// 下載畫布並寫入 DPI（PNG pHYs／JPEG JFIF），讓印刷廠與 Office 讀到正確尺寸
+async function downloadCanvasDpi(canvas, name, fmt, quality, dpi){
+  const mime='image/'+(fmt==='png'?'png':'jpeg');
+  const blob=await new Promise(r=>canvas.toBlob(r,mime,quality));
+  let buf=await blob.arrayBuffer();
+  try{ buf = fmt==='png' ? pngSetDpi(buf,dpi) : jpegSetDpi(buf,dpi); }catch(e){}
+  const out=new Blob([buf],{type:mime});
+  const a=document.createElement('a'); a.download=name+'.'+(fmt==='png'?'png':'jpg'); a.href=URL.createObjectURL(out);
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),8000);
 }
 
 function downloadOne(canvas, name, fmt, quality){
@@ -5866,8 +5890,8 @@ async function exportPDF(){
   for(let pi=0;pi<S.pages.length;pi++){
     if(pi>0){ const [pw,ph]=_pdfPageMM(S.pages[pi]); doc.addPage([pw,ph], pw>ph?'landscape':'portrait'); }
     const pg=S.pages[pi];
-    // 渲染倍率：長邊至少 2880px（學會壁報 1080×1920 → 2160×3840，於 14.29×25.4cm 約 380dpi 可印刷）
-    const sc=Math.min(4,Math.max(2,Math.ceil(2880/Math.max(pg.W,pg.H))));
+    // 渲染倍率：規格有指定 DPI 就照 DPI；否則長邊至少 2880px
+    const sc=_exportScaleFor(pg);
     const cvs=document.createElement('canvas');
     cvs.width=pg.W*sc; cvs.height=pg.H*sc;
     const ctx=cvs.getContext('2d');
@@ -5992,9 +6016,20 @@ async function exportPDF(){
   const fname=(spec&&spec.name)||'光田醫院_海報.pdf';
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),8000);
-  if(spec&&spec.maxMB&&mb>spec.maxMB) snack(`已下載 ${fname}（${mb.toFixed(2)} MB，超過 ${spec.maxMB} MB 上限，請減少或縮小照片後再匯出）`,7000);
-  else snack(`PDF 已下載：${fname}（${mb.toFixed(2)} MB${spec?`，頁面 ${spec.mm[0]}×${spec.mm[1]} mm 直式 9:16`:''}）`,5000);
+  const sc0=_exportScaleFor(firstPg), dpi0=_effectiveDpi(firstPg,sc0);
+  const info=`${mb.toFixed(2)} MB，頁面 ${(_pdfPageMM(firstPg)[0]/10).toFixed(2)}×${(_pdfPageMM(firstPg)[1]/10).toFixed(2)} cm，${Math.round(firstPg.W*sc0)}×${Math.round(firstPg.H*sc0)} px（${dpi0} dpi）`;
+  if(spec&&spec.maxMB&&mb>spec.maxMB) snack(`已下載 ${fname}（${info}）。超過 ${spec.maxMB} MB 上限，請減少或縮小照片後再匯出`,8000);
+  else if(dpi0<150) snack(`PDF 已下載：${fname}（${info}）。解析度低於 150 dpi，實體印刷會偏糊，建議在助手把匯出 DPI 調高`,8000);
+  else snack(`PDF 已下載：${fname}（${info}）`,6000);
 }
+function _exportScaleFor(pg){
+  const s=_pdfSpecFor(pg);
+  let sc = (s&&s.dpi) ? s.dpi/96 : Math.min(4,Math.max(2,Math.ceil(2880/Math.max(pg.W,pg.H))));
+  const maxPx=60e6; // 單張畫布像素上限（瀏覽器記憶體），超過就降倍率
+  if(pg.W*pg.H*sc*sc>maxPx) sc=Math.sqrt(maxPx/(pg.W*pg.H));
+  return sc;
+}
+function _effectiveDpi(pg,sc){ const mm=_pdfPageMM(pg); return Math.round(pg.W*sc/(mm[0]/25.4)); }
 // ── 含 PDF 規格的版型（學會壁報）：實體頁面尺寸、最小字級檢查 ──
 function _pdfSpecFor(pg){
   const s=pg&&pg.pdfSpec; if(!s||!s.mm) return null;
@@ -6786,9 +6821,12 @@ function applyTemplate(id, force=false){
     tpl=getEffectiveBuiltin(id); // 含覆寫資料
   }
   if(!tpl) return;
-
+  return applyTemplateObj(tpl, force);
+}
+// 直接套用一個版型物件（助手動態產生的版型也走這裡）
+function applyTemplateObj(tpl, force=false){
   if(!force && S.objs.length>0){
-    if(!confirm(`套用「${tpl.name}」將清除目前所有物件，確定嗎？`)) return;
+    if(!confirm(`套用「${tpl.name}」將清除目前所有物件，確定嗎？`)) return false;
   }
 
   pushHistory();
@@ -6858,6 +6896,7 @@ function applyTemplate(id, force=false){
   const ac=document.getElementById('tpl-'+tpl.id);
   if(ac) ac.classList.add('active');
   snack(`已套用：${tpl.name}`);
+  return true;
 }
 
 // ── Firebase / Firestore 同步 ──────────────────────────
@@ -10355,17 +10394,46 @@ const Collage = {
   <div class="conf-box">
     <div class="conf-head">
       <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 16 16" style="flex-shrink:0"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3"/></svg>
-      <div style="flex:1"><h3>學會壁報助手：直式 9:16 電子海報（投稿用）</h3><p>先用免費 AI 整理文案，再套版、上字、匯出合規 PDF。不用等美編排程，自己 30 分鐘內完成草稿。</p></div>
+      <div style="flex:1"><h3>學會壁報助手：依你的學會規格做投稿海報</h3><p>每個學會的尺寸、容量、字級、檔名都不同。先把公告的規格填進來，再用免費 AI 整理文案、套版、匯出高解析度 PDF／PNG。</p></div>
       <button class="btn btn-ghost btn-sm" onclick="confClose()">關閉</button>
     </div>
     <div class="conf-body">
-      <div>
-        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.5px;margin-bottom:5px">投稿規範速查（115 年度腎臟病健康促進機構壁報成果展示）</div>
-        <div class="conf-spec">
-          <span>直式 9:16</span><span>PDF 單頁、每篇 1 份</span><span>5 MB 以下</span><span>全中文</span><span>最小 12 pt（建議 24–30 pt 以上）</span><span>檔名 CKD_光田綜合醫院.pdf</span><span>不可含影片／音訊／動畫</span>
-          <span class="warn">線上投稿截止 115/11/10 23:59</span><span class="warn">活動 115/12/5–6 臺大醫院國際會議中心</span>
+      <div class="conf-step" style="background:#fff">
+        <h4><i>0</i>設定這次學會的規格（依學會公告填，不確定的欄位留空）</h4>
+        <div class="conf-form">
+          <label class="c4">常用規格（選了會自動填入，之後可再改）
+            <select id="conf-preset" onchange="confPreset()"></select>
+          </label>
+          <label class="c2">頁面尺寸（公分，寬 × 高）
+            <div class="wh"><input type="number" id="conf-w" step="0.1" min="5" max="300" oninput="confPxHint()"><span>×</span><input type="number" id="conf-h" step="0.1" min="5" max="300" oninput="confPxHint()"><button type="button" onclick="confSwap()" title="直式／橫式互換">直↔橫</button></div>
+          </label>
+          <label>匯出解析度（DPI）
+            <select id="conf-dpi" onchange="confPxHint()"><option value="300">300（印刷）</option><option value="200">200（大圖輸出）</option><option value="150">150（展板）</option><option value="0">自動（長邊 ≥2880px）</option></select>
+          </label>
+          <label>檔案上限（MB，可空）
+            <input type="number" id="conf-mb" step="0.5" min="0" placeholder="例：5">
+          </label>
+          <label>最小字級（pt，可空）
+            <input type="number" id="conf-pt" step="1" min="0" placeholder="例：12">
+          </label>
+          <label>類別／編號標籤（可空）
+            <input type="text" id="conf-tag" placeholder="例：CKD、P-012">
+          </label>
+          <label class="c2">指定檔名（可空）
+            <input type="text" id="conf-name" placeholder="例：CKD_光田綜合醫院.pdf">
+          </label>
+          <label class="c2">活動／學會名稱（印在頁尾，可空）
+            <input type="text" id="conf-event" placeholder="例：115 年度腎臟病健康促進機構壁報成果展示">
+          </label>
+          <label class="c2">單位簡稱（作者列與頁尾）
+            <input type="text" id="conf-unit" placeholder="例：光田綜合醫院 腎臟內科" value="光田綜合醫院 ○○科">
+          </label>
         </div>
-        <div style="font-size:11.5px;color:#64748b;margin-top:5px">必備內容：投稿類別 CKD、海報標題、作者姓名、所屬單位、聯絡 Email（機構標誌選填）。本版型已預留全部欄位。</div>
+        <div class="conf-hint" id="conf-px"></div>
+        <div class="row">
+          <button class="btn btn-green" onclick="confApply()">用這個規格產生版型並開始編輯</button>
+          <button class="btn btn-indigo" onclick="confApplySpecOnly()">只套用規格到目前畫布（保留我的設計）</button>
+        </div>
       </div>
 
       <div class="conf-steps">
@@ -10379,23 +10447,23 @@ const Collage = {
           <div><a class="lnk" href="https://gemini.google.com" target="_blank" rel="noopener">開啟 Gemini</a><a class="lnk" href="https://chatgpt.com" target="_blank" rel="noopener">開啟 ChatGPT</a><a class="lnk" href="https://notebooklm.google.com" target="_blank" rel="noopener">開啟 NotebookLM</a></div>
         </div>
         <div class="conf-step">
-          <h4><i>2</i>套用 9:16 學會壁報版型</h4>
-          <p>版型為 1080×1920 畫布，匯出時自動設定為 14.29×25.4 cm（與學會範例相同）。把 AI 給的文案貼進各區塊，照片／圖表用「圖片」工具插入。字級對照：32px＝12pt（下限）、64px＝24pt、80px＝30pt。</p>
-          <div class="row"><button class="btn btn-green" onclick="confApply()">套用版型並開始編輯</button></div>
+          <h4><i>2</i>套版、貼字、放照片</h4>
+          <p>版型依上方規格自動產生：直式單欄、橫式雙欄，字級依頁面大小換算且不低於你填的最小字級。已預留標籤、院徽、標題、作者／單位／Email、四段落、亮點數字、照片位置、頁尾。點文字兩下即可改；照片用左側「圖片」插入。</p>
         </div>
         <div class="conf-step">
           <h4><i>3</i>底圖與視覺（選用）</h4>
-          <p>需要氣氛底圖時用「AI 生成底圖」（院內 FLUX 模型，免費），或到 Gemini 生圖後用「背景圖」匯入。請讓 AI 只畫背景、不要畫中文字，文字一律在這裡上。</p>
+          <p>需要氣氛底圖時用「AI 生成底圖」（院內 FLUX 模型，免費），或到 Gemini 生圖後用「背景圖」匯入。AI 只畫背景、不要畫中文字；文字一律在這裡上，印刷才清楚。</p>
           <div class="row">
-            <button class="btn btn-purple" onclick="confAiBg()">AI 生成底圖（9:16）</button>
+            <button class="btn btn-purple" onclick="confAiBg()">AI 生成底圖（依畫布比例）</button>
             <button class="btn btn-indigo" onclick="confCopy('bg')">複製「底圖生圖」提示詞</button>
           </div>
         </div>
         <div class="conf-step">
-          <h4><i>4</i>匯出合規 PDF</h4>
-          <p>一鍵匯出：單頁 PDF、自動命名 CKD_光田綜合醫院.pdf、自動壓到 5 MB 內、匯出前檢查有無小於 12pt 的文字，並顯示實際檔案大小。</p>
+          <h4><i>4</i>匯出高解析度 PDF／PNG</h4>
+          <p>匯出 PDF：頁面照規格公分數、依 DPI 產生像素、自動命名、超過容量上限時自動壓縮、匯出前檢查小於最小字級的文字，完成後顯示實際容量與 dpi。PDF 投稿用、PNG 貼公告或送印用。</p>
           <div class="row">
             <button class="btn btn-amber" onclick="confExport()">匯出 PDF（投稿版）</button>
+            <button class="btn btn-green" onclick="confExportPng()">下載 PNG（高解析度）</button>
             <a class="lnk" href="./conf-poster-guide.html" target="_blank" rel="noopener" style="align-self:center">完整製作指南（可列印）</a>
           </div>
         </div>
@@ -10403,17 +10471,17 @@ const Collage = {
 
       <div class="conf-check">
         <h4>投稿前自我檢查</h4>
-        <label><input type="checkbox"> PDF 為直式 9:16、僅 1 頁、5 MB 以下（匯出時會顯示容量）</label>
-        <label><input type="checkbox"> 內容全為中文，沒有小於 12 pt 的文字；AI 產生的數字已核對原始資料</label>
-        <label><input type="checkbox"> 已填：投稿類別 CKD、海報標題、作者姓名、所屬單位、聯絡 Email</label>
-        <label><input type="checkbox"> 檔名為 CKD_光田綜合醫院.pdf；沒有影片、音訊、動畫</label>
+        <label><input type="checkbox"> 尺寸、方向、頁數、容量與學會公告一致（匯出時會顯示實際數值）</label>
+        <label><input type="checkbox"> 字級不低於學會規定；AI 產生的數字已核對原始資料</label>
+        <label><input type="checkbox"> 必備欄位都有：類別／編號、標題、作者、單位、聯絡方式（依學會要求）</label>
+        <label><input type="checkbox"> 檔名符合學會格式；沒有影片、音訊、動畫</label>
         <label><input type="checkbox"> 照片無病人可辨識資訊；AI 生成的圖片不當作真實醫療照片使用</label>
       </div>
     </div>
     <div class="conf-foot">
-      <span class="sp">提示：AI 文案只是草稿，數據與結論請由承辦人員確認後再投稿。</span>
+      <span class="sp">提示：AI 文案只是草稿，數據與結論請由承辦人員確認後再投稿。規格會記在這台電腦，下次開啟自動帶入。</span>
       <button class="btn btn-ghost btn-sm" onclick="confClose()">關閉</button>
-      <button class="btn btn-green btn-sm" onclick="confApply()">套用版型</button>
+      <button class="btn btn-green btn-sm" onclick="confApply()">產生版型</button>
     </div>
   </div>
 </div>
@@ -10716,9 +10784,22 @@ function aiUse(){
 }
 
 // ═══ 學會壁報助手 ═══
-const CONF_TPL_ID='conf-ckd-9x16';
+const CONF_LS='ktgh_conf_spec_v1';
+const CONF_PRESETS=[
+  {id:'ckd115',label:'115 腎臟病健康促進壁報：直式 9:16 電子海報（14.29×25.4 cm、PDF ≤5 MB、≥12 pt）',mm:[142.9,254],dpi:300,mb:5,pt:12,name:'CKD_光田綜合醫院.pdf',tag:'CKD',event:'115 年度腎臟病健康促進機構壁報成果展示'},
+  {id:'e916',label:'電子海報 直式 9:16（螢幕播放，14.29×25.4 cm）',mm:[142.9,254],dpi:300},
+  {id:'e169',label:'電子海報 橫式 16:9（螢幕播放，25.4×14.29 cm）',mm:[254,142.9],dpi:300},
+  {id:'a4v',label:'A4 直式 21×29.7 cm',mm:[210,297],dpi:300},
+  {id:'a3v',label:'A3 直式 29.7×42 cm',mm:[297,420],dpi:300},
+  {id:'a2v',label:'A2 直式 42×59.4 cm',mm:[420,594],dpi:200},
+  {id:'a1v',label:'A1 直式 59.4×84.1 cm（實體壁報）',mm:[594,841],dpi:200},
+  {id:'a1h',label:'A1 橫式 84.1×59.4 cm',mm:[841,594],dpi:200},
+  {id:'a0v',label:'A0 直式 84.1×118.9 cm（實體壁報）',mm:[841,1189],dpi:150},
+  {id:'b90',label:'展板 90×120 cm 直式',mm:[900,1200],dpi:150},
+  {id:'custom',label:'自訂（下方手動輸入）'}
+];
 const CONF_PROMPTS={
-copy:`你是醫院品質與衛教海報的文案編輯。請把下面的成果資料整理成「學會壁報（直式 9:16 電子海報）」的文案，條件：
+copy:`你是醫院品質與衛教海報的文案編輯。請把下面的成果資料整理成「學會壁報海報」的文案，條件：
 1. 全部使用繁體中文，不要表情符號。
 2. 固定四段：一、背景與目的／二、執行方法／三、成果與數據／四、結論與未來。每段 3–5 個重點，每點不超過 25 字。
 3. 另外提供：海報主標題（15 字內）、副標題（20 字內）、3 個最亮眼的數據（數字＋一句說明，各 12 字內）。
@@ -10727,11 +10808,147 @@ copy:`你是醫院品質與衛教海報的文案編輯。請把下面的成果�
 
 成果資料如下：
 （把成果報告、簡報文字或統計表貼在這裡）`,
-nblm:`請根據我上傳的來源，整理成學會壁報（直式 9:16 電子海報）的文案：固定四段「一、背景與目的／二、執行方法／三、成果與數據／四、結論與未來」，每段 3–5 個重點、每點不超過 25 字；另外給我海報主標題（15 字內）、副標題（20 字內）與 3 個亮點數字（數字＋一句說明）。全部繁體中文，不要表情符號，數字只能引用來源裡有的，並標註出自哪一份來源。`,
-bg:`直式 9:16 海報底圖，醫療健康主題（腎臟照護、健康促進），乾淨明亮，靛藍 #14286E 到淺藍 #00AAC8 的柔和漸層，上方留深色區塊放標題，中段與下方大面積留白放文字，扁平插畫風格，不要任何文字、不要人臉、不要標誌，高解析度`
+nblm:`請根據我上傳的來源，整理成學會壁報海報的文案：固定四段「一、背景與目的／二、執行方法／三、成果與數據／四、結論與未來」，每段 3–5 個重點、每點不超過 25 字；另外給我海報主標題（15 字內）、副標題（20 字內）與 3 個亮點數字（數字＋一句說明）。全部繁體中文，不要表情符號，數字只能引用來源裡有的，並標註出自哪一份來源。`,
+bg:`海報底圖，醫療健康主題，乾淨明亮，靛藍 #14286E 到淺藍 #00AAC8 的柔和漸層，上方留深色區塊放標題，其餘大面積留白放文字，扁平插畫風格，不要任何文字、不要人臉、不要標誌，高解析度`
 };
-function confOpen(){ document.getElementById('conf-overlay').style.display='flex'; }
+function confOpen(){
+  const sel=document.getElementById('conf-preset');
+  if(!sel.options.length) CONF_PRESETS.forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.label; sel.appendChild(o); });
+  let saved=null; try{ saved=JSON.parse(localStorage.getItem(CONF_LS)||'null'); }catch(e){}
+  if(saved) confFillForm(saved); else { sel.value='ckd115'; confPreset(); }
+  document.getElementById('conf-overlay').style.display='flex';
+}
 function confClose(){ document.getElementById('conf-overlay').style.display='none'; }
+function confPreset(){
+  const p=CONF_PRESETS.find(x=>x.id===document.getElementById('conf-preset').value); if(!p||!p.mm) { confPxHint(); return; }
+  confFillForm({presetId:p.id, mm:p.mm, dpi:p.dpi||300, maxMB:p.mb||'', minPt:p.pt||'', tag:p.tag||'', name:p.name||'', event:p.event||'', unit:document.getElementById('conf-unit').value});
+}
+function confFillForm(sp){
+  const g=id=>document.getElementById(id);
+  g('conf-preset').value=sp.presetId||'custom';
+  g('conf-w').value=sp.mm?(sp.mm[0]/10):''; g('conf-h').value=sp.mm?(sp.mm[1]/10):'';
+  g('conf-dpi').value=String(sp.dpi??300); g('conf-mb').value=sp.maxMB||''; g('conf-pt').value=sp.minPt||'';
+  g('conf-tag').value=sp.tag||''; g('conf-name').value=sp.name||''; g('conf-event').value=sp.event||''; if(sp.unit) g('conf-unit').value=sp.unit;
+  confPxHint();
+}
+function confReadSpec(){
+  const g=id=>document.getElementById(id);
+  const w=parseFloat(g('conf-w').value), h=parseFloat(g('conf-h').value);
+  if(!(w>=5&&w<=300&&h>=5&&h<=300)) return null;
+  const preset=CONF_PRESETS.find(x=>x.id===g('conf-preset').value);
+  const sp={presetId:g('conf-preset').value, mm:[+w.toFixed(2)*10, +h.toFixed(2)*10], dpi:parseInt(g('conf-dpi').value)||0,
+    maxMB:parseFloat(g('conf-mb').value)||0, minPt:parseFloat(g('conf-pt').value)||0,
+    tag:g('conf-tag').value.trim(), name:g('conf-name').value.trim(), event:g('conf-event').value.trim(), unit:g('conf-unit').value.trim()||'光田綜合醫院'};
+  sp.mm=[Math.round(w*10*100)/100, Math.round(h*10*100)/100];
+  if(sp.name && !/\.pdf$/i.test(sp.name)) sp.name+='.pdf';
+  // 標籤：若使用者改了尺寸但 preset 仍是舊的，顯示名稱改用尺寸
+  const ratio=confRatioName(sp.mm[0],sp.mm[1]);
+  sp.label=(preset&&preset.mm&&Math.abs(preset.mm[0]-sp.mm[0])<0.5&&Math.abs(preset.mm[1]-sp.mm[1])<0.5)? preset.label.split('：')[0].split('（')[0] : `學會壁報 ${(sp.mm[0]/10)}×${(sp.mm[1]/10)} cm ${ratio}`;
+  return sp;
+}
+function confRatioName(w,h){
+  const r=w/h, known=[['9:16',9/16],['16:9',16/9],['3:4',.75],['4:3',4/3],['1:1',1],['A 系列直式',1/1.4142],['A 系列橫式',1.4142],['2:3',2/3],['3:2',1.5]];
+  for(const [n,v] of known){ if(Math.abs(r/v-1)<0.012) return n; }
+  return w<h?'直式':'橫式';
+}
+function confSwap(){ const a=document.getElementById('conf-w'), b=document.getElementById('conf-h'); const t=a.value; a.value=b.value; b.value=t; confPxHint(); }
+function confPxHint(){
+  const el=document.getElementById('conf-px'); const sp=confReadSpec();
+  if(!sp){ el.className='conf-hint bad'; el.textContent='請輸入 5–300 公分的寬與高。'; return; }
+  const W=Math.round(sp.mm[0]*3.7795), H=Math.round(sp.mm[1]*3.7795);
+  const pg={W,H,pdfSpec:sp}; const sc=_exportScaleFor(pg); const dpi=_effectiveDpi(pg,sc);
+  const outW=Math.round(W*sc), outH=Math.round(H*sc);
+  const capped = sp.dpi && dpi<sp.dpi-2;
+  el.className='conf-hint'+(dpi<150?' bad':'');
+  el.textContent=`${confRatioName(sp.mm[0],sp.mm[1])}　畫布 ${W}×${H} px　→　匯出 ${outW}×${outH} px（${dpi} dpi）${capped?`，已因瀏覽器記憶體上限自動降到 ${dpi} dpi`:''}${dpi<150?'；低於 150 dpi 印刷會偏糊':''}。字級換算：1 pt＝${(1/0.75).toFixed(2)} px，${sp.minPt?`最小 ${sp.minPt} pt＝${Math.ceil(sp.minPt/0.75)} px`:'未設最小字級'}。`;
+}
+function confSaveSpec(sp){ try{ localStorage.setItem(CONF_LS,JSON.stringify(sp)); }catch(e){} }
+function confSpecToPdfSpec(sp){ return {mm:sp.mm, name:sp.name||'', maxMB:sp.maxMB||0, minPt:sp.minPt||0, dpi:sp.dpi||0, label:sp.label}; }
+
+// 依規格動態產生版型：直式單欄、橫式雙欄；字級依頁寬換算且不低於最小字級；放不下時自動縮字
+function confBuildTemplate(sp){
+  const PX=3.7795, W=Math.round(sp.mm[0]*PX), H=Math.round(sp.mm[1]*PX), land=W>H;
+  const m=Math.round(Math.min(W,H)*0.046);
+  const refMM= land? sp.mm[0]/2 : sp.mm[0];
+  const k=Math.pow(refMM/142.9,0.55);
+  const minPx= sp.minPt? sp.minPt/0.75 : 0;
+  const basePt={title:27,head:19.5,body:13.5,meta:12,num:24,lab:12};
+  const mkF=f=>{ const F={}; for(const key in basePt) F[key]=Math.max(minPx, basePt[key]*k*f/0.75); return F; };
+  const L=1.4;
+  const txt=(text,size,color,weight,align,x,y,w,h)=>({type:'txt',text,size:Math.round(size),color,weight,align,fontFamily:'Noto Sans TC',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1});
+  const rect=(x,y,w,h,fill,o={})=>Object.assign({type:'shape',shapeType:'rect',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1,fillColor:fill,strokeColor:'transparent',strokeWidth:0,strokeDash:'solid'},o);
+  const SEC=[['一、背景與目的','#14286E',['• 本院照護現況與推動緣由','• 本年度要解決的問題或目標','• 服務對象與涵蓋範圍'],['• 現況與推動緣由','• 本年度目標','• 服務對象']],
+             ['二、執行方法','#006341',['• 做了哪些事：衛教、個管、轉診、社區','• 團隊分工與流程（可改成流程圖）','• 執行期間'],['• 衛教、個管、轉診','• 團隊分工與流程','• 執行期間']],
+             ['三、成果與數據','#006678',['• 關鍵數字請改下方亮點框','• 與去年或目標值比較，可放圖表','• 民眾／病友回饋'],['• 關鍵數字見亮點框','• 與去年比較','• 病友回饋']],
+             ['四、結論與未來','#427500',['• 一句話總結最重要的成果','• 待改善事項與下一步計畫','• 對其他機構的參考價值'],['• 最重要的成果','• 下一步計畫','• 參考價值']]];
+  const unit=sp.unit||'光田綜合醫院';
+  const meta1=`作者：王○○、李○○、陳○○　｜　單位：${unit}`, meta2='聯絡 Email：xxxxx@ktgh.com.tw';
+  const foot1=`${unit.split(' ')[0]}${sp.event?'　｜　'+sp.event:''}`, foot2= sp.name? `匯出時自動命名為 ${sp.name}` : '';
+  const placeH=F=>F.body*L*2.4;
+  // opt：place 照片框、lines 每段行數、boxes 亮點框、short 短句（窄欄）、titleLines
+  function build(F, opt){
+    const secH=(F,i)=>F.head*1.3+m*0.2+F.body*L*opt.lines+((i===2&&opt.boxes)? m*0.4+F.num*1.2+F.lab*L+m*0.6 : 0);
+    const withPlace=opt.place;
+    const o=[];
+    const logoH=F.title*1.05, logoW=logoH/0.1725;
+    const titleLines= land?1:opt.titleLines;
+    const headerH=m*0.6+logoH+m*0.45+F.title*L*titleLines+m*0.6;
+    o.push(rect(0,0,W,headerH,'#14286E',{fillGradient:{on:true,angle:135,color1:'#14286E',color2:'#00AAC8'}}));
+    o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:m,y:Math.round(m*0.6),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725});
+    if(sp.tag){ const t='投稿類別：'+sp.tag, tp=F.meta, th=tp*1.8, tw=t.length*tp*0.95+tp*1.6, ty=m*0.6+(logoH-th)/2;
+      o.push(rect(W-m-tw,ty,tw,th,'#FFFFFF',{rx:Math.round(th/2)})); o.push(txt(t,tp,'#14286E','700','center',W-m-tw,ty+(th-tp*L)/2,tw,tp*L)); }
+    o.push(txt(titleLines===1?'海報標題：請改成成果主題':'海報標題：請改成成果主題\n（建議 15 字內，可兩行）',F.title,'#FFFFFF','700','left',m,m*0.6+logoH+m*0.45,W-2*m,F.title*L*titleLines));
+    let y=headerH;
+    const metaLines= land?1:2, metaH=F.meta*L*metaLines+m*0.7;
+    o.push(rect(0,y,W,metaH,'#E8EAF0'));
+    o.push(txt(land? meta1+'　｜　'+meta2 : meta1+'\n'+meta2, F.meta,'#333333','400','left',m,y+m*0.35,W-2*m,F.meta*L*metaLines));
+    y+=metaH;
+    const footLines= foot2?2:1, footH=F.meta*L*footLines+m*0.7, footY=H-footH;
+    o.push(rect(0,footY,W,footH,'#F5F5F5'));
+    o.push(txt(foot2? foot1+'\n'+foot2 : foot1, F.meta,'#666666','400','center',m,footY+m*0.35,W-2*m,F.meta*L*footLines));
+    const top=y+m*0.8, bottom=footY-m*0.6;
+    const cols= land? [[0,1],[2,3]] : [[0,1,2,3]];
+    const colW= land? (W-3*m)/2 : W-2*m;
+    let over=0;
+    cols.forEach((idxs,ci)=>{
+      const x=m+ci*(colW+m), hasPlace= withPlace && (land? ci===1 : true);
+      const need=idxs.reduce((a,i)=>a+secH(F,i),0)+(hasPlace? m*0.5+placeH(F):0);
+      over=Math.max(over, need-(bottom-top));
+      const gap=Math.max(0,(bottom-top)-need)/(idxs.length+(hasPlace?1:0));
+      let cy=top;
+      idxs.forEach(i=>{
+        const [t,col,bodyFull,bodyShort]=SEC[i];
+        const body=(opt.short?bodyShort:bodyFull).slice(0,opt.lines).join('\n');
+        o.push(rect(x,cy+F.head*0.1,F.head*0.22,F.head*1.1,col,{rx:Math.round(F.head*0.11)}));
+        o.push(txt(t,F.head,col,'700','left',x+F.head*0.55,cy,colW-F.head*0.55,F.head*1.3));
+        cy+=F.head*1.3+m*0.2;
+        o.push(txt(body,F.body,'#333333','400','left',x+F.body*0.3,cy,colW-F.body*0.3,F.body*L*opt.lines));
+        cy+=F.body*L*opt.lines;
+        if(i===2&&opt.boxes){ cy+=m*0.4; const bw=(colW-2*m*0.5)/3, bh=F.num*1.2+F.lab*L+m*0.6;
+          [['4,053','個案人次（範例）'],['1,421','轉介人次（範例）'],['95%','滿意度（範例）']].forEach(([n,l],j)=>{ const bx=x+j*(bw+m*0.5);
+            o.push(rect(bx,cy,bw,bh,'#E6F6FA',{rx:Math.round(m*0.4)}));
+            o.push(txt(n,F.num,'#14286E','700','center',bx,cy+m*0.3,bw,F.num*1.2));
+            o.push(txt(l,F.lab,'#006678','500','center',bx,cy+m*0.3+F.num*1.2,bw,F.lab*L)); });
+          cy+=bh; }
+        cy+=gap;
+      });
+      if(hasPlace){ const ph=placeH(F); cy+=m*0.5;
+        o.push(rect(x,cy,colW,ph,'transparent',{rx:Math.round(m*0.3),strokeColor:'#9AAAD8',strokeWidth:Math.max(2,Math.round(F.body*0.08)),strokeDash:'8,4'}));
+        o.push(txt('照片／圖表位置：用左側「圖片」插入後刪除此框',F.lab,'#64748b','400','center',x,cy+(ph-F.lab*L)/2,colW,F.lab*L)); }
+    });
+    return {objs:o,over};
+  }
+  const colW0= land? (W-3*m)/2 : W-2*m;
+  const opt={place:true,lines:3,boxes:true,short:false,titleLines:2};
+  let f=1, F=mkF(1);
+  opt.short = colW0/F.body < 20;                       // 窄欄（每行不到 20 字）用短句，避免換行撐高
+  let r=build(F,opt), tries=0;
+  while(r.over>0 && tries<5){ f*=Math.max(0.6, 1-r.over/H-0.03); F=mkF(f); opt.short=colW0/F.body<20; r=build(F,opt); tries++; }
+  // 最小字級撐住、縮不下去：逐步簡化版面
+  const steps=[()=>opt.place=false, ()=>opt.short=true, ()=>opt.lines=2, ()=>opt.boxes=false, ()=>opt.titleLines=1];
+  for(const st of steps){ if(r.over<=0) break; st(); r=build(F,opt); }
+  return {id:'conf-dyn', name:sp.label, category:'conf', w:W, h:H, bg:'#FFFFFF', previewGrad:['#14286E','#00AAC8'], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.place||opt.lines<3||!opt.boxes};
+}
 function confCopy(key){
   const t=CONF_PROMPTS[key]; if(!t) return;
   const done=()=>snack('提示詞已複製，到 AI 平台貼上即可',3000);
@@ -10743,23 +10960,42 @@ function _confCopyFallback(t,done){
   try{ document.execCommand('copy'); done(); }catch(e){ snack('無法自動複製，請改用完整指南頁面複製'); } ta.remove();
 }
 function confApply(){
+  const sp=confReadSpec(); if(!sp){ snack('請先填入有效的頁面寬高（5–300 公分）'); return; }
+  confSaveSpec(sp);
   switchTab('poster',document.getElementById('ntab-poster'));
-  const sel=document.getElementById('tpl-cat-sel'); if(sel){ sel.value='conf'; renderTemplates(); }
-  if(!TEMPLATES.some(t=>t.id===CONF_TPL_ID)){ snack('版型尚未載入，請稍後再試'); return; }
-  const before=S.objs.length;
-  applyTemplate(CONF_TPL_ID);
-  // applyTemplate 可能被使用者取消（保留原物件），此時不關閉助手
-  if(S.pdfSpec||before===0) confClose();
+  const tpl=confBuildTemplate(sp);
+  if(applyTemplateObj(tpl)!==false){
+    document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on')); confClose();
+    if(tpl.overflow) setTimeout(()=>snack('這個頁面尺寸配上最小字級放不下完整版面，已盡量簡化；請再刪減文字或調低最小字級',7000),900);
+    else if(tpl.simplified) setTimeout(()=>snack('頁面較小，版型已自動簡化（減少段落行數或區塊）',5000),900);
+  }
+}
+function confApplySpecOnly(){
+  const sp=confReadSpec(); if(!sp){ snack('請先填入有效的頁面寬高（5–300 公分）'); return; }
+  confSaveSpec(sp);
+  switchTab('poster',document.getElementById('ntab-poster'));
+  const W=Math.round(sp.mm[0]*3.7795), H=Math.round(sp.mm[1]*3.7795);
+  if(Math.abs((S.W/S.H)/(W/H)-1)>0.01){
+    if(!confirm(`目前畫布 ${S.W}×${S.H} px 的比例與規格不同。\n要把畫布改成 ${W}×${H} px 嗎？（物件位置不會自動重排）`)) return;
+    pushHistory(); S.W=W; S.H=H; document.getElementById('inW').value=W; document.getElementById('inH').value=H; document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on'));
+  }
+  S.pdfSpec=confSpecToPdfSpec(sp); S.name=sp.label; renderBg(); setTimeout(zfit,50); scheduleAutoSave();
+  snack(`已套用規格：${sp.label}，匯出時依此處理`,4000); confClose();
 }
 function confAiBg(){
-  if(!S.pdfSpec){ if(!confirm('尚未套用學會壁報版型，先套用再生成底圖？')) return; confApply(); if(!S.pdfSpec) return; }
+  if(!S.pdfSpec){ if(!confirm('尚未套用學會規格，先用上方規格產生版型再生成底圖？')) return; confApply(); if(!S.pdfSpec) return; }
   confClose(); aiGenOpen('bg');
 }
 function confExport(){
   if(S.tab!=='poster') switchTab('poster',document.getElementById('ntab-poster'));
-  if(!S.objs.length&&!S.bgImgEl){ snack('畫布是空的，請先套用版型並填入內容'); return; }
-  if(!S.pdfSpec&&!confirm('目前畫布不是學會壁報版型，PDF 會以一般尺寸匯出，確定？')) return;
+  if(!S.objs.length&&!S.bgImgEl){ snack('畫布是空的，請先產生版型並填入內容'); return; }
+  if(!S.pdfSpec&&!confirm('目前畫布沒有套用學會規格，PDF 會以一般尺寸匯出，確定？')) return;
   confClose(); exportPDF();
+}
+function confExportPng(){
+  if(S.tab!=='poster') switchTab('poster',document.getElementById('ntab-poster'));
+  if(!S.objs.length&&!S.bgImgEl){ snack('畫布是空的，請先產生版型並填入內容'); return; }
+  confClose(); dlPoster();
 }
 
 function showTos(){

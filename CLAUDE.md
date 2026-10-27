@@ -62,10 +62,12 @@ poster-generator-deploy/
 - [ ] 盤點現有版型，建立 ROADMAP.md
 - [ ] 補充橫式版型
 
-## 學會壁報助手（2026-10-27 新增）
+## 學會壁報助手（2026-10-27 新增，同日改為規格可自訂）
 
-- 首頁卡片／下載列按鈕 `confOpen()` 開啟 `#conf-overlay`：投稿規範速查、AI 提示詞複製（`CONF_PROMPTS`）、套版、AI 底圖、匯出。
-- 版型 `conf-ckd-9x16`（`templates.json`，類別 `conf`）可帶 `pdfSpec:{mm:[142.9,254], name, maxMB, minPt}`；`applyTemplate` 會存到 `S.pdfSpec`，並隨 pages／autosave 保存。
-- `exportPDF()` 若頁面有 `pdfSpec` 且畫布比例未被改掉：頁面用規格 mm、檔名用 `name`、JPEG 品質自動降到 `maxMB` 內、匯出前檢查小於 `minPt` 的文字（1080px 畫布對 142.9mm：1px＝0.375pt，32px＝12pt）。
-- `applyTemplate` 已支援 `shape` 物件（之前只有 txt／table／img，形狀會被略過）。
-- 同仁用的可列印指南：`docs/conf-poster-guide.html`（桌面「學會壁報AI製作指南」資料夾有一份副本，改了請同步）。
+- 首頁卡片／下載列按鈕 `confOpen()` 開啟 `#conf-overlay`。步驟 0 是規格表單：常用規格 `CONF_PRESETS`（115 CKD 9:16、16:9、A4–A0、展板、自訂）、頁面公分、直↔橫、匯出 DPI、容量上限、最小字級、標籤、檔名、活動名、單位；存 localStorage `ktgh_conf_spec_v1`。
+- 版型不在 templates.json，由 `confBuildTemplate(spec)` 動態產生（直式單欄／橫式雙欄，字級依頁寬 0.55 次方換算且 ≥ 最小字級，放不下自動縮字、再不行拿掉照片框），經 `applyTemplateObj(tpl)` 套用（`applyTemplate(id)` 已拆成查找＋套用）。
+- `S.pdfSpec={mm,name,maxMB,minPt,dpi,label}` 隨 pages／autosave 保存；畫布 px＝mm×3.7795（1 px＝0.75 pt）。
+- `exportPDF()`：頁面用規格 mm、倍率 `_exportScaleFor()`（規格 dpi/96，否則長邊 ≥2880px，總像素上限 60M 自動降）、容量上限自動降 JPEG 品質、匯出前檢查小於 minPt 的文字、完成提示顯示 MB／px／dpi（<150 dpi 警告）。
+- `dlPoster()` PNG 同樣用 `_exportScaleFor()` 高解析度並以 `pngSetDpi` 寫入 dpi、檔名用規格檔名；`downloadCanvasDpi()` 共用。
+- `applyTemplate` 已支援 `shape` 物件。
+- 同仁用可列印指南：`docs/conf-poster-guide.html`（桌面「學會壁報AI製作指南」資料夾有副本，改了請同步）。
