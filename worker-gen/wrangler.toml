@@ -13,7 +13,7 @@ id = "382a642d6f854b87b485e5ab9a8ece7e"
 
 [vars]
 # 允許呼叫的來源（逗號分隔）。本機預覽 localhost 也放行。
-ALLOWED_ORIGINS = "https://kyoape-ux.github.io,https://ktgh-poster.pages.dev,http://localhost:3464,http://127.0.0.1:3464"
+ALLOWED_ORIGINS = "https://kyoape-ux.github.io,https://ktgh-poster.ktghvideo.workers.dev,http://localhost:3464,http://127.0.0.1:3464"
 # 每 IP 限制：每分鐘 / 每日
 LIMIT_PER_MIN = "4"
 LIMIT_PER_DAY = "40"
