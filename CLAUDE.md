@@ -62,22 +62,6 @@ poster-generator-deploy/
 - [ ] 盤點現有版型，建立 ROADMAP.md
 - [ ] 補充橫式版型
 
-## 學會壁報助手（2026-10-27 新增，同日改為規格可自訂）
-
-- 首頁卡片／下載列按鈕 `confOpen()` 開啟 `#conf-overlay`，三個頁籤：1 規格、2 內容與照片（內容模型 `CC`，localStorage `ktgh_conf_content_v1`：title/subtitle/authors/email/qr、sections 2–6、stats 0–4、photos 0–6 含 caption；「AI 自動填表」打 Worker `/api/outline`）、3 產生與匯出。產生時 `confContentForBuild` 整理內容、`confAttachMedia` 把照片 cover 裁進槽位、QR 由 api.qrserver 取圖；每個區塊帶 `groupId`（標題區、作者卡、各段落卡、照片列、頁尾）可整組拖曳。規格表單：常用尺寸 `CONF_PRESETS`（只有尺寸：9:16、16:9、A4–A0、展板、自訂；**不可放任何學會名稱或預填容量／字級／檔名**，使用者要求）、頁面公分、直↔橫、匯出 DPI、容量上限、最小字級、標籤、檔名、活動名、單位；存 localStorage `ktgh_conf_spec_v1`。
-- 風格模板 `CONF_STYLES`（card 卡片式／gov 公版 A0／blue 寬廣藍／green 清新綠曲線／orange 橙色幾何／dark 深色紫／simple 簡潔式）：每款定義配色（c1/c2/dark/tint/tint2/accent/txt）、header（band/bar/light/curve）、section（badge/pill/label）、deco（circles/none/poly/glow）、footer、cardFill、watermark；`usesTheme` 的才吃「配色」下拉。來源：公版＝~/Downloads/學會海報範本/論文海報公版格式_A0.pptx（#1F2875 色條、黃框標籤、院徽水印），其餘取自該資料夾歷年美編海報。**UI 與指南的風格名稱不可出現人名**（使用者要求）。
-- 版型不在 templates.json，由 `confBuildTemplate(spec)` 依 `spec.style` 分派：`confBuildCard`（預設，卡片式專業版：底色＋裝飾圓、漸層標題區疊作者卡、超橢圓編號徽章卡片、成果數字磚、圖表／照片位置、結論強調卡、深色頁尾＋QR）或 `confBuildSimple`（簡潔式）；配色 `CONF_THEMES`（indigo/green/blue/warm/red，皆品牌色）。字級依頁寬 0.55 次方換算且 ≥ 最小字級，放不下自動縮字（內文到最小字級後標題／段標／數字仍維持倍率階層）、再逐步簡化（去圖表→短句→2 行→照片縮小→緊湊版面去副標題→去照片→去數字磚→標題 1 行）。經 `applyTemplateObj(tpl)` 套用（`applyTemplate(id)` 已拆成查找＋套用）。
-- 使用者明確要求：成品要有設計感、不能陽春，否則無法給同事用；預設清單只能是尺寸、不可帶學會名稱。
-- `_drawPolyCanvas` 補上 superellipse（匯出 PNG/PDF 之前會漏畫超橢圓，徽章會消失）。
-- `S.pdfSpec={mm,name,maxMB,minPt,dpi,label}` 隨 pages／autosave 保存；畫布 px＝mm×3.7795（1 px＝0.75 pt）。
-- `exportPDF()`：頁面用規格 mm、倍率 `_exportScaleFor()`（規格 dpi/96，否則長邊 ≥2880px，總像素上限 60M 自動降）、容量上限自動降 JPEG 品質、匯出前檢查小於 minPt 的文字、完成提示顯示 MB／px／dpi（<150 dpi 警告）。
-- `dlPoster()` PNG 同樣用 `_exportScaleFor()` 高解析度並以 `pngSetDpi` 寫入 dpi、檔名用規格檔名；`downloadCanvasDpi()` 共用。
-- `applyTemplate` 已支援 `shape` 物件。
-- 同仁用可列印指南：`docs/conf-poster-guide.html`（桌面「學會壁報AI製作指南」資料夾有副本，改了請同步）。
-- AI 設計（頁籤 3）：`confAiDesign()` 打既有 `/api/gen` 生主視覺 → `confBuildTemplate({...sp,onBg:true})` 產生半透明卡片版型 → `bgCoverCanvas` 鋪底圖；`confBananaOpen()` 開 `#banana-overlay`（z-index 10001）：`confBananaPrompt()` 自動寫中文提示詞、`confRenderThumb()` 拿目前畫布當草稿、`confBananaRun()` 打 Worker `/api/design`（需 GEMINI_API_KEY 秘密，模型 vars GEMINI_IMAGE_MODEL 預設 gemini-3.1-flash-image，每人 8／全院 60 張/天）、`confImportPosterDataUrl()` 把整張圖當底圖並清空物件。查證 2026-10：Gemini 影像 API 無免費額度、OpenAI 影像 API 無免費額度；免費可程式化只有 Workers AI。
-- 匯出與編輯畫面一致：`_wrapCanvasLines()` 模擬 `.tinner` 的 pre-wrap＋break-word（CJK 逐字斷行、拉丁字詞斷行、收尾標點不放行首、行尾空白懸掛），dlPoster／exportPDF 都用它換行並裁切到文字框；`_txtLines()` 量行數，產生器用它決定標題／副標／作者／段落／頁尾的實際高度。付費 Nano Banana 一鍵路線 UI 已拿掉（使用者不採付費），Worker `/api/design` 留著但前端不呼叫。
-- 群組選取：第一次點選整組；整組已選取時再點同一物件且沒拖曳 → 單選（可拉大小、單獨移動，onDown/onUp 的 deepSel）。產生器不砍重點：先縮字到學會字級、再簡化區塊、最後才允許低到 8pt 並提醒（tpl.belowMin/bodyPt）；表頭、作者列、頁尾已壓縮，頁尾一行放得下就一行、沒 QR 連結不留方塊。
-
 ## 資安現況（2026-10-28 決議）
 
 - 使用者決議：網站維持 GitHub Pages 公開網址、**不加登入**（生產力工具，不想增加同仁負擔）。曾試做 Cloudflare Workers 靜態資產＋Access，已刪除臨時網站 `ktgh-poster`。
@@ -86,8 +70,9 @@ poster-generator-deploy/
 - 已移除未使用的付費 Nano Banana 端點 `/api/design`。Worker 部署與秘密寫入需使用者自己跑（自動模式會擋）：`npx wrangler deploy --config /Users/jyunhao/dev/poster-generator-deploy/worker-gen/wrangler.toml`。
 - 待辦（建議使用者處理）：刪除 Firebase 專案 kuangtien-poster；第三方腳本加 SRI 或自行託管；repo 歷史仍含舊密碼與 Firebase apiKey（專案刪除後即失效）。
 
-## 2026-10-28 瘦身與檢查器
+## 學會壁報助手已移除（2026-10-28）
 
-- 使用者判斷自動排版贏不了 PPT／Canva／美編，故大幅精簡：只留「卡片式」「公版 A0」兩款（`CONF_STYLES`），刪除簡潔式、4 款歷年風格、AI 主視覺（onBg）、Nano Banana 視窗與匯入整張 AI 圖。
-- 新增第 4 頁籤「檢查我的檔案」：`confCheckFile`（pdf.js 3.11.174 於需要時才從 cdnjs 載入，worker 以 blob 載入）檢查頁面尺寸／方向、頁數、容量、最小字級（文字 transform 向量長度）、圖片有效 dpi（operator list 追蹤 CTM）、Movie/Sound/RichMedia/附件、檔名；`confCheckCompress` 逐 dpi 渲染一次、換 JPEG 品質用 jsPDF 重組，PDF 最高 200 dpi 起算，圖片可轉規格 PDF。規格表單多「頁數上限」。
-- 測試備註：瀏覽器面板在背景時 pdf.js 渲染很慢，要把分頁拉前景；9 頁 12 MB 的 PDF 壓到 5 MB 內約 64 秒。
+- 使用者判斷：一年申請學會海報很少、自動排版贏不了 PPT／Canva／美編，整個功能拿掉（首頁卡片、海報編輯按鈕、734＋行程式、Worker `/api/outline`、說明頁）。
+- 完整程式保留在 git 標籤 `conf-assistant-v1`，要還原可 `git checkout conf-assistant-v1 -- docs/index.html docs/conf-poster-guide.html`。
+- 保留的通用改進：匯出自動換行與裁切（`_wrapCanvasLines`）、`applyTemplateObj`、`applyTemplate` 支援 shape、本地 QR（`qrDataUrl`）、匯出 DPI 與 PNG 寫入 dpi（`_exportScaleFor`、`downloadCanvasDpi`）、群組內再點一次單選、共用範本走 Worker。
+- 給美編的公版需求清單與歷年範本分析在桌面「學會壁報AI製作指南」資料夾。

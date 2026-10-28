@@ -2,7 +2,6 @@
 // POST /api/gen { prompt, style, ratio, quality? } → { ok, image:"data:image/jpeg;base64,...", w, h, prompt_en }
 // GET  /api/quota → 目前額度
 // GET  /api/templates → 共用範本（公開讀）；POST /api/templates（X-Admin-Token＝秘密 ADMIN_TOKEN）寫入 KV tpl:shared；GET /api/admin-check 驗證 token
-// POST /api/outline { text, sections? } → { ok, title, subtitle, sections:[{title,bullets[]}], stats:[{value,label}] }
 //
 // 品質策略：
 //  1. 先用 LLM 把中文主題改寫成細緻的英文提示詞（FLUX 的文字編碼器對中文理解很差，這步影響最大）
@@ -213,92 +212,6 @@ export default {
       }, 200, c.headers);
     }
 
-    // ── 3) 學會壁報：貼上簡報／報告文字 → 海報內容 JSON（標題、段落、亮點數字）──
-    if (url.pathname === '/api/outline' && req.method === 'POST') {
-      let body;
-      try { body = await req.json(); } catch { return json({ ok: false, error: 'bad json' }, 400, c.headers); }
-      const text = String(body.text || '').trim().slice(0, 12000);
-      if (text.length < 20) return json({ ok: false, error: '請貼上至少 20 字的成果資料' }, 400, c.headers);
-      const nSec = Math.min(6, Math.max(2, +body.sections || 4));
-      const om = await readCount(env, `om:${minKey()}:${ip}`), od = await readCount(env, `od:${dayKey()}:${ip}`);
-      if (om >= 6) return json({ ok: false, error: '太頻繁了，請等一分鐘再試' }, 429, c.headers);
-      if (od >= 60) return json({ ok: false, error: '今日 AI 整理額度已用完（每人 60 次／天）' }, 429, c.headers);
-      const out = await outlineText(env, text, nSec);
-      if (!out || out._fail) return json({ ok: false, error: 'AI 整理失敗，請縮短文字再試或手動填寫', detail: out && out._fail }, 502, c.headers);
-      await Promise.all([bump(env, `om:${minKey()}:${ip}`, 120), bump(env, `od:${dayKey()}:${ip}`, 60 * 60 * 26)]);
-      return json({ ok: true, ...out }, 200, c.headers);
-    }
-
     return json({ ok: false, error: 'not found' }, 404, c.headers);
   },
 };
-
-// 文字 → 海報內容。讓模型輸出簡單的逐行格式（比 JSON 穩定，不會因括號出錯），由程式解析。
-//   標題：xxx / 副標題：xxx / 段落：標題 然後以「- 」開頭的重點 / 數字：4,053｜說明
-async function outlineText(env, text, nSec) {
-  const sys = `你是醫院品質與衛教海報的文案編輯。把使用者提供的成果資料整理成學會壁報海報內容，嚴格依下列純文字格式輸出，不要任何其他說明、不要 markdown、不要編號：
-標題：主標題（15字內）
-副標題：一句話說明核心做法與效益（22字內）
-段落：背景與目的
-- 重點（22字內）
-- 重點
-- 重點
-段落：執行方法
-- 重點
-- 重點
-（依序輸出 ${nSec} 個段落，順序為 背景與目的、執行方法、成果與數據、結論與未來${nSec > 4 ? '，可再加「團隊與資源」「病人回饋」等' : nSec < 4 ? '，內容不足時合併相鄰段落' : ''}）
-數字：4,053｜CKD 照護人次
-數字：1,421｜Pre-ESRD 照護人次
-規則：全部繁體中文；每段 2–3 個重點，每個重點不超過 22 字、不用句號結尾；「數字」給 2–3 行，只能是資料裡真的有的數字（數字或百分比，｜後是 8 字內說明），沒有就不寫；每個重點都必須能在使用者提供的資料裡找到依據，不可加入資料沒有的統計、趨勢、原因或結論（例如「逐年增加」「滿意度提升」）；資料沒提到的段落只寫一個重點「（待補）」；不要表情符號。`;
-  const fails = [];
-  for (const model of [LLM, LLM_FALLBACK]) {
-    try {
-      const r = await env.AI.run(model, {
-        messages: [{ role: 'system', content: sys }, { role: 'user', content: text + ' /no_think' }],
-        max_tokens: 2000, temperature: 0.3,
-      });
-      let t = '';
-      if (typeof r === 'string') t = r;
-      else if (r) {
-        t = r.response || (r.result && r.result.response) || '';
-        if (!t && r.choices && r.choices[0]) { const ch = r.choices[0], mm = ch.message || {}; t = mm.content || ch.text || ''; if (!t) fails.push(`${model}: choices 無內容 finish=${ch.finish_reason} msgKeys=${Object.keys(mm).join(',')}`); }
-      }
-      if (typeof t !== 'string') t = JSON.stringify(t);
-      t = t.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-      const out = parseOutline(t);
-      if (out) {
-        // 保底：有數字卻沒有「成果」段時補上，位置在第 3 段（或最後一段之前）
-        if (out.stats.length && !out.sections.some(sc => /成果|數據|結果|成效/.test(sc.title)) && out.sections.length < 6) {
-          out.sections.splice(Math.min(2, out.sections.length), 0, { title: '成果與數據', bullets: ['關鍵成果數字見下方亮點'] });
-        }
-        return { ...out, model };
-      }
-      fails.push(`${model}: 解析不出段落（${t.slice(0, 100).replace(/\n/g, ' / ')}）`);
-    } catch (e) { fails.push(`${model}: ${String(e && e.message || e).slice(0, 160)}`); }
-  }
-  return { _fail: fails };
-}
-function parseOutline(t) {
-  const clean = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
-  const strip = s => clean(s).replace(/^[*#\s]+|[*\s]+$/g, '');
-  const out = { title: '', subtitle: '', sections: [], stats: [] };
-  let cur = null;
-  for (const raw of t.split(/\r?\n/)) {
-    const line = raw.trim(); if (!line) continue;
-    let m;
-    if ((m = line.match(/^[*#\s]*標題\s*[:：]\s*(.+)$/))) { out.title = strip(m[1]).slice(0, 30); cur = null; }
-    else if ((m = line.match(/^[*#\s]*副標題\s*[:：]\s*(.+)$/))) { out.subtitle = strip(m[1]).slice(0, 50); cur = null; }
-    else if ((m = line.match(/^[*#\s]*段落\s*[:：]\s*(.+)$/))) { cur = { title: strip(m[1]).replace(/^[一二三四五六七八九十\d]+[、.．\s]+/, '').slice(0, 12), bullets: [] }; out.sections.push(cur); }
-    else if ((m = line.match(/^[*#\s]*數字\s*[:：]\s*(.+)$/))) { const parts = m[1].split(/[｜|]/); const v = strip(parts[0]).slice(0, 12); if (v) out.stats.push({ value: v, label: strip(parts.slice(1).join(' ')).slice(0, 16) }); cur = null; }
-    else if (cur && /^[-•·*]\s*/.test(line)) {
-      const b = strip(line.replace(/^[-•·*]\s*/, '')).replace(/[。．.]$/, '').slice(0, 40);
-      const nm = b.match(/^([\d][\d,.]*\s*[%％]?)\s*[｜|]\s*(.+)$/);       // 數字被寫進重點：搬到亮點數字
-      if (nm) { out.stats.push({ value: nm[1].replace(/\s+/g, '').slice(0, 12), label: clean(nm[2]).slice(0, 16) }); cur.moved = true; }
-      else if (b && cur.bullets.length < 4) cur.bullets.push(b);
-    }
-  }
-  out.sections.forEach(sc => { if (!sc.bullets.length && sc.moved) sc.bullets.push('關鍵成果數字見下方亮點'); });
-  out.sections = out.sections.filter(sc => sc.title && sc.bullets.length).map(sc => ({ title: sc.title, bullets: sc.bullets })).slice(0, 6);
-  out.stats = out.stats.slice(0, 4);
-  return out.sections.length >= 2 ? out : null;
-}
