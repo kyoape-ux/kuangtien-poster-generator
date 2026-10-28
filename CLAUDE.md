@@ -85,3 +85,9 @@ poster-generator-deploy/
 - QR 碼全部本地產生（cdnjs qrcode-generator 1.4.4）。
 - 已移除未使用的付費 Nano Banana 端點 `/api/design`。Worker 部署與秘密寫入需使用者自己跑（自動模式會擋）：`npx wrangler deploy --config /Users/jyunhao/dev/poster-generator-deploy/worker-gen/wrangler.toml`。
 - 待辦（建議使用者處理）：刪除 Firebase 專案 kuangtien-poster；第三方腳本加 SRI 或自行託管；repo 歷史仍含舊密碼與 Firebase apiKey（專案刪除後即失效）。
+
+## 2026-10-28 瘦身與檢查器
+
+- 使用者判斷自動排版贏不了 PPT／Canva／美編，故大幅精簡：只留「卡片式」「公版 A0」兩款（`CONF_STYLES`），刪除簡潔式、4 款歷年風格、AI 主視覺（onBg）、Nano Banana 視窗與匯入整張 AI 圖。
+- 新增第 4 頁籤「檢查我的檔案」：`confCheckFile`（pdf.js 3.11.174 於需要時才從 cdnjs 載入，worker 以 blob 載入）檢查頁面尺寸／方向、頁數、容量、最小字級（文字 transform 向量長度）、圖片有效 dpi（operator list 追蹤 CTM）、Movie/Sound/RichMedia/附件、檔名；`confCheckCompress` 逐 dpi 渲染一次、換 JPEG 品質用 jsPDF 重組，PDF 最高 200 dpi 起算，圖片可轉規格 PDF。規格表單多「頁數上限」。
+- 測試備註：瀏覽器面板在背景時 pdf.js 渲染很慢，要把分頁拉前景；9 頁 12 MB 的 PDF 壓到 5 MB 內約 64 秒。
