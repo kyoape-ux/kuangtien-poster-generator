@@ -76,3 +76,9 @@ poster-generator-deploy/
 - 完整程式保留在 git 標籤 `conf-assistant-v1`，要還原可 `git checkout conf-assistant-v1 -- docs/index.html docs/conf-poster-guide.html`。
 - 保留的通用改進：匯出自動換行與裁切（`_wrapCanvasLines`）、`applyTemplateObj`、`applyTemplate` 支援 shape、本地 QR（`qrDataUrl`）、匯出 DPI 與 PNG 寫入 dpi（`_exportScaleFor`、`downloadCanvasDpi`）、群組內再點一次單選、共用範本走 Worker。
 - 給美編的公版需求清單與歷年範本分析在桌面「學會壁報AI製作指南」資料夾。
+
+## AI 生圖已移除（2026-10-28）
+
+- 使用者判斷「沒用、不好看」，海報編輯的「AI 生成底圖」、圖片編輯的「AI 生成圖片」、院內 Workers AI（FLUX／Qwen）全部移除，也決定不做使用計數。完整舊程式見 git 標籤 `ai-gen-v1`。
+- Worker `ktgh-poster-gen` 現在只剩共用範本：`GET/POST /api/templates`、`GET /api/admin-check`（78 行，無 AI 綁定）。前端常數改名 `WORKER_API`。
+- 素材資源頁仍有外部 AI 工具的連結（只是連結）。
