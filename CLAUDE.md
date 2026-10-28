@@ -82,3 +82,10 @@ poster-generator-deploy/
 - 使用者判斷「沒用、不好看」，海報編輯的「AI 生成底圖」、圖片編輯的「AI 生成圖片」、院內 Workers AI（FLUX／Qwen）全部移除，也決定不做使用計數。完整舊程式見 git 標籤 `ai-gen-v1`。
 - Worker `ktgh-poster-gen` 現在只剩共用範本：`GET/POST /api/templates`、`GET /api/admin-check`（78 行，無 AI 綁定）。前端常數改名 `WORKER_API`。
 - 素材資源頁仍有外部 AI 工具的連結（只是連結）。
+
+## 海報編輯過渡期（2026-10-28 起，至 2026-11-28）
+
+- 使用者決議：海報改引導到 Canva（協作方便），海報編輯先過渡一個月再決定是否下架。已加：海報編輯頂端黃色提示條（可關，sessionStorage `kt_canva_note_off`）、首頁「用 Canva 做海報」卡片、`canvaGuideOpen()` 起手式視窗（品牌色可複製、院徽下載、常用尺寸、輸出提醒、院內輔助工具捷徑）。
+- 美編上架 Canva 公版後，到 `docs/index.html` 的 `CANVA_TEMPLATES` 陣列加 `{name,url,note}`；期限改 `CANVA_DEADLINE`。
+- 到期若沒人反對：移除海報編輯（約 5,000 行：物件系統、版面、屬性面板、範本、素材庫、專案存取、表格），保留圖片編輯／批次浮水印／QR／拼貼；舊程式留在 git 標籤（下架前先打標籤）。
+- 先決條件：美編把電視圖卡、社群貼文、衛教海報、邀請卡等常用公版做到 Canva；確認 Canva 免費版能否鎖定品牌色字型、是否申請非營利版。

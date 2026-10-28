@@ -829,6 +829,34 @@ input[type=color]{width:32px;height:28px;border:none;border-radius:5px;cursor:po
 }
 #pw.bg-editing{cursor:move;outline:3px dashed #F59E0B;outline-offset:-3px}
 #pw.bg-editing .obj{pointer-events:none}
+/* ── Canva 起手式 ── */
+#canva-overlay{position:fixed;inset:0;background:rgba(10,15,40,.62);z-index:9990;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.cv-box{background:#fff;border-radius:16px;width:min(860px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+.cv-head{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(115deg,#14286E,#1F4FA8);color:#fff}
+.cv-head h3{margin:0;font-size:16px;flex:1}.cv-head p{margin:2px 0 0;font-size:12px;opacity:.88}
+.cv-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;background:#f8fafc}
+.cv-warn{background:#FFF5CC;border-left:4px solid #FFB900;border-radius:0 10px 10px 0;padding:9px 13px;font-size:12.5px;color:#5a4300;line-height:1.6}
+.cv-sec{background:#fff;border:1px solid #e3e8ef;border-radius:12px;padding:12px 14px}
+.cv-sec h4{margin:0 0 6px;font-size:13.5px;color:#14286E}
+.cv-sec p,.cv-sec li{font-size:12.5px;color:#475569;line-height:1.65;margin:3px 0}
+.cv-sec ol,.cv-sec ul{margin:4px 0 4px 20px;padding:0}
+.cv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cv-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.cv-tbl th,.cv-tbl td{border:1px solid #e3e8ef;padding:4px 8px;text-align:left}
+.cv-tbl th{background:#E8EAF0;color:#14286E;white-space:nowrap}
+.cv-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cv-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #d5dbe3;border-radius:8px;padding:3px 9px 3px 4px;background:#fff;font-size:12px;cursor:pointer;color:#334155}
+.cv-chip i{width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.15)}
+.cv-chip:hover{border-color:#14286E}
+.cv-links{display:flex;flex-wrap:wrap;gap:6px}
+.cv-links a,.cv-links button{display:inline-flex;align-items:center;border:1px solid #9AAAD8;background:#E8EBFA;color:#14286E;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer;font-family:inherit}
+.cv-links a:hover,.cv-links button:hover{background:#D5DAEF}
+.cv-foot{display:flex;gap:8px;align-items:center;padding:10px 18px;border-top:1px solid #e8edf3;background:#fff;font-size:11.5px;color:#64748b}
+#canva-note{display:flex;align-items:center;gap:10px;flex-shrink:0;padding:6px 12px;background:#FFF5CC;border-bottom:1px solid #FFCF4D;font-size:12px;color:#5a4300}
+#canva-note b{color:#7A5500}
+#canva-note button{border:1px solid #FFCF4D;background:#fff;border-radius:7px;padding:2px 10px;font-size:11.5px;font-weight:700;color:#7A5500;cursor:pointer;font-family:inherit}
+#canva-note .x{margin-left:auto;border:none;background:transparent;font-size:15px;padding:0 4px;color:#7A5500}
+@media (max-width:720px){.cv-grid{grid-template-columns:1fr}}
 .tos-box{
   background:#fff;border-radius:20px;max-width:560px;width:100%;
   box-shadow:0 24px 80px rgba(0,0,0,.3);overflow:hidden;
@@ -1531,6 +1559,7 @@ body.tool-pan #cscroll:active{cursor:grabbing}
 <!-- CANVAS AREA -->
 <div id="ca">
   <div id="ca-main">
+    <div id="canva-note"><span><b>海報建議改用 Canva</b>：多人協作、範本多、手機也能改。本編輯器試行保留至 <span id="canva-deadline"></span>，之後視同仁意見決定是否下架；需要的檔案請先用「儲存專案」備份。</span><button onclick="canvaGuideOpen()">Canva 起手式</button><button class="x" onclick="canvaNoteHide()" title="本次不再顯示">✕</button></div>
     <div class="catop">
       <button class="btn btn-blue btn-sm" id="tool-v" onclick="setToolMode('select')" title="選取 (V)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M4 2l16 10-7 1.5L9 22z"/></svg></button>
       <button class="btn btn-ghost btn-sm" id="tool-h" onclick="setToolMode('pan')" title="手型平移 (H)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 11V8a2 2 0 0 0-4 0v3M14 8V6a2 2 0 0 0-4 0v5M10 7a2 2 0 0 0-4 0v6M6 13l-.4 1.6A4 4 0 0 0 9.5 20h5a4 4 0 0 0 4-4v-2a2 2 0 0 0-2-2h-1"/></svg></button>
@@ -1675,7 +1704,15 @@ body.tool-pan #cscroll:active{cursor:grabbing}
       <div class="hcard-ic" style="background:rgba(255,255,255,.2);box-shadow:none;backdrop-filter:blur(2px)"><svg width="26" height="26" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M2 6h12M2 10h7M6 6v6"/></svg></div>
       <div style="flex:1">
         <div class="q-ttl">製作海報<span class="q-pill">最常用</span></div>
-        <div class="q-desc">挑範本 → 改字 → 匯出 PNG / PDF / SVG</div>
+        <div class="q-desc">簡單圖卡可用；正式海報建議改用 Canva（協作更方便）</div>
+      </div>
+      <svg width="22" height="22" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+    </div>
+    <div class="q-main" onclick="canvaGuideOpen()" style="margin-top:16px;background:linear-gradient(115deg,#14286E 0%,#1F4FA8 55%,#00AAC8 100%);box-shadow:0 14px 34px rgba(20,40,110,.30)">
+      <div class="hcard-ic" style="background:rgba(255,255,255,.2);box-shadow:none;backdrop-filter:blur(2px)"><svg width="26" height="26" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M5.5 9.8a3 3 0 105-2.4M8 5.2v5.6M5.2 8h5.6"/></svg></div>
+      <div style="flex:1">
+        <div class="q-ttl">用 Canva 做海報<span class="q-pill">建議</span></div>
+        <div class="q-desc">院徽與色票下載、常用尺寸對照、美編公版、協作說明</div>
       </div>
       <svg width="22" height="22" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="2" viewBox="0 0 16 16" style="flex-shrink:0"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
     </div>
@@ -10204,6 +10241,15 @@ const Collage = {
 };
 </script>
 
+<!-- ══ Canva 起手式 ══ -->
+<div id="canva-overlay" onclick="if(event.target===this)canvaGuideClose()">
+  <div class="cv-box">
+    <div class="cv-head"><div style="flex:1"><h3>用 Canva 做海報：起手式</h3><p>多人可同時編輯、範本多、手機也能改；院內工具負責把圖片處理好。</p></div><button class="btn btn-ghost btn-sm" onclick="canvaGuideClose()">關閉</button></div>
+    <div class="cv-body" id="cv-body"></div>
+    <div class="cv-foot"><span id="cv-foot-txt"></span></div>
+  </div>
+</div>
+
 <!-- ══ 使用須知 Modal ══ -->
 <div id="tos-overlay" style="display:none">
   <div class="tos-box">
@@ -10405,6 +10451,45 @@ const Collage = {
 const TOS_KEY = 'kt_tos_accepted';
 // 院內 Worker（共用範本雲端同步；管理員寫入需金鑰）
 const WORKER_API='https://ktgh-poster-gen.ktghvideo.workers.dev';
+
+// ═══ Canva 起手式（海報編輯過渡期導引） ═══
+const CANVA_DEADLINE='2026-11-28';
+const CANVA_TEMPLATES=[];   // 美編上架後在這裡加：{name:'電視圖卡 橫式', url:'https://www.canva.com/...', note:'1920×1080'}
+const CANVA_BRAND=[['寧靜靛','#14286E'],['寬廣藍','#00AAC8'],['生命綠','#6EC300'],['沉穩綠','#006341'],['熱情紅','#E11928'],['陽光黃','#FFB900'],['大地棕','#AA7D5F'],['純淨白','#FFFFFF']];
+const CANVA_SIZES=[['電視圖卡 橫式','1920 × 1080 px'],['電視圖卡 直式','1080 × 1920 px'],['社群貼文','1080 × 1080 px'],['限時動態','1080 × 1920 px'],['Facebook 封面','1702 × 630 px'],['A4 直式','21 × 29.7 cm'],['A3 直式','29.7 × 42 cm'],['A2 直式','42 × 59.4 cm'],['A1 直式','59.4 × 84.1 cm'],['A0 直式','84.1 × 118.9 cm'],['展板','90 × 120 cm']];
+const CANVA_LOGOS=[['院徽 彩色橫式','logo-h-normal.png'],['院徽 白字橫式（深色底用）','logo-h-white.png'],['院徽 全白橫式','logo-h-fullwhite.png'],['院徽 直式','logo-v.png'],['院徽 圖示','logo-solo.png']];
+function canvaCopy(t){ const done=()=>snack('已複製 '+t,1800); if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done).catch(done); else { const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); done(); } }
+function canvaGuideOpen(){
+  const b=document.getElementById('cv-body');
+  b.innerHTML=`
+  <div class="cv-warn">海報編輯器試行保留至 <b>${CANVA_DEADLINE}</b>，之後視同仁意見決定是否下架。需要保留的作品請先用海報編輯的「儲存專案」備份，或下載 PNG／PDF。</div>
+  <div class="cv-sec"><h4>開始用 Canva（三步）</h4><ol>
+    <li>到 <a href="https://www.canva.com/zh_tw/" target="_blank" rel="noopener">canva.com</a> 用公務信箱註冊免費版。</li>
+    <li>從下方「美編公版」開啟範本（點「使用此範本」會複製一份給你）；沒有合適公版就依尺寸對照表自訂尺寸。</li>
+    <li>要多人一起改：右上角「分享」→ 邀請同事為「可編輯」；定稿後「下載」選 PDF（列印）或 PNG（網路）。</li></ol></div>
+  <div class="cv-sec"><h4>美編公版</h4>${CANVA_TEMPLATES.length? '<div class="cv-links">'+CANVA_TEMPLATES.map(t=>`<a href="${t.url}" target="_blank" rel="noopener">${t.name}${t.note?'（'+t.note+'）':''}</a>`).join('')+'</div>' : '<p>美編整理中，上架後會出現在這裡。目前請先依下方尺寸自訂，並使用院徽與品牌色。</p>'}</div>
+  <div class="cv-grid">
+    <div class="cv-sec"><h4>品牌色（點一下複製色碼）</h4><div class="cv-chips">${CANVA_BRAND.map(c=>`<span class="cv-chip" onclick="canvaCopy('${c[1]}')"><i style="background:${c[1]}"></i>${c[0]} ${c[1]}</span>`).join('')}</div>
+      <p style="margin-top:8px">字型：Noto Sans TC（思源黑體）為主，英數可用 Montserrat；Canva 搜尋「Noto Sans TC」或「思源黑體」，找不到就選 Canva 內建的繁中黑體。淺色的綠、藍、棕只用在色塊與大字，小字請用深色版。</p></div>
+    <div class="cv-sec"><h4>院徽下載</h4><div class="cv-links">${CANVA_LOGOS.map(l=>`<a href="./logos/${l[1]}" download="${l[0].replace(/[（）\s]/g,'')}.png">${l[0]}</a>`).join('')}</div>
+      <p style="margin-top:8px">下載後在 Canva「上傳」→ 拖進設計。院徽不要變形、不要加漸層或陰影。</p></div>
+  </div>
+  <div class="cv-sec"><h4>常用尺寸（Canva「建立設計」→「自訂尺寸」）</h4><table class="cv-tbl"><tbody>${CANVA_SIZES.map(z=>`<tr><th>${z[0]}</th><td>${z[1]}</td></tr>`).join('')}</tbody></table><p>大尺寸（A1、A0、展板）可先用一半比例設計、輸出 PDF 後交給印刷廠；實際尺寸請依印刷廠或學會公告為準。</p></div>
+  <div class="cv-sec"><h4>輸出與注意事項</h4><ul>
+    <li>網路與簡報用 PNG／JPG；要印刷用 PDF（列印）。</li>
+    <li>照片不要含病人可辨識資訊；上傳到 Canva 的檔案存在 Canva 的服務上。</li>
+    <li>Canva 內的付費素材會有標示，免費帳號請避免使用，以免輸出帶浮水印。</li></ul></div>
+  <div class="cv-sec"><h4>院內工具仍可搭配</h4><div class="cv-links">
+    <button onclick="canvaGuideClose();switchTab('ie',document.getElementById('ntab-ie'))">圖片編輯（去背、調色、裁切）</button>
+    <button onclick="canvaGuideClose();switchTab('wm',document.getElementById('ntab-wm'))">批次浮水印</button>
+    <button onclick="canvaGuideClose();switchTab('qr',document.getElementById('ntab-qr'))">QR 碼產生</button>
+    <button onclick="canvaGuideClose();switchTab('collage',document.getElementById('ntab-collage'))">相片拼貼</button></div></div>`;
+  document.getElementById('cv-foot-txt').textContent='有問題或想保留海報編輯：請聯絡行銷企劃處 視覺多媒體設計組，分機 5204、5205、5206。';
+  document.getElementById('canva-overlay').style.display='flex';
+}
+function canvaGuideClose(){ document.getElementById('canva-overlay').style.display='none'; }
+function canvaNoteHide(){ try{ sessionStorage.setItem('kt_canva_note_off','1'); }catch(e){} const n=document.getElementById('canva-note'); if(n) n.style.display='none'; }
+(function(){ const d=document.getElementById('canva-deadline'); if(d) d.textContent=CANVA_DEADLINE; let off=false; try{ off=!!sessionStorage.getItem('kt_canva_note_off'); }catch(e){} const n=document.getElementById('canva-note'); if(n&&off) n.style.display='none'; })();
 
 function showTos(){
   // 每次開啟重置到「使用須知」頁籤
