@@ -14,10 +14,11 @@
 <meta name="twitter:title" content="光田綜合醫院｜美編小助手">
 <meta name="twitter:description" content="海報編輯・圖片編輯・批次浮水印・QR碼產生・素材資源">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@400;500;700;900&family=BIZ+UDPGothic:wght@400;700&family=Yusei+Magic&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-<!-- QR 改用 api.qrserver.com REST API，不依賴 CDN library -->
+<!-- QR 碼本地產生（qrcode-generator），不經外部服務 -->
 <style>
 :root{
   /* 低飽和度色彩系統 */
@@ -5355,7 +5356,7 @@ function syncQrColor(which, val){
 }
 
 
-// ── QR Code：使用 api.qrserver.com REST API ──
+// ── QR Code：本地產生（qrcode-generator） ──
 let _qrTimer   = null;
 let _qrLogoImg = null;   // 目前套用的 LOGO Image 物件
 let _qrComposite = null; // 合成後的 data URL（供下載用）
@@ -5365,26 +5366,25 @@ function qrGenerate(){
   _qrTimer = setTimeout(_qrDraw, 300);
 }
 
-function _qrBuildUrl(fmt){
-  const content = qrGetContent();
-  if(!content) return null;
-  const size   = parseInt(document.getElementById('qr-size').value)||400;
-  const fg     = (document.getElementById('qr-color').value||'#000000').replace('#','');
-  const bg     = (document.getElementById('qr-bg').value||'#ffffff').replace('#','');
-  const ecl    = document.getElementById('qr-ecl').value||'H';
-  const margin = parseInt(document.getElementById('qr-margin').value)||4;
-  const params = new URLSearchParams({
-    size:   `${size}x${size}`,
-    data:   content,
-    color:  fg,
-    bgcolor:bg,
-    ecc:    ecl,
-    margin: margin,
-    format: fmt||'png'
-  });
-  return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`;
+// 本地產生 QR 模組矩陣（qrcode-generator；typeNumber 0 = 自動）
+function _qrMatrix(content, ecl){
+  if(typeof qrcode!=='function') throw new Error('QR 函式庫尚未載入');
+  const q=qrcode(0, ['L','M','Q','H'].includes(ecl)?ecl:'H'); q.addData(content, 'Byte'); q.make(); return q;
 }
-
+// 畫到 canvas：size 為輸出邊長，margin 為四周留白（px）
+function _qrToCanvas(content, size, fg, bg, ecl, margin){
+  const q=_qrMatrix(content, ecl), n=q.getModuleCount();
+  const cvs=document.createElement('canvas'); cvs.width=size; cvs.height=size; const ctx=cvs.getContext('2d');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,size,size);
+  const inner=size-margin*2, cell=inner/n; ctx.fillStyle=fg;
+  for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) ctx.fillRect(margin+Math.floor(c*cell), margin+Math.floor(r*cell), Math.ceil(cell), Math.ceil(cell));
+  return cvs;
+}
+// 給其他功能用（學會壁報頁尾）：回傳 PNG data URL
+function qrDataUrl(content, size=400, fg='#000000', bg='#FFFFFF', ecl='M', marginPx=null){
+  const m= marginPx==null ? Math.round(size*0.04) : marginPx;
+  return _qrToCanvas(String(content), size, fg, bg, ecl, m).toDataURL('image/png');
+}
 async function _qrDraw(){
   const info    = document.getElementById('qr-info');
   const imgEl   = document.getElementById('qr-preview-img');
@@ -5396,44 +5396,24 @@ async function _qrDraw(){
   document.getElementById('qr-color-hex').value = fg;
   document.getElementById('qr-bg-hex').value    = bg;
   if(!content){ if(info) info.textContent='請輸入內容以產生 QR 碼'; return; }
-  const size = parseInt(document.getElementById('qr-size').value)||400;
-  const url  = _qrBuildUrl('png');
-  if(!url) return;
+  const size   = parseInt(document.getElementById('qr-size').value)||400;
+  const ecl    = document.getElementById('qr-ecl').value||'H';
+  const margin = parseInt(document.getElementById('qr-margin').value)||0;
   if(loading) loading.style.display='flex';
-  if(info)    info.textContent='產生中…';
   try{
-    // Fetch as blob 避免 canvas CORS taint
-    const resp = await fetch(url);
-    if(!resp.ok) throw new Error('API error');
-    const blob    = await resp.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const qrImg   = await new Promise((res,rej)=>{
-      const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=blobUrl;
-    });
-    URL.revokeObjectURL(blobUrl);
-    // 繪製 QR 到 canvas
-    const cvs = document.createElement('canvas');
-    cvs.width = size; cvs.height = size;
-    const ctx = cvs.getContext('2d');
-    ctx.drawImage(qrImg, 0, 0, size, size);
-    // 疊加 LOGO（若已設定）
+    // 本地產生（不經外部服務）：margin 欄位的單位沿用舊版「模組數」→ 換算成 px
+    const q=_qrMatrix(content, ecl); const n=q.getModuleCount(); const marginPx=Math.round(size*margin/(n+margin*2));
+    const cvs=_qrToCanvas(content, size, fg, bg, ecl, marginPx);
+    const ctx=cvs.getContext('2d');
     if(_qrLogoImg){
       const ratio    = parseInt(document.getElementById('qr-logo-size').value||'25')/100;
       const logoSize = Math.round(size * ratio);
       const ar       = _qrLogoImg.naturalHeight/_qrLogoImg.naturalWidth;
-      const lw       = logoSize;
-      const lh       = Math.round(logoSize * ar);
-      const lx       = Math.round((size-lw)/2);
-      const ly       = Math.round((size-lh)/2);
+      const lw       = logoSize, lh = Math.round(logoSize * ar);
+      const lx       = Math.round((size-lw)/2), ly = Math.round((size-lh)/2);
       const pad      = Math.round(logoSize * 0.14);
-      // 白色圓角底板
-      ctx.save();
-      ctx.fillStyle = bg;
-      const r = Math.round(pad*0.8);
-      ctx.beginPath();
-      ctx.roundRect(lx-pad, ly-pad, lw+pad*2, lh+pad*2, r);
-      ctx.fill();
-      ctx.restore();
+      ctx.save(); ctx.fillStyle = bg; const r = Math.round(pad*0.8);
+      ctx.beginPath(); ctx.roundRect(lx-pad, ly-pad, lw+pad*2, lh+pad*2, r); ctx.fill(); ctx.restore();
       ctx.drawImage(_qrLogoImg, lx, ly, lw, lh);
     }
     _qrComposite = cvs.toDataURL('image/png');
@@ -5441,10 +5421,10 @@ async function _qrDraw(){
     imgEl.style.display='block';
     imgEl.src = _qrComposite;
     if(loading) loading.style.display='none';
-    if(info)    info.textContent=`${size}×${size}px｜${content.length} 字元${_qrLogoImg?' ＋LOGO':''}`;
+    if(info)    info.textContent=`${size}×${size}px｜${content.length} 字元｜${n}×${n} 模組${_qrLogoImg?' ＋LOGO':''}`;
   } catch(e){
     if(loading) loading.style.display='none';
-    if(info)    info.textContent='產生失敗，請確認網路連線';
+    if(info)    info.textContent='產生失敗：'+(e.message||e);
   }
 }
 
@@ -5484,45 +5464,33 @@ async function qrDownload(fmt){
     const a=document.createElement('a'); a.href=_qrComposite; a.download='qrcode.png'; a.click();
     snack('QR 碼 PNG 已下載'); return;
   }
-  // SVG：API 的 svg 不含邊框靜區也不含 LOGO → 取其模組路徑後自行組裝（加邊框、嵌入 LOGO）
-  const url=_qrBuildUrl('svg');
-  if(!url){ snack('請先輸入內容'); return; }
-  snack('下載中…');
+  // SVG：本地由模組矩陣組裝（含邊框靜區與 LOGO）
+  const content=qrGetContent(); if(!content){ snack('請先輸入內容'); return; }
   try{
-    const resp=await fetch(url);
-    if(!resp.ok) throw new Error();
-    const src=await resp.text();
-    const doc=new DOMParser().parseFromString(src,'image/svg+xml');
-    const root=doc.documentElement;
-    const qw=parseFloat(root.getAttribute('width'))||parseFloat((root.getAttribute('viewBox')||'').split(/\s+/)[2])||400;
-    const g=doc.querySelector('g#elements')||doc.querySelector('g')||doc.querySelector('path');
-    if(!g) throw new Error('no path');
     const size   = parseInt(document.getElementById('qr-size').value)||400;
     const fg     = document.getElementById('qr-color').value||'#000000';
     const bg     = document.getElementById('qr-bg').value||'#ffffff';
+    const ecl    = document.getElementById('qr-ecl').value||'H';
     const margin = parseInt(document.getElementById('qr-margin').value)||0;
-    // 以輸出尺寸為座標：模組區縮放到 (size - 2*margin)，四周留 margin px（與 PNG 一致）
-    const inner=size-margin*2, k=inner/qw;
-    let inr=new XMLSerializer().serializeToString(g).replace(/fill:rgb\(0, 0, 0\)/g,'fill:'+fg);
+    const q=_qrMatrix(content, ecl), n=q.getModuleCount();
+    const marginPx=size*margin/(n+margin*2), cell=(size-marginPx*2)/n;
+    let d='';
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+=`M${(marginPx+c*cell).toFixed(2)} ${(marginPx+r*cell).toFixed(2)}h${cell.toFixed(2)}v${cell.toFixed(2)}h-${cell.toFixed(2)}z`;
     let logoSvg='';
     if(_qrLogoImg){
       const ratio=parseInt(document.getElementById('qr-logo-size').value||'25')/100;
       const lw=Math.round(size*ratio), lh=Math.round(lw*_qrLogoImg.naturalHeight/_qrLogoImg.naturalWidth);
-      const lx=Math.round((size-lw)/2), ly=Math.round((size-lh)/2), pad=Math.round(lw*0.14), r=Math.round(pad*0.8);
-      // LOGO 以 PNG data URL 嵌入（最長邊 1024，確保放大列印仍清晰）
+      const lx=Math.round((size-lw)/2), ly=Math.round((size-lh)/2), pad=Math.round(lw*0.14), rr=Math.round(pad*0.8);
       const mx=1024, sc=Math.min(1, mx/Math.max(_qrLogoImg.naturalWidth,_qrLogoImg.naturalHeight));
       const c=document.createElement('canvas'); c.width=Math.round(_qrLogoImg.naturalWidth*sc); c.height=Math.round(_qrLogoImg.naturalHeight*sc);
       c.getContext('2d').drawImage(_qrLogoImg,0,0,c.width,c.height);
-      const href=c.toDataURL('image/png');
-      logoSvg=`\n  <rect x="${lx-pad}" y="${ly-pad}" width="${lw+pad*2}" height="${lh+pad*2}" rx="${r}" ry="${r}" fill="${bg}"/>\n  <image x="${lx}" y="${ly}" width="${lw}" height="${lh}" preserveAspectRatio="xMidYMid meet" href="${href}" xlink:href="${href}"/>`;
+      logoSvg=`\n  <rect x="${lx-pad}" y="${ly-pad}" width="${lw+pad*2}" height="${lh+pad*2}" rx="${rr}" ry="${rr}" fill="${bg}"/>\n  <image x="${lx}" y="${ly}" width="${lw}" height="${lh}" xlink:href="${c.toDataURL('image/png')}"/>`;
     }
-    const out=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">\n  <title>QR Code</title>\n  <rect x="0" y="0" width="${size}" height="${size}" fill="${bg}"/>\n  <g transform="translate(${margin} ${margin}) scale(${k})">${inr}</g>${logoSvg}\n</svg>`;
+    const out=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">\n  <rect width="${size}" height="${size}" fill="${bg}"/>\n  <path d="${d}" fill="${fg}"/>${logoSvg}\n</svg>`;
     const blob=new Blob([out],{type:'image/svg+xml'});
-    const bu=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=bu; a.download='qrcode.svg'; a.click();
-    setTimeout(()=>URL.revokeObjectURL(bu),2000);
-    snack('QR 碼 SVG 已下載'+(_qrLogoImg?'（含 LOGO）':''));
-  } catch(e){ console.warn(e); snack('下載失敗，請確認網路連線'); }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='qrcode.svg'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+    snack('QR 碼 SVG 已下載');
+  }catch(e){ snack('SVG 產生失敗：'+(e.message||e)); }
 }
 
 
@@ -6974,97 +6942,52 @@ function applyTemplateObj(tpl, force=false){
   return true;
 }
 
-// ── Firebase / Firestore 同步 ──────────────────────────
-const FB_CONFIG = {
-  apiKey: "AIzaSyB3zod9zQ_11AHx2g62v8Rj9VqYUM8bOYM",
-  authDomain: "kuangtien-poster.firebaseapp.com",
-  projectId: "kuangtien-poster",
-  storageBucket: "kuangtien-poster.firebasestorage.app",
-  messagingSenderId: "294368545338",
-  appId: "1:294368545338:web:259e49ae4bd093bfeec303"
-};
-const FB_WRITE_KEY = 'KT_POSTER_ADMIN_2024';
-const FB_ADMIN_LS_KEY = 'kt_fb_admin';   // localStorage key to remember admin mode
-
-let _fbApp = null;
-let _fbDb  = null;
+// ── 共用範本雲端同步：院內 Worker（Cloudflare KV）。讀取公開；寫入需管理員金鑰（存於 Worker 秘密，前端只在本次瀏覽暫存） ──
+const ADMIN_SS_KEY = 'kt_admin_token';
 let _fbAdminMode = false;
 let _syncTimer = null;
 
 function fbInit() {
-  if (_fbApp) return;
-  try {
-    _fbApp = firebase.initializeApp(FB_CONFIG);
-    _fbDb  = firebase.firestore(_fbApp);
-    _fbAdminMode = !!localStorage.getItem(FB_ADMIN_LS_KEY);
-    console.log('[FB] Firestore 初始化完成，管理模式:', _fbAdminMode);
-  } catch(e) {
-    console.error('[FB] 初始化失敗', e);
-  }
+  _fbAdminMode = !!sessionStorage.getItem(ADMIN_SS_KEY);
 }
 
 async function fbPull() {
-  if (!_fbDb) return;
   try {
     updateCloudDot('syncing');
-    const doc = await _fbDb.collection('data').doc('templates').get();
-    if (doc.exists) {
-      const d = doc.data();
-      // 更新自訂範本
-      if (Array.isArray(d.custom_templates)) {
-        localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(d.custom_templates));
-      }
-      // 更新內建範本覆寫
-      if (d.builtin_overrides && typeof d.builtin_overrides === 'object') {
-        localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(d.builtin_overrides));
-      }
-      // 更新已刪除內建範本
-      if (Array.isArray(d.builtin_deleted)) {
-        localStorage.setItem(BUILTIN_DELETED_KEY, JSON.stringify(d.builtin_deleted));
-      }
-      renderTemplates();
-      updateCloudDot('ok');
-      console.log('[FB] 雲端同步完成');
-    } else {
-      updateCloudDot('ok');
-      console.log('[FB] 雲端尚無資料，使用本機');
-    }
+    const r = await fetch(AI_GEN_API + '/api/templates', { cache: 'no-store' });
+    if (r.status === 404) { updateCloudDot('ok'); return; }           // Worker 尚未更新：沿用本機
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (Array.isArray(d.custom_templates)) localStorage.setItem(CUSTOM_TPLS_KEY, JSON.stringify(d.custom_templates));
+    if (d.builtin_overrides && typeof d.builtin_overrides === 'object') localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(d.builtin_overrides));
+    if (Array.isArray(d.builtin_deleted)) localStorage.setItem(BUILTIN_DELETED_KEY, JSON.stringify(d.builtin_deleted));
+    renderTemplates();
+    updateCloudDot('ok');
   } catch(e) {
-    console.error('[FB] 讀取失敗', e);
+    console.warn('[cloud] 讀取失敗', e);
     updateCloudDot('error');
   }
 }
 
 async function fbPush() {
-  if (!_fbDb || !_fbAdminMode) return;
+  if (!_fbAdminMode) return;
+  const tok = sessionStorage.getItem(ADMIN_SS_KEY);
+  if (!tok) { _fbAdminMode = false; updateCloudDot('off'); return; }
   try {
     updateCloudDot('syncing');
-    const customTpls = loadCustomTemplates().map(t => {
-      // 移除縮圖以節省空間
-      const {thumbDataUrl, ...rest} = t;
-      return rest;
-    });
+    const customTpls = loadCustomTemplates().map(t => { const {thumbDataUrl, ...rest} = t; return rest; });
     const overrides = loadBuiltinOverrides();
-    // 清理 overrides 中的縮圖
     const cleanOverrides = {};
-    for (const [k,v] of Object.entries(overrides)) {
-      const {thumbDataUrl, ...rest} = v;
-      cleanOverrides[k] = rest;
-    }
-    const deleted = loadBuiltinDeleted();
-    await _fbDb.collection('data').doc('templates').set({
-      custom_templates: customTpls,
-      builtin_overrides: cleanOverrides,
-      builtin_deleted: deleted,
-      last_updated: new Date().toISOString(),
-      _auth: FB_WRITE_KEY
-    });
+    for (const [k,v] of Object.entries(overrides)) { const {thumbDataUrl, ...rest} = v; cleanOverrides[k] = rest; }
+    const payload = { custom_templates: customTpls, builtin_overrides: cleanOverrides, builtin_deleted: loadBuiltinDeleted() };
+    const r = await fetch(AI_GEN_API + '/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': tok }, body: JSON.stringify(payload) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) throw new Error(d.error || ('HTTP ' + r.status));
     updateCloudDot('ok');
-    console.log('[FB] 推送成功');
   } catch(e) {
-    console.error('[FB] 推送失敗', e);
+    console.error('[cloud] 推送失敗', e);
     updateCloudDot('error');
-    snack('雲端同步失敗，請確認網路連線');
+    snack('雲端同步失敗：' + (e.message || e));
   }
 }
 
@@ -7086,37 +7009,36 @@ function updateCloudDot(state) {
 }
 
 function toggleAdminMode() {
-  // 使用自訂對話框（prompt 在某些環境會被瀏覽器限制）
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:12px;padding:24px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
-      <div style="font-weight:700;font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:6px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 16 16"><circle cx="6" cy="7" r="3.5"/><path d="M8.5 9.5l5 5M11.5 12.5l1.5 1.5"/></svg> 管理員登入</div>
-      <div style="color:#666;font-size:12px;margin-bottom:12px">輸入管理員密碼以啟用範本寫入功能</div>
-      <input id="_admin_pwd_input" type="password" placeholder="請輸入密碼"
+    <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <div style="font-weight:700;font-size:15px;margin-bottom:12px">管理員模式</div>
+      <div style="color:#666;font-size:12px;margin-bottom:12px">輸入管理員金鑰以啟用共用範本寫入（金鑰由行銷承辦保管，設定在院內服務，不存在網頁裡；關閉分頁即登出）</div>
+      <input id="_admin_pwd_input" type="password" placeholder="請輸入金鑰" autocomplete="off"
         style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;margin-bottom:12px">
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button onclick="this.closest('div[style]').remove()"
-          style="padding:6px 16px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#f5f5f5">取消</button>
-        <button id="_admin_ok_btn"
-          style="padding:6px 16px;border:none;border-radius:6px;cursor:pointer;background:#005BAC;color:#fff">確認</button>
+        <button onclick="this.closest('div[style]').remove()" style="padding:6px 16px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#f5f5f5">取消</button>
+        <button id="_admin_ok_btn" style="padding:6px 16px;border:none;border-radius:6px;cursor:pointer;background:#14286E;color:#fff">確認</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
   const inp = overlay.querySelector('#_admin_pwd_input');
   inp.focus();
-  const doLogin = () => {
-    const pwd = inp.value;
+  const doLogin = async () => {
+    const tok = inp.value.trim();
     overlay.remove();
-    if (pwd === FB_WRITE_KEY) {
+    if (!tok) return;
+    try {
+      const r = await fetch(AI_GEN_API + '/api/admin-check', { headers: { 'X-Admin-Token': tok } });
+      const d = await r.json().catch(() => ({}));
+      if (!d.ok) { snack('金鑰錯誤，或院內服務尚未設定 ADMIN_TOKEN'); return; }
+      sessionStorage.setItem(ADMIN_SS_KEY, tok);
       _fbAdminMode = true;
-      localStorage.setItem(FB_ADMIN_LS_KEY, '1');
       updateCloudDot('off');
-      snack('管理員模式已開啟，範本變更將自動同步');
+      snack('管理員模式已開啟（本分頁有效），範本變更將自動同步');
       renderTemplates();
-    } else {
-      snack('密碼錯誤');
-    }
+    } catch(e) { snack('無法連線院內服務'); }
   };
   overlay.querySelector('#_admin_ok_btn').onclick = doLogin;
   inp.onkeydown = e => { if(e.key==='Enter') doLogin(); if(e.key==='Escape') overlay.remove(); };
@@ -7124,7 +7046,7 @@ function toggleAdminMode() {
 
 function exitAdminMode() {
   _fbAdminMode = false;
-  localStorage.removeItem(FB_ADMIN_LS_KEY);
+  sessionStorage.removeItem(ADMIN_SS_KEY);
   updateCloudDot('off');
   snack('已切換為唯讀模式');
   renderTemplates();
@@ -10399,8 +10321,6 @@ const Collage = {
       a.download=(this.mode==='idphoto'?`證件照_${this.idW_cm}x${this.idH_cm}cm`:`拼貼_${this.count}格`)+`_${this.W}x${this.H}.png`; a.click(); }, 'image/png'); if(typeof snack==='function') snack('已匯出 PNG'); },
 };
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <!-- ══ AI 生圖 Modal ══ -->
 <div id="ai-overlay" style="display:none" onclick="if(event.target===this)aiGenClose()">
@@ -11525,10 +11445,9 @@ async function confAttachMedia(tpl,c){
   }
   if(tpl.qrSlot&&c.qr){
     try{
-      const u='https://api.qrserver.com/v1/create-qr-code/?'+new URLSearchParams({size:'400x400',data:c.qr,margin:'1',ecc:'M',format:'png'}).toString();
-      const b=await (await fetch(u)).blob(); const url=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); });
+      const url=qrDataUrl(c.qr, 600, '#000000', '#FFFFFF', 'M', 12);   // 本地產生，不經外部服務
       const s=tpl.qrSlot; tpl.objs.push({type:'img',imgDataUrl:url,x:s.x,y:s.y,w:s.w,h:s.h,rot:0,opacity:1,aspectRatio:1,groupId:s.groupId});
-    }catch(e){ snack('QR code 產生失敗（需要網路），頁尾留空白方塊'); }
+    }catch(e){ snack('QR code 產生失敗，頁尾留空白方塊'); }
   }
 }
 // ═══ AI 設計 ═══

@@ -1,6 +1,7 @@
 // 美編小助手 AI 生圖代理：Workers AI + KV 限速
 // POST /api/gen { prompt, style, ratio, quality? } → { ok, image:"data:image/jpeg;base64,...", w, h, prompt_en }
 // GET  /api/quota → 目前額度
+// GET  /api/templates → 共用範本（公開讀）；POST /api/templates（X-Admin-Token＝秘密 ADMIN_TOKEN）寫入 KV tpl:shared；GET /api/admin-check 驗證 token
 // POST /api/design  { prompt, aspect, images[] } → { ok, image }（Nano Banana，需 GEMINI_API_KEY）
 // POST /api/outline { text, sections? } → { ok, title, subtitle, sections:[{title,bullets[]}], stats:[{value,label}] }
 //
@@ -67,6 +68,13 @@ const json = (obj, status, headers) => new Response(JSON.stringify(obj), {
 
 function dayKey() { return new Date().toISOString().slice(0, 10); }
 function minKey() { return Math.floor(Date.now() / 60000); }
+function adminOk(req, env) {
+  const t = req.headers.get('X-Admin-Token') || '';
+  const k = env.ADMIN_TOKEN || '';
+  if (!k || t.length !== k.length) return false;
+  let d = 0; for (let i = 0; i < k.length; i++) d |= t.charCodeAt(i) ^ k.charCodeAt(i);
+  return d === 0;
+}
 async function readCount(env, key) { return +(await env.RL.get(key)) || 0; }
 async function bump(env, key, ttl) {
   const n = (await readCount(env, key)) + 1;
@@ -139,6 +147,33 @@ export default {
     if (!c.ok) return json({ ok: false, error: 'origin not allowed' }, 403, c.headers);
 
     const ip = req.headers.get('CF-Connecting-IP') || '0.0.0.0';
+
+    // ── 共用範本（取代 Firestore）：讀取公開；寫入需 X-Admin-Token 等於秘密 ADMIN_TOKEN ──
+    if (url.pathname === '/api/templates' && req.method === 'GET') {
+      const raw = await env.RL.get('tpl:shared');
+      return new Response(raw || '{"custom_templates":[],"builtin_overrides":{},"builtin_deleted":[],"last_updated":null}', { status: 200, headers: { ...c.headers, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    }
+    if (url.pathname === '/api/admin-check' && req.method === 'GET') {
+      return json({ ok: adminOk(req, env) }, 200, c.headers);
+    }
+    if (url.pathname === '/api/templates' && req.method === 'POST') {
+      if (!env.ADMIN_TOKEN) return json({ ok: false, error: '尚未設定 ADMIN_TOKEN 秘密' }, 503, c.headers);
+      if (!adminOk(req, env)) return json({ ok: false, error: '管理員驗證失敗' }, 403, c.headers);
+      const am = await readCount(env, `am:${minKey()}:${ip}`); if (am >= 10) return json({ ok: false, error: '太頻繁' }, 429, c.headers);
+      let body;
+      try { body = await req.json(); } catch { return json({ ok: false, error: 'bad json' }, 400, c.headers); }
+      const data = {
+        custom_templates: Array.isArray(body.custom_templates) ? body.custom_templates : [],
+        builtin_overrides: (body.builtin_overrides && typeof body.builtin_overrides === 'object') ? body.builtin_overrides : {},
+        builtin_deleted: Array.isArray(body.builtin_deleted) ? body.builtin_deleted : [],
+        last_updated: new Date().toISOString(),
+      };
+      const raw = JSON.stringify(data);
+      if (raw.length > 20 * 1024 * 1024) return json({ ok: false, error: '範本資料超過 20 MB，請移除大圖' }, 413, c.headers);
+      await env.RL.put('tpl:shared', raw);
+      await bump(env, `am:${minKey()}:${ip}`, 120);
+      return json({ ok: true, last_updated: data.last_updated, bytes: raw.length }, 200, c.headers);
+    }
 
     if (url.pathname === '/api/quota' && req.method === 'GET') {
       const bd = await readCount(env, `bd:${dayKey()}:${ip}`), bg = await readCount(env, `bg:${dayKey()}`);
