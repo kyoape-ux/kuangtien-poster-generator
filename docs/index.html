@@ -3832,10 +3832,15 @@ function attachDrag(elParam, objParam){
   let el=elParam, obj=objParam;
   let mode=null, sx=0, sy=0, ox=0, oy=0, ow=0, oh=0, orot=0, cx=0, cy=0, osize=0, oar=1;
 
+  let deepSel=false;
   function onDown(e){
     if(e.button===2) return; // right-click handled by contextmenu
     e.stopPropagation();
-    selObj(obj.id, e.shiftKey);
+    // 群組已整組選取、再點其中一個 → 放開沒拖曳時改為單選（可拉大小、單獨移動）
+    const grpAllSel = !!obj.groupId && !e.shiftKey && S.selIds.length>1 && S.selIds.includes(obj.id) && S.objs.filter(o=>o.groupId===obj.groupId).every(o=>S.selIds.includes(o.id));
+    const singleInGrp = !!obj.groupId && !e.shiftKey && S.selIds.length===1 && S.selId===obj.id;
+    if(!singleInGrp) selObj(obj.id, e.shiftKey);
+    deepSel = grpAllSel;
 
     // Alt+drag → clone object, drag the clone
     if(e.altKey && !e.target.classList.contains('roth') && !e.target.classList.contains('rh')){
@@ -3861,8 +3866,8 @@ function attachDrag(elParam, objParam){
       mode='resize-'+e.target.dataset.dir;
     } else {
       mode='move';
-      // store initial positions of group members
-      if(obj.groupId){
+      // store initial positions of group members（單選群組成員時只移動自己）
+      if(obj.groupId && S.selIds.length>1){
         S.objs.forEach(o=>{ if(o.groupId===obj.groupId){ o._gox=o.x; o._goy=o.y; } });
       }
     }
@@ -3903,8 +3908,8 @@ function attachDrag(elParam, objParam){
         }
       }
       drawSnapGuides(gx, gy);
-      // group members move together
-      if(obj.groupId){
+      // group members move together（單選群組成員時不帶動其他）
+      if(obj.groupId && S.selIds.length>1){
         const ddx=obj.x-ox, ddy=obj.y-oy;
         S.objs.forEach(o=>{
           if(o.id===obj.id||o.groupId!==obj.groupId) return;
@@ -3964,11 +3969,18 @@ function attachDrag(elParam, objParam){
     showSizeTip(obj);
   }
 
-  function onUp(){
+  function onUp(e){
     if(!mode) return;
     const savedMode = mode;
     mode=null;
     clearSnapGuides();
+    if(deepSel && savedMode==='move' && e && Math.abs(e.clientX-sx)<3 && Math.abs(e.clientY-sy)<3){
+      // 沒拖曳：改為單選這個物件
+      document.querySelectorAll('.obj').forEach(x=>x.classList.remove('sel','multi-sel'));
+      S.selIds=[obj.id]; S.selId=obj.id; el.classList.add('sel'); document.getElementById('li'+obj.id)?.classList.add('sel');
+      showPP(obj.id); showSizeTip(obj); snack('已選取單一物件：可拉動框角調整大小；點空白處再點卡片可回到整組',3000);
+    }
+    deepSel=false;
     S.objs.forEach(o=>{ delete o._gox; delete o._goy; });
     document.removeEventListener('mousemove',onMove);
     document.removeEventListener('mouseup',onUp);
@@ -11231,10 +11243,10 @@ function confBuildSimple(sp,c){
     });
     return {objs:o,over};
   }
-  const opt={place:true,lines:3,tiles:true,titleLines:2};
+  const opt={place:true,lines:8,tiles:true,titleLines:2};
   let f=1, F=mkF(1), r=build(F,opt), tries=0;
-  while(r.over>0 && tries<5){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
-  const steps=[()=>opt.place=false, ()=>opt.lines=2, ()=>opt.tiles=false, ()=>opt.titleLines=1];
+  while(r.over>0 && tries<6){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
+  const steps=[()=>opt.place=false, ()=>opt.tiles=false, ()=>opt.titleLines=1];
   for(const st of steps){ if(r.over<=0) break; st(); r=build(F,opt); }
   return {id:'conf-dyn', name:sp.label, category:'conf', w:W, h:H, bg:'#FFFFFF', previewGrad:['#14286E','#00AAC8'], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.place||opt.lines<3, photoSlots:[], qrSlot:null};
 }
@@ -11269,7 +11281,7 @@ function confBuildCard(sp,c,ST){
   const minPx= sp.minPt? sp.minPt/0.75 : 0;
   const basePt={title:26,sub:12.5,head:17,body:13,meta:11.5,num:26,lab:11,badge:12};
   const ratio={title:1.9,sub:1.0,head:1.3,body:1.0,meta:1.0,num:1.8,lab:1.0,badge:1.0};
-  const mkF=f=>{ const F={}; const body=Math.max(minPx, basePt.body*k*f/0.75); for(const key in basePt) F[key]=Math.max(body*ratio[key], basePt[key]*k*f/0.75); return F; };
+  const mkF=(f,floorPx=minPx)=>{ const F={}; const body=Math.max(floorPx, basePt.body*k*f/0.75); for(const key in basePt) F[key]=Math.max(body*ratio[key], basePt[key]*k*f/0.75); return F; };
   const L=1.4; const G='gc'+Date.now().toString(36)+'_';
   const txt=(text,size,color,weight,align,x,y,w,h,extra={})=>Object.assign({type:'txt',text,size:Math.round(size),color,weight,align,fontFamily:'Noto Sans TC',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1},extra);
   const shape=(type,x,y,w,h,fill,o={})=>Object.assign({type:'shape',shapeType:type,x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),rot:0,opacity:1,fillColor:fill,strokeColor:'transparent',strokeWidth:0,strokeDash:'solid'},o);
@@ -11314,7 +11326,7 @@ function confBuildCard(sp,c,ST){
     if(ST.watermark&&!onBg){ const s=W*0.62; o.push({type:'img',imgUrl:'./logos/logo-solo.png',x:Math.round(W-s*0.78),y:Math.round(H-s*0.78-m*1.6),w:Math.round(s),h:Math.round(s),rot:0,opacity:0.06,aspectRatio:1}); }
     // ── 標題區
     const gh=G+'hdr';
-    const logoH=F.title*1.0, logoW=logoH/0.1725;
+    const logoH=F.title*0.78, logoW=logoH/0.1725;   // 院徽縮小，表頭讓位給內容
     let titleLines= land?1:opt.titleLines;
     const hasSub= !opt.compact && (c.subtitle||!c.title);
     const titleColor= (ST.header==='band'||ST.header==='curve')? '#FFFFFF' : T.txt;
@@ -11327,7 +11339,7 @@ function confBuildCard(sp,c,ST){
     const tagPill=(fill,color,cy)=>{ if(!sp.tag) return; const t=sp.tag, tp=F.meta, th=tp*1.9, tw=Math.max(t.length*tp*1.05,tp*3)+tp*2.2, ty=cy-th/2;
       o.push(rect(W-m-tw,ty,tw,th,fill,{rx:Math.round(th/2),groupId:gh})); o.push(txt(t,tp,color,'700','center',W-m-tw,ty+(th-tp*L)/2,tw,tp*L,{groupId:gh})); };
     if(ST.header==='band'||ST.header==='curve'){
-      headerH=m*0.8+logoH+m*0.55+F.title*L*titleLines+(hasSub? m*0.25+F.sub*L*subLines : 0)+m*1.2;
+      headerH=m*0.5+logoH+m*0.3+F.title*L*titleLines+(hasSub? m*0.15+F.sub*L*subLines : 0)+m*0.95;
       if(ST.header==='curve'){
         o.push(rect(0,0,W,headerH*0.72,T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,120))));
         o.push(shape('ellipse',-W*0.1,headerH*0.72-W*0.22,W*1.2,W*0.44,T.c2,Object.assign({groupId:gh},grad(T.c1,T.c2,90))));
@@ -11336,35 +11348,35 @@ function confBuildCard(sp,c,ST){
         o.push(shape('ellipse',W*0.62,-headerH*0.55,W*0.55,W*0.55,'#FFFFFF',{opacity:0.08,groupId:gh}));
         o.push(shape('ellipse',W*0.84,headerH*0.35,W*0.28,W*0.28,'#FFFFFF',{opacity:0.07,groupId:gh}));
       }
-      o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:m,y:Math.round(m*0.8),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
-      tagPill('#FFFFFF',T.txt==='#FFFFFF'?T.dark:T.txt, m*0.8+logoH/2);
-      let y=m*0.8+logoH+m*0.55;
+      o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:m,y:Math.round(m*0.5),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
+      tagPill('#FFFFFF',T.txt==='#FFFFFF'?T.dark:T.txt, m*0.5+logoH/2);
+      let y=m*0.5+logoH+m*0.3;
       o.push(txt(title,F.title,'#FFFFFF','700','left',m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
       y+=F.title*L*titleLines;
-      if(hasSub){ y+=m*0.25; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L*subLines,{opacity:0.88,groupId:gh})); }
+      if(hasSub){ y+=m*0.15; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,'#FFFFFF','400','left',m,y,W-2*m,F.sub*L*subLines,{opacity:0.88,groupId:gh})); }
       authY=headerH-m*0.6;
     } else if(ST.header==='bar'){
       // 公版：上方色條（院徽置中）、標題置中、作者置中
-      const barH=logoH+m*1.0;
+      const barH=logoH+m*0.7;
       if(onBg) o.push(rect(0,barH,W,F.title*L*titleLines+F.sub*L*subLines+F.meta*L*3+m*3.2,'#FFFFFF',{opacity:0.85,groupId:gh}));
       o.push(rect(0,0,W,barH,T.c1,{groupId:gh}));
       o.push({type:'img',imgUrl:'./logos/logo-h-white.png',x:Math.round((W-logoW)/2),y:Math.round(m*0.5),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
       tagPill('#FFFFFF',T.txt, barH/2);
-      let y=barH+m*0.8;
+      let y=barH+m*0.5;
       o.push(txt(title,F.title,T.txt,'700','center',m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
       y+=F.title*L*titleLines;
       if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400','center',m,y,W-2*m,F.sub*L*subLines,{groupId:gh})); y+=F.sub*L*subLines; }
-      headerH=y+m*0.5; authY=headerH;
+      headerH=y+m*0.3; authY=headerH;
     } else { // light：白底、彩色院徽、細線
       if(onBg) o.push(rect(m*0.5,m*0.4,W-m,logoH+F.title*L*titleLines+F.sub*L*subLines+F.meta*L*3+m*3.4,'#FFFFFF',{opacity:0.85,rx:Math.round(m*0.4),groupId:gh}));
-      o.push({type:'img',imgUrl:'./logos/logo-h-normal.png',x:m,y:Math.round(m*0.8),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
-      tagPill(T.c1,'#FFFFFF', m*0.8+logoH/2);
-      let y=m*0.8+logoH+m*0.5;
+      o.push({type:'img',imgUrl:'./logos/logo-h-normal.png',x:m,y:Math.round(m*0.5),w:Math.round(logoW),h:Math.round(logoH),rot:0,opacity:1,aspectRatio:0.1725,groupId:gh});
+      tagPill(T.c1,'#FFFFFF', m*0.5+logoH/2);
+      let y=m*0.5+logoH+m*0.3;
       o.push(txt(title,F.title,T.txt,'700',titleAlign,m,y,W-2*m,F.title*L*titleLines,{groupId:gh}));
       y+=F.title*L*titleLines;
       if(hasSub){ y+=m*0.2; o.push(txt(c.subtitle||'副標題：一句話說明核心做法與效益（可刪）',F.sub,bodyColor,'400',titleAlign,m,y,W-2*m,F.sub*L*subLines,{opacity:0.9,groupId:gh})); y+=F.sub*L*subLines; }
-      y+=m*0.4; o.push(rect(m,y,W-2*m,Math.max(3,m*0.12),T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,90))));
-      headerH=y+m*0.5; authY=headerH;
+      y+=m*0.25; o.push(rect(m,y,W-2*m,Math.max(3,m*0.12),T.c1,Object.assign({groupId:gh},grad(T.c1,T.c2,90))));
+      headerH=y+m*0.35; authY=headerH;
     }
     // ── 作者（band／curve 用疊卡；bar 置中純文字；light 左對齊純文字）
     const ga=G+'auth';
@@ -11376,34 +11388,34 @@ function confBuildCard(sp,c,ST){
     else { authText=aA+'\n'+aU+'\n'+aE; authLines=nl(authText,F.meta,'400',authW); }
     let authH, contentTop;
     if(ST.header==='band'||ST.header==='curve'){
-      authH=F.meta*L*authLines+m*0.7;
-      o.push(rect(m,authY+m*0.12,W-2*m,authH,T.c1,{rx:Math.round(m*0.35),opacity:0.10,groupId:ga}));
-      o.push(rect(m,authY,W-2*m,authH, darkMode?T.tint2:'#FFFFFF',{rx:Math.round(m*0.35),groupId:ga}));
+      authH=F.meta*L*authLines+m*0.45;
+      o.push(rect(m,authY+m*0.1,W-2*m,authH,T.c1,{rx:Math.round(m*0.3),opacity:0.10,groupId:ga}));
+      o.push(rect(m,authY,W-2*m,authH, darkMode?T.tint2:'#FFFFFF',{rx:Math.round(m*0.3),groupId:ga}));
       o.push(rect(m,authY+authH*0.22,m*0.16,authH*0.56,T.accent,{rx:Math.round(m*0.08),groupId:ga}));
-      o.push(txt(authText, F.meta,bodyColor,'400','left',m+pad*0.8,authY+m*0.35,authW,F.meta*L*authLines,{groupId:ga}));
-      contentTop=authY+authH+m*0.8;
+      o.push(txt(authText, F.meta,bodyColor,'400','left',m+pad*0.8,authY+m*0.22,authW,F.meta*L*authLines,{groupId:ga}));
+      contentTop=authY+authH+m*0.55;
     } else {
       authH=F.meta*L*authLines;
       o.push(txt(authText, F.meta,bodyColor,'400',ST.header==='bar'?'center':'left',m+pad*0.8,authY,authW,authH,{groupId:ga}));
-      contentTop=authY+authH+m*0.9;
+      contentTop=authY+authH+m*0.6;
     }
     // ── 頁尾
     const gf=G+'foot';
-    const qr=Math.max(F.meta*L*2, F.lab*L*2)+m*0.3, footH=qr+m*0.8, footY=H-footH;
+    // 頁尾：精簡成一行（放不下才兩行）；有 QR 連結才留 QR 方塊
+    const hasQr=!!c.qr, qr= hasQr? F.meta*L*2+m*0.15 : 0;
+    const footW=W-2*m-(hasQr? qr+m : 0);
+    const parts=[unitShort]; if(sp.tag) parts.push(sp.tag); if(sp.event) parts.push(sp.event); if(hasQr) parts.push('掃描 QR code 看完整報告');
+    let footText=parts.join('　｜　'), footLines=nl(footText,F.meta,'400',footW);
+    if(footLines>1){ footText=parts.slice(0,sp.tag?2:1).join('　｜　')+'\n'+parts.slice(sp.tag?2:1).join('　｜　'); footLines=nl(footText,F.meta,'400',footW); }
+    footLines=Math.max(footLines, hasQr?2:1);
+    const footH=Math.max(F.meta*L*footLines, qr)+m*0.5, footY=H-footH;
     const footFill= ST.footer==='light'? T.tint2 : (ST.footer==='bar'? T.c1 : T.dark);
     const footTxt= ST.footer==='light'? T.txt : '#FFFFFF';
     o.push(rect(0,footY,W,footH,footFill,{groupId:gf}));
-    if(ST.footer!=='light') o.push(rect(0,footY,W,Math.max(3,m*0.12),T.accent,{groupId:gf}));
-    const footW=W-2*m-qr-m;
-    let f1=`${unitShort}${sp.event?'　｜　'+sp.event:''}`;
-    let f2=`${sp.tag?sp.tag+'　｜　':''}${c.qr? '掃描 QR code 看完整報告' : '聯絡：'+(c.email||'xxxxx@ktgh.com.tw')}`;
-    if(nl(f1,F.meta,'400',footW)>1&&sp.event){ f1=sp.event; f2=unitShort+'　｜　'+f2; }
-    if(nl(f2,F.meta,'400',footW)>1&&sp.tag){ f2=f2.replace(sp.tag+'　｜　',''); }
-    if(nl(f1,F.meta,'400',footW)>1&&sp.event){ f1=unitShort; }
-    o.push(txt(f1+'\n'+f2,F.meta,footTxt,'400','left',m,footY+m*0.4,footW,F.meta*L*2,{opacity:0.92,groupId:gf}));
-    o.push(rect(W-m-qr,footY+m*0.4,qr,qr,'#FFFFFF',{rx:Math.round(m*0.15),groupId:gf}));
-    if(c.qr) qrSlot={x:Math.round(W-m-qr+qr*0.06),y:Math.round(footY+m*0.4+qr*0.06),w:Math.round(qr*0.88),h:Math.round(qr*0.88),groupId:gf};
-    else o.push(txt('QR\n（選用）',F.lab,T.txt==='#FFFFFF'?T.dark:T.txt,'700','center',W-m-qr,footY+m*0.4+(qr-F.lab*L*2)/2,qr,F.lab*L*2,{groupId:gf}));
+    if(ST.footer!=='light') o.push(rect(0,footY,W,Math.max(2,m*0.1),T.accent,{groupId:gf}));
+    o.push(txt(footText,F.meta,footTxt,'400','left',m,footY+(footH-F.meta*L*footLines)/2,footW,F.meta*L*footLines,{opacity:0.92,groupId:gf}));
+    if(hasQr){ o.push(rect(W-m-qr,footY+(footH-qr)/2,qr,qr,'#FFFFFF',{rx:Math.round(m*0.12),groupId:gf}));
+      qrSlot={x:Math.round(W-m-qr+qr*0.05),y:Math.round(footY+(footH-qr)/2+qr*0.05),w:Math.round(qr*0.9),h:Math.round(qr*0.9),groupId:gf}; }
     // ── 內容區塊
     const top=contentTop, bottom=footY-m*0.7;
     const badgeD=F.head*1.5;
@@ -11419,7 +11431,9 @@ function confBuildCard(sp,c,ST){
     const slotW=(colW-(perRow-1)*m*0.4)/perRow, slotH= opt.photoCompact? slotW*0.5 : slotW*0.6;
     const hasCaps= nPhotos && c.photos.some(p=>(p.caption||'').trim()) && !opt.photoCompact;
     const rowH= slotH+(hasCaps? F.lab*L+m*0.1 : 0);
-    const photoH= opt.photos? rows*rowH+(rows-1)*m*0.3+(nPhotos||opt.photoCompact? m*0.1 : F.lab*L+m*0.25) : 0;
+    const photoHint='活動照片：在助手「內容與照片」加入後會自動排進來（建議 3 張、長邊 ≥1500 px）';
+    const hintLines=(nPhotos||opt.photoCompact)? 0 : nl(photoHint,F.lab,'400',colW);
+    const photoH= opt.photos? rows*rowH+(rows-1)*m*0.3+(hintLines? F.lab*L*hintLines+m*0.25 : m*0.1) : 0;
     const half=Math.ceil(n/2);
     const idxAll=c.sections.map((_,i)=>i);
     const blocks= land? [[...idxAll.slice(0,half),'photos'],[...idxAll.slice(half)]] : [[...idxAll.slice(0,Math.min(2,n)),'photos',...idxAll.slice(Math.min(2,n))]];
@@ -11444,7 +11458,7 @@ function confBuildCard(sp,c,ST){
               else { o.push(shape('ellipse',px+sw*0.38,py+slotH*0.28,sw*0.24,sw*0.24,'#FFFFFF',{opacity:0.9,groupId:gp})); o.push(txt(`照片 ${j+1}`,F.lab,hintColor,'500','center',px,py+slotH*0.62,sw,F.lab*L,{groupId:gp})); }
             }
           }
-          if(!nPhotos&&!opt.photoCompact) o.push(txt('活動照片：在助手「內容與照片」加入後會自動排進來（建議 3 張、長邊 ≥1500 px）',F.lab,hintColor,'400','left',x,cy+slotH+m*0.1,colW,F.lab*L,{opacity:0.9,groupId:gp}));
+          if(hintLines) o.push(txt(photoHint,F.lab,hintColor,'400','left',x,cy+slotH+m*0.1,colW,F.lab*L*hintLines,{opacity:0.9,groupId:gp}));
           cy+=photoH+gap; return;
         }
         const i=b, sec=c.sections[i], h=secH(i), tinted=(i===n-1&&n>=3), gs=G+'sec'+i;
@@ -11490,12 +11504,16 @@ function confBuildCard(sp,c,ST){
     });
     return {objs:o,over,photoSlots,qrSlot};
   }
-  const opt={photos:true,photoCompact:false,chart:true,tiles:true,lines:3,titleLines:2,compact:false};
+  const opt={photos:true,photoCompact:false,chart:true,tiles:true,lines:8,titleLines:2,compact:false}; // lines=8：所有重點都保留，不砍字
   let f=1, F=mkF(1), r=build(F,opt), tries=0;
-  while(r.over>0 && tries<5){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
-  const steps=[()=>opt.chart=false, ()=>opt.lines=2, ()=>opt.photoCompact=true, ()=>opt.compact=true, ()=>opt.photos=false, ()=>opt.tiles=false, ()=>opt.titleLines=1];
+  while(r.over>0 && tries<6){ f*=Math.max(0.6,1-r.over/H-0.03); F=mkF(f); r=build(F,opt); tries++; }
+  const steps=[()=>opt.chart=false, ()=>opt.photoCompact=true, ()=>opt.compact=true, ()=>opt.tiles=false, ()=>opt.titleLines=1];
   for(const st of steps){ if(r.over<=0) break; st(); r=build(F,opt); }
-  return {id:'conf-dyn', name:sp.label+'・'+(ST.name||'').split('（')[0], category:'conf', w:W, h:H, bg:pageBg, previewGrad:[T.c1,T.c2], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.photos||opt.lines<3||!opt.tiles, photoSlots:r.photoSlots, qrSlot:r.qrSlot};
+  // 還是放不下：寧可縮字也不砍文字，最低 8pt（會提醒低於學會字級）
+  let belowMin=false;
+  if(r.over>0){ const hard=8/0.75; let t2=0; while(r.over>0 && t2<10 && F.body>hard+0.1){ f*=0.9; F=mkF(f,hard); r=build(F,opt); t2++; } belowMin= !!sp.minPt && F.body*0.75 < sp.minPt-0.05; }
+  if(r.over>0){ opt.photos=false; r=build(F,opt); }   // 最後手段：拿掉照片列
+  return {id:'conf-dyn', name:sp.label+'・'+(ST.name||'').split('（')[0], category:'conf', w:W, h:H, bg:pageBg, previewGrad:[T.c1,T.c2], pdfSpec:confSpecToPdfSpec(sp), objs:r.objs, overflow:r.over>0, simplified:!opt.photos||!opt.tiles||opt.compact, bodyPt:+(F.body*0.75).toFixed(1), belowMin, photoSlots:r.photoSlots, qrSlot:r.qrSlot};
 }
 // 把照片裁進槽位、QR 放進頁尾（非同步，之後才套用版型）
 async function confAttachMedia(tpl,c){
@@ -11637,8 +11655,9 @@ async function confApply(){
   switchTab('poster',document.getElementById('ntab-poster'));
   if(applyTemplateObj(tpl,true)!==false){
     document.querySelectorAll('.sc').forEach(e=>e.classList.remove('on')); confClose();
-    if(tpl.overflow) setTimeout(()=>snack('這個頁面尺寸配上最小字級放不下完整內容，已盡量簡化；請刪減文字、減少段落或調低最小字級',8000),900);
-    else if(tpl.simplified) setTimeout(()=>snack('頁面較小，版型已自動簡化（減少重點行數或區塊）。卡片可整組拖曳調整位置',6000),900);
+    if(tpl.belowMin) setTimeout(()=>snack(`內容太多：文字已縮到 ${tpl.bodyPt} pt 才放得下，低於學會最小字級，請精簡文字或減少段落`,9000),900);
+    else if(tpl.overflow) setTimeout(()=>snack('內容太多，即使縮字也放不下，請刪減文字或減少段落',8000),900);
+    else if(tpl.simplified) setTimeout(()=>snack('內容較多，已縮小字級或簡化區塊讓文字完整呈現。點一下選整組、再點一次可單獨調整文字框',7000),900);
     else setTimeout(()=>snack('版型已產生。每張卡片是一個群組，可整組拖曳；點文字兩下可修改',5000),900);
   }
 }
