@@ -78,8 +78,10 @@ poster-generator-deploy/
 - 匯出與編輯畫面一致：`_wrapCanvasLines()` 模擬 `.tinner` 的 pre-wrap＋break-word（CJK 逐字斷行、拉丁字詞斷行、收尾標點不放行首、行尾空白懸掛），dlPoster／exportPDF 都用它換行並裁切到文字框；`_txtLines()` 量行數，產生器用它決定標題／副標／作者／段落／頁尾的實際高度。付費 Nano Banana 一鍵路線 UI 已拿掉（使用者不採付費），Worker `/api/design` 留著但前端不呼叫。
 - 群組選取：第一次點選整組；整組已選取時再點同一物件且沒拖曳 → 單選（可拉大小、單獨移動，onDown/onUp 的 deepSel）。產生器不砍重點：先縮字到學會字級、再簡化區塊、最後才允許低到 8pt 並提醒（tpl.belowMin/bodyPt）；表頭、作者列、頁尾已壓縮，頁尾一行放得下就一行、沒 QR 連結不留方塊。
 
-## P0 資安（2026-10-28）
+## 資安現況（2026-10-28 決議）
 
-- 前端已移除 Firebase SDK、FB_CONFIG 與寫死的管理員密碼。共用範本改走 Worker：`GET /api/templates`（公開讀，KV `tpl:shared`）、`POST /api/templates`（需 `X-Admin-Token` 等於 Worker 秘密 `ADMIN_TOKEN`）、`GET /api/admin-check`。管理員金鑰只存 sessionStorage（關分頁即登出）。
-- QR 碼全部本地產生（cdnjs qrcode-generator 1.4.4，`_qrMatrix/_qrToCanvas/qrDataUrl`），不再連 api.qrserver.com。
-- 存取控管搬遷步驟見 `DEPLOY_ACCESS.md`；Pages 部署腳本 `deploy-pages.sh`。Worker 部署、秘密設定、Pages 建立都要使用者自己跑（自動模式禁止代為部署）。
+- 使用者決議：網站維持 GitHub Pages 公開網址、**不加登入**（生產力工具，不想增加同仁負擔）。曾試做 Cloudflare Workers 靜態資產＋Access，已刪除臨時網站 `ktgh-poster`。
+- 前端已移除 Firebase SDK 與寫死的管理員密碼；共用範本走 Worker：`GET /api/templates`（公開讀，KV `tpl:shared`）、`POST /api/templates`（需 `X-Admin-Token` ＝ Worker 秘密 `ADMIN_TOKEN`）、`GET /api/admin-check`。管理員金鑰只存 sessionStorage。金鑰檔 `.admin-token.txt`（git 忽略），重設用 `setup-admin-token.sh`。
+- QR 碼全部本地產生（cdnjs qrcode-generator 1.4.4）。
+- 已移除未使用的付費 Nano Banana 端點 `/api/design`。Worker 部署與秘密寫入需使用者自己跑（自動模式會擋）：`npx wrangler deploy --config /Users/jyunhao/dev/poster-generator-deploy/worker-gen/wrangler.toml`。
+- 待辦（建議使用者處理）：刪除 Firebase 專案 kuangtien-poster；第三方腳本加 SRI 或自行託管；repo 歷史仍含舊密碼與 Firebase apiKey（專案刪除後即失效）。
