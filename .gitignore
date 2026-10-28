@@ -11,3 +11,5 @@ archive/
 !.dev.vars.example
 .env*
 !.env.example
+
+.admin-token.txt
